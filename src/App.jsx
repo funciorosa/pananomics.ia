@@ -1070,11 +1070,14 @@ export default function App() {
   const [entidades, setEntidades] = useState(ENTIDADES_FALLBACK);
 
   useEffect(() => {
-    sbQuery("presupuesto", "select=nombre_entidad&order=nombre_entidad&limit=10000")
+    sbQuery("entidades", "select=nombre,siglas&order=nombre")
       .then(rows => {
         if (rows?.length) {
-          const unique = [...new Set(rows.map(r => r.nombre_entidad).filter(Boolean))].sort();
-          if (unique.length > 0) setEntidades(unique);
+          setEntidades(rows.map(r => r.nombre).filter(Boolean).sort());
+          // Build dynamic SIGLAS map from DB
+          const sigMap = {};
+          rows.forEach(r => { if (r.nombre && r.siglas) sigMap[r.nombre] = r.siglas; });
+          Object.assign(SIGLAS, sigMap);
         }
       }).catch(() => {});
   }, []);

@@ -963,6 +963,23 @@ function ChatView({ user }) {
   const bottomRef = useRef(null);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [messages]);
   useEffect(() => { loadContexts(); }, []);
+  useEffect(() => {
+    setMessages(prev => {
+      if (prev.length === 1 && prev[0].role === "assistant") {
+        return [{ role:"assistant", text:`¡Hola ${user.name}! Soy **Panamita** 👋 Estoy conectada a la base de datos en tiempo real.
+
+Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026) y **6 documentos normativos**. Puedes preguntarme:
+
+• _¿Cómo ejecutó MEDUCA en 2024?_
+• _Compara MINSA vs MIDA en inversión 2023_
+• _¿Cuáles entidades están por debajo de la meta?_
+• _Analiza la tendencia de MOP últimos 5 años_
+
+¿Qué quieres analizar?` }];
+      }
+      return prev;
+    });
+  }, [ENTIDADES.length]);
 
   const loadContexts = async () => {
     try {

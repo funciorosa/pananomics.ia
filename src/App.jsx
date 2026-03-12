@@ -40,12 +40,17 @@ const C = {
 };
 
 const ENTIDADES_FALLBACK = [
-  "ASAMBLEA NACIONAL","CONTRALORÍA GENERAL DE LA REPÚBLICA",
-  "MINISTERIO DE LA PRESIDENCIA","MINISTERIO DE RELACIONES EXTERIORES",
-  "MINISTERIO DE EDUCACIÓN","MINISTERIO DE COMERCIO E INDUSTRIAS",
-  "MINISTERIO DE OBRAS PÚBLICAS","MINISTERIO DE DESARROLLO AGROPECUARIO",
-  "MINISTERIO DE SALUD","MINISTERIO DE TRABAJO Y DESARROLLO LABORAL",
-  "MINISTERIO DE VIVIENDA Y ORDENAMIENTO TERRITORIAL"
+  {nombre:"ASAMBLEA NACIONAL",siglas:"AN",codigo_area:0,codigo_entidad:1},
+  {nombre:"CONTRALORÍA GENERAL DE LA REPÚBLICA",siglas:"CGR",codigo_area:0,codigo_entidad:2},
+  {nombre:"PRESIDENCIA DE LA REPÚBLICA",siglas:"MIPRE",codigo_area:0,codigo_entidad:3},
+  {nombre:"MINISTERIO DE RELACIONES EXTERIORES",siglas:"MIRE",codigo_area:0,codigo_entidad:5},
+  {nombre:"MINISTERIO DE EDUCACIÓN",siglas:"MEDUCA",codigo_area:0,codigo_entidad:7},
+  {nombre:"MINISTERIO DE COMERCIO E INDUSTRIAS",siglas:"MICI",codigo_area:0,codigo_entidad:8},
+  {nombre:"MINISTERIO DE OBRAS PÚBLICAS",siglas:"MOP",codigo_area:0,codigo_entidad:9},
+  {nombre:"MINISTERIO DE DESARROLLO AGROPECUARIO",siglas:"MIDA",codigo_area:0,codigo_entidad:10},
+  {nombre:"MINISTERIO DE SALUD",siglas:"MINSA",codigo_area:0,codigo_entidad:12},
+  {nombre:"MINISTERIO DE TRABAJO Y DESARROLLO LABORAL",siglas:"MITRADEL",codigo_area:0,codigo_entidad:13},
+  {nombre:"MINISTERIO DE VIVIENDA Y ORDENAMIENTO TERRITORIAL",siglas:"MIVIOT",codigo_area:0,codigo_entidad:14},
 ];
 
 const SIGLAS = {
@@ -165,13 +170,36 @@ function Sidebar({ active, setActive, user, onLogout }) {
   );
 }
 // ── PANAMA MAP ────────────────────────────────────────────────────────────────
-// Uses real GeoJSON coordinates + d3-geo projection for accurate province shapes
+// Loads real GeoJSON from public/data/pa.json and renders with d3-geo
 function PanamaMap({ provincias }) {
   const [hover, setHover] = useState(null);
   const [paths, setPaths] = useState([]);
 
   const normalize = s => (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim();
-  const getProvData = keys => provincias?.find(p => keys.some(k => normalize(p.name).includes(normalize(k)))) || null;
+
+  // Match GeoJSON feature id → province data from DB
+  const PROV_MATCH = {
+    'PA1':  n => n.includes('BOCAS'),
+    'PANT': n => n.includes('NASO'),
+    'PA4':  n => n.includes('CHIRIQUI'),
+    'PA2':  n => n.includes('COCLE'),
+    'PA3':  n => n.includes('COLON'),
+    'PA5':  n => n.includes('DARIEN'),
+    'PAEM': n => n.includes('EMBERA') || n.includes('WOUNAAN'),
+    'PAKY': n => n.includes('KUNA') || n.includes('GUNA'),
+    'PA6':  n => n.includes('HERRERA'),
+    'PA7':  n => n.includes('SANTOS'),
+    'PANB': n => n.includes('NGABE') || n.includes('NGOBE') || n.includes('BUGLE'),
+    'PA10': n => n.includes('OESTE'),
+    'PA8':  n => (n.includes('PANAMA') || n.includes('PANAM')) && !n.includes('OESTE'),
+    'PA9':  n => n.includes('VERAGUAS'),
+  };
+
+  const getProvData = id => {
+    const fn = PROV_MATCH[id];
+    if (!fn || !provincias) return null;
+    return provincias.find(p => fn(normalize(p.name))) || null;
+  };
 
   const heatFill = pct => {
     if (pct == null) return "#DCE3EF";
@@ -185,141 +213,26 @@ function PanamaMap({ provincias }) {
     return +pct>=76 ? "rgba(5,110,50,0.8)" : +pct>=60 ? "rgba(185,90,5,0.7)" : "rgba(170,20,20,0.7)";
   };
 
-  // Real simplified GeoJSON for Panama provinces/comarcas (WGS84)
-  const GEOJSON = {
-    type:"FeatureCollection",
-    features:[
-      { id:"bocas", label:"Bocas\ndel Toro", keys:["BOCAS"],
-        type:"Feature", geometry:{ type:"Polygon", coordinates:[[
-          [-82.88,9.58],[-82.55,9.65],[-82.20,9.60],[-82.00,9.45],[-81.90,9.15],
-          [-82.00,8.85],[-82.20,8.72],[-82.45,8.70],[-82.65,8.78],[-82.88,8.95],
-          [-82.95,9.22],[-82.88,9.58]
-        ]] }
-      },
-      { id:"chiriqui", label:"Chiriquí", keys:["CHIRIQUI","CHIRIQUÍ"],
-        type:"Feature", geometry:{ type:"Polygon", coordinates:[[
-          [-83.02,8.80],[-82.88,8.95],[-82.65,8.78],[-82.45,8.70],[-82.20,8.72],
-          [-82.00,8.85],[-81.90,9.15],[-82.00,9.45],[-81.75,9.05],[-81.55,8.88],
-          [-81.32,8.82],[-81.12,8.68],[-81.02,8.40],[-80.95,8.10],[-81.05,7.92],
-          [-81.25,7.78],[-81.58,7.62],[-81.78,7.58],[-82.10,7.68],[-82.38,7.80],
-          [-82.62,7.92],[-82.88,8.12],[-83.02,8.42],[-83.02,8.80]
-        ]] }
-      },
-      { id:"ngabe", label:"Ngäbe-Buglé", keys:["NGABE","NGÄBE","BUGLE","BUGLÉ"],
-        type:"Feature", geometry:{ type:"Polygon", coordinates:[[
-          [-82.00,9.45],[-81.90,9.15],[-82.00,8.85],[-81.75,9.05],[-81.55,8.88],
-          [-81.32,8.82],[-81.12,8.68],[-81.02,8.40],[-80.95,8.10],[-81.05,7.92],
-          [-80.88,8.00],[-80.70,8.15],[-80.55,8.40],[-80.52,8.72],[-80.68,8.98],
-          [-80.85,9.20],[-81.10,9.38],[-81.45,9.42],[-81.72,9.32],[-81.95,9.38],[-82.00,9.45]
-        ]] }
-      },
-      { id:"veraguas", label:"Veraguas", keys:["VERAGUAS"],
-        type:"Feature", geometry:{ type:"Polygon", coordinates:[[
-          [-80.95,8.10],[-81.02,8.40],[-81.12,8.68],[-80.88,8.00],[-80.70,8.15],
-          [-80.55,8.40],[-80.52,8.72],[-80.40,8.55],[-80.22,8.35],[-80.10,8.12],
-          [-79.98,7.88],[-80.02,7.62],[-80.18,7.42],[-80.40,7.30],[-80.68,7.22],
-          [-80.88,7.32],[-81.05,7.55],[-81.25,7.78],[-81.05,7.92],[-80.95,8.10]
-        ]] }
-      },
-      { id:"herrera", label:"Herrera", keys:["HERRERA"],
-        type:"Feature", geometry:{ type:"Polygon", coordinates:[[
-          [-80.52,8.72],[-80.55,8.40],[-80.40,8.55],[-80.22,8.35],[-80.12,8.38],
-          [-80.02,8.22],[-79.92,8.02],[-80.05,7.82],[-80.18,7.68],[-80.38,7.60],
-          [-80.55,7.62],[-80.65,7.80],[-80.72,8.02],[-80.68,8.18],[-80.60,8.42],[-80.52,8.72]
-        ]] }
-      },
-      { id:"los_santos", label:"Los Santos", keys:["LOS SANTOS","SANTOS"],
-        type:"Feature", geometry:{ type:"Polygon", coordinates:[[
-          [-80.18,7.42],[-80.40,7.30],[-80.68,7.22],[-80.88,7.32],[-80.80,7.18],
-          [-80.65,7.08],[-80.42,7.02],[-80.22,7.05],[-80.05,7.18],[-79.92,7.38],
-          [-79.90,7.60],[-80.02,7.80],[-80.05,7.82],[-79.92,8.02],[-80.02,8.22],
-          [-80.12,8.38],[-80.22,8.35],[-80.10,8.12],[-79.98,7.88],[-80.02,7.62],[-80.18,7.42]
-        ]] }
-      },
-      { id:"cocle", label:"Coclé", keys:["COCLE","COCLÉ"],
-        type:"Feature", geometry:{ type:"Polygon", coordinates:[[
-          [-80.85,9.20],[-80.68,8.98],[-80.52,8.72],[-80.60,8.42],[-80.68,8.18],
-          [-80.72,8.02],[-80.65,7.80],[-80.55,7.62],[-80.38,7.60],[-80.18,7.68],
-          [-80.05,7.82],[-80.02,7.80],[-79.90,7.60],[-79.82,7.75],[-79.78,8.00],
-          [-79.80,8.28],[-79.88,8.52],[-80.02,8.70],[-80.22,8.82],[-80.45,8.90],
-          [-80.62,9.00],[-80.72,9.12],[-80.85,9.20]
-        ]] }
-      },
-      { id:"colon", label:"Colón", keys:["COLON","COLÓN"],
-        type:"Feature", geometry:{ type:"Polygon", coordinates:[[
-          [-81.10,9.38],[-80.85,9.20],[-80.72,9.12],[-80.62,9.00],[-80.45,8.90],
-          [-80.22,8.82],[-80.02,8.70],[-79.88,8.52],[-79.80,8.28],[-79.78,8.00],
-          [-79.82,7.75],[-79.90,7.60],[-79.92,8.02],[-79.88,8.32],[-79.82,8.65],
-          [-79.78,8.92],[-79.72,9.15],[-79.65,9.35],[-79.72,9.58],[-79.88,9.65],
-          [-80.12,9.60],[-80.38,9.55],[-80.68,9.52],[-81.00,9.52],[-81.30,9.48],
-          [-81.45,9.42],[-81.10,9.38]
-        ]] }
-      },
-      { id:"panama_oeste", label:"Panamá\nOeste", keys:["PANAMÁ OESTE","PANAMA OESTE","OESTE"],
-        type:"Feature", geometry:{ type:"Polygon", coordinates:[[
-          [-80.02,8.70],[-79.88,8.52],[-79.80,8.28],[-79.78,8.00],[-79.82,7.75],
-          [-79.72,7.82],[-79.58,7.90],[-79.52,8.10],[-79.55,8.38],[-79.62,8.58],
-          [-79.72,8.75],[-79.88,8.92],[-79.78,8.92],[-79.72,9.15],[-79.65,9.35],
-          [-79.72,9.58],[-79.88,9.65],[-79.85,9.52],[-79.82,9.22],[-79.85,9.00],
-          [-79.90,8.80],[-79.95,8.68],[-80.02,8.70]
-        ]] }
-      },
-      { id:"panama", label:"Panamá", keys:["PANAMÁ","PANAMA"],
-        type:"Feature", geometry:{ type:"Polygon", coordinates:[[
-          [-79.72,9.58],[-79.65,9.35],[-79.72,9.15],[-79.78,8.92],[-79.88,8.92],
-          [-79.72,8.75],[-79.62,8.58],[-79.55,8.38],[-79.52,8.10],[-79.58,7.90],
-          [-79.72,7.82],[-79.82,7.75],[-79.90,7.60],[-79.92,7.38],[-79.80,7.22],
-          [-79.62,7.12],[-79.38,7.08],[-79.18,7.15],[-78.98,7.28],[-78.82,7.45],
-          [-78.68,7.62],[-78.60,7.85],[-78.55,8.10],[-78.62,8.35],[-78.72,8.55],
-          [-78.88,8.72],[-79.02,8.85],[-79.20,8.92],[-79.42,8.98],[-79.62,8.98],
-          [-79.75,9.05],[-79.82,9.22],[-79.85,9.52],[-79.88,9.65],[-80.12,9.60],
-          [-80.38,9.55],[-80.68,9.52],[-80.42,9.48],[-80.20,9.42],[-80.00,9.32],
-          [-79.88,9.12],[-79.80,8.92],[-79.85,9.00],[-79.90,8.80],[-79.95,8.68],
-          [-80.02,8.70],[-79.88,8.92],[-79.78,8.92],[-79.72,9.15],[-79.65,9.35],[-79.72,9.58]
-        ]] }
-      },
-      { id:"guna_yala", label:"Guna Yala", keys:["GUNA YALA","KUNA","SAN BLAS"],
-        type:"Feature", geometry:{ type:"Polygon", coordinates:[[
-          [-79.72,9.58],[-79.88,9.65],[-80.12,9.60],[-80.38,9.55],[-80.68,9.52],
-          [-81.00,9.52],[-81.30,9.48],[-81.45,9.42],[-81.72,9.32],[-81.95,9.38],
-          [-82.00,9.45],[-82.20,9.60],[-82.55,9.65],[-82.88,9.58],[-82.55,9.55],
-          [-82.20,9.52],[-82.00,9.38],[-81.72,9.22],[-81.45,9.32],[-81.00,9.42],
-          [-80.68,9.42],[-80.38,9.45],[-80.12,9.50],[-79.88,9.55],[-79.72,9.58]
-        ]] }
-      },
-      { id:"darien", label:"Darién", keys:["DARIEN","DARIÉN"],
-        type:"Feature", geometry:{ type:"Polygon", coordinates:[[
-          [-78.60,7.85],[-78.68,7.62],[-78.82,7.45],[-78.98,7.28],[-78.82,7.18],
-          [-78.55,7.12],[-78.25,7.15],[-78.00,7.22],[-77.75,7.35],[-77.50,7.45],
-          [-77.30,7.60],[-77.18,7.82],[-77.25,8.05],[-77.38,8.25],[-77.55,8.42],
-          [-77.75,8.55],[-78.00,8.65],[-78.28,8.72],[-78.55,8.75],[-78.82,8.72],
-          [-79.02,8.85],[-78.88,8.72],[-78.72,8.55],[-78.62,8.35],[-78.55,8.10],[-78.60,7.85]
-        ]] }
-      },
-      { id:"embera", label:"Emberá", keys:["EMBERA","EMBERÁ","WOUNAAN"],
-        type:"Feature", geometry:{ type:"Polygon", coordinates:[[
-          [-77.25,8.05],[-77.18,7.82],[-77.30,7.60],[-77.50,7.45],[-77.75,7.35],
-          [-77.50,7.28],[-77.25,7.42],[-77.10,7.62],[-77.05,7.88],[-77.15,8.10],[-77.25,8.05]
-        ]] }
-      },
-    ]
-  };
-
   useEffect(() => {
     let d3Lib;
     try { d3Lib = window.d3 || require("d3"); } catch { return; }
     if (!d3Lib) return;
-
     const W = 860, H = 380;
-    const projection = d3Lib.geoMercator().fitSize([W, H], GEOJSON);
-    const pathGen = d3Lib.geoPath().projection(projection);
-
-    const computed = GEOJSON.features.map(f => {
-      const svgD = pathGen(f);
-      const centroid = projection(d3Lib.geoCentroid(f));
-      return { id:f.id, label:f.label, keys:f.keys, d:svgD, cx:centroid[0], cy:centroid[1] };
-    });
-    setPaths(computed);
+    fetch('/data/pa.json')
+      .then(r => r.json())
+      .then(geo => {
+        const projection = d3Lib.geoMercator().fitSize([W, H], geo);
+        const pathGen = d3Lib.geoPath().projection(projection);
+        const computed = geo.features.map(f => {
+          const svgD = pathGen(f);
+          const centroid = projection(d3Lib.geoCentroid(f));
+          const id = f.properties?.id || '';
+          const name = f.properties?.name || id;
+          return { id, label: name, d: svgD, cx: centroid[0], cy: centroid[1] };
+        });
+        setPaths(computed);
+      })
+      .catch(() => {});
   }, []);
 
   return (
@@ -331,25 +244,21 @@ function PanamaMap({ provincias }) {
         <text x="848" y="290" fontSize="8" fill="rgba(20,70,140,0.5)" fontFamily="'Segoe UI',sans-serif" writingMode="vertical-rl">COLOMBIA</text>
 
         {paths.map(prov => {
-          const data = getProvData(prov.keys);
-          const pct = data?.pct ?? null;
+          const provData = getProvData(prov.id);
+          const pct = provData?.pct ?? null;
           const isH = hover?.id === prov.id;
           return (
             <g key={prov.id} style={{ cursor:"pointer" }}
-              onMouseEnter={() => setHover({ id:prov.id, label:prov.label, data })}
+              onMouseEnter={() => setHover({ id:prov.id, label:prov.label, data:provData })}
               onMouseLeave={() => setHover(null)}>
-              <path d={prov.d} fill={heatFill(pct)} stroke={isH?"#1a237e":heatStroke(pct)} strokeWidth={isH?2.5:1}
+              <path d={prov.d} fill={heatFill(pct)} stroke={isH?"#1a237e":heatStroke(pct)} strokeWidth={isH?2.5:0.8}
                 style={{ filter:isH?"drop-shadow(0 2px 8px rgba(0,0,0,0.3))":"none", transition:"filter 0.2s" }}/>
-              {prov.label.split("\n").map((line, i, arr) => (
-                <text key={i} x={prov.cx} y={prov.cy + i*10 - (arr.length-1)*5}
-                  textAnchor="middle" fontSize="7" fill="#0f172a" fontWeight="700"
-                  fontFamily="'Segoe UI',sans-serif" style={{ pointerEvents:"none" }}>
-                  {line}
-                </text>
-              ))}
+              <text x={prov.cx} y={prov.cy} textAnchor="middle" fontSize="7" fill="#0f172a" fontWeight="700"
+                fontFamily="'Segoe UI',sans-serif" style={{ pointerEvents:"none" }}>
+                {prov.label.length > 14 ? prov.label.split(' ').slice(0,2).join('\n') : prov.label}
+              </text>
               {pct != null && (
-                <text x={prov.cx} y={prov.cy + (prov.label.split("\n").length)*10}
-                  textAnchor="middle" fontSize="6.5" fontWeight="800"
+                <text x={prov.cx} y={prov.cy+10} textAnchor="middle" fontSize="6.5" fontWeight="800"
                   fill={+pct>=76?"#064e2c":+pct>=60?"#7c3d00":"#7f1d1d"}
                   fontFamily="'Segoe UI',sans-serif" style={{ pointerEvents:"none" }}>
                   {pct}%
@@ -365,7 +274,7 @@ function PanamaMap({ provincias }) {
 
       {hover?.data && (
         <div style={{ position:"absolute", top:8, right:8, background:"white", border:`1.5px solid ${heatStroke(hover.data.pct)}`, borderRadius:10, padding:"10px 14px", boxShadow:"0 6px 20px rgba(0,0,0,0.14)", minWidth:165, zIndex:20 }}>
-          <div style={{ fontWeight:800, color:"#1a2a4a", marginBottom:5, fontSize:13 }}>{hover.label.replace("\n"," ")}</div>
+          <div style={{ fontWeight:800, color:"#1a2a4a", marginBottom:5, fontSize:13 }}>{hover.label}</div>
           <div style={{ fontSize:12, color:"#676879", marginBottom:2 }}>Modificado: <b style={{ color:"#323338" }}>{fmt(hover.data.mod)}</b></div>
           <div style={{ fontSize:12, color:"#676879", marginBottom:6 }}>Ejecutado: <b style={{ color:"#323338" }}>{fmt(hover.data.eje)}</b></div>
           <div style={{ padding:"4px 12px", borderRadius:20, background:heatFill(hover.data.pct), border:`1px solid ${heatStroke(hover.data.pct)}`, textAlign:"center", fontWeight:800, fontSize:14, color:+hover.data.pct>=76?"#064e2c":+hover.data.pct>=60?"#7c3d00":"#7f1d1d" }}>
@@ -394,6 +303,7 @@ function Dashboard() {
   const [tab, setTab] = useState("anual");
   const [anio, setAnio] = useState(2024);
   const [entidad, setEntidad] = useState("MINISTERIO DE SALUD");
+
   const [data, setData] = useState(null);
   const [histData, setHistData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -421,6 +331,12 @@ function Dashboard() {
       {name:"Modernización Institucional", mod:68, eje:54},
       {name:"Tecnología e Innovación", mod:45, eje:32},
       {name:"Programas Sociales", mod:62, eje:30},
+    ],
+    funcProgramas: [
+      {name:"Administración General", mod:280, eje:245},
+      {name:"Servicios de Salud Primaria", mod:180, eje:162},
+      {name:"Educación Básica General", mod:120, eje:108},
+      {name:"Seguridad Ciudadana", mod:70, eje:53},
     ],
     provincias: [
       {name:"Panamá", mod:420000000, eje:358000000, pct:85.2},
@@ -453,7 +369,7 @@ function Dashboard() {
   const loadAnual = async () => {
     setLoading(true);
     try {
-      const rows = await sbQuery("presupuesto", `select=tipo_presupuesto,presupuesto_ley,presupuesto_modificado,ejecutado,grupo_gasto,fuente_ingreso,nombre_programa,nombre_subprograma,provincia_comarca&anio=eq.${anio}&nombre_entidad=eq.${encodeURIComponent(entidad)}`);
+      const rows = await sbQuery("presupuesto", `select=tipo_presupuesto,presupuesto_ley,presupuesto_modificado,ejecutado,grupo_gasto,fuente_ingreso,nombre_programa,nombre_subprograma,provincia_comarca&anio=eq.${anio}&nombre_entidad=eq.${encodeURIComponent(entidad)}&limit=10000`);
       if (!rows.length) { setData(DEMO_DATA); setLoading(false); return; }
       const sum = (arr,k) => arr.reduce((s,r)=>s+(+r[k]||0),0);
       const func = rows.filter(r=>r.tipo_presupuesto==="FUNCIONAMIENTO");
@@ -467,6 +383,9 @@ function Dashboard() {
       // Programas inversión
       const pMap = {};
       inv.forEach(r=>{ const p=(r.nombre_programa||"Sin Programa").slice(0,35); if(!pMap[p])pMap[p]={mod:0,eje:0}; pMap[p].mod+=+r.presupuesto_modificado||0; pMap[p].eje+=+r.ejecutado||0; });
+      // Programas funcionamiento
+      const fpMap = {};
+      func.forEach(r=>{ const p=(r.nombre_programa||"Sin Programa").slice(0,35); if(!fpMap[p])fpMap[p]={mod:0,eje:0}; fpMap[p].mod+=+r.presupuesto_modificado||0; fpMap[p].eje+=+r.ejecutado||0; });
       // Provincias
       const provMap = {};
       rows.forEach(r=>{ const p=r.provincia_comarca||"No especificada"; if(!provMap[p])provMap[p]={mod:0,eje:0}; provMap[p].mod+=+r.presupuesto_modificado||0; provMap[p].eje+=+r.ejecutado||0; });
@@ -477,6 +396,7 @@ function Dashboard() {
         grupos: Object.entries(gMap).sort((a,b)=>b[1].mod-a[1].mod).slice(0,8).map(([g,v])=>({name:g.slice(0,28),mod:+(v.mod/1e6).toFixed(2),eje:+(v.eje/1e6).toFixed(2),pct:+(v.eje/v.mod*100).toFixed(1)})),
         fuentes: Object.entries(fMap).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([f,v])=>({name:f.slice(0,30),value:+(v/1e6).toFixed(2)})),
         programas: Object.entries(pMap).sort((a,b)=>b[1].mod-a[1].mod).slice(0,8).map(([p,v])=>({name:p,mod:+(v.mod/1e6).toFixed(2),eje:+(v.eje/1e6).toFixed(2)})),
+        funcProgramas: Object.entries(fpMap).sort((a,b)=>b[1].mod-a[1].mod).slice(0,8).map(([p,v])=>({name:p,mod:+(v.mod/1e6).toFixed(2),eje:+(v.eje/1e6).toFixed(2)})),
         provincias: Object.entries(provMap).sort((a,b)=>b[1].mod-a[1].mod).map(([p,v])=>({name:p,mod:v.mod,eje:v.eje,pct:+(v.eje/v.mod*100).toFixed(1)})),
       });
     } catch(e){ setData(DEMO_DATA); }
@@ -486,7 +406,7 @@ function Dashboard() {
   const loadHistorico = async () => {
     setLoading(true);
     try {
-      const rows = await sbQuery("presupuesto", `select=anio,presupuesto_ley,presupuesto_modificado,ejecutado&nombre_entidad=eq.${encodeURIComponent(entidad)}&anio=lte.2025`);
+      const rows = await sbQuery("presupuesto", `select=anio,presupuesto_ley,presupuesto_modificado,ejecutado&nombre_entidad=eq.${encodeURIComponent(entidad)}&anio=lte.2025&limit=50000`);
       const byYear = {};
       rows.forEach(r=>{ const y=r.anio; if(!byYear[y])byYear[y]={ley:0,mod:0,eje:0}; byYear[y].ley+=+r.presupuesto_ley||0; byYear[y].mod+=+r.presupuesto_modificado||0; byYear[y].eje+=+r.ejecutado||0; });
       const hist = Object.entries(byYear).sort((a,b)=>+a[0]-+b[0]).map(([y,v])=>({ year:+y, Ley:+(v.ley/1e6).toFixed(2), Modificado:+(v.mod/1e6).toFixed(2), Ejecutado:+(v.eje/1e6).toFixed(2), Ejecucion:+(v.eje/v.mod*100).toFixed(1) }));
@@ -515,7 +435,7 @@ function Dashboard() {
         </div>
         <div style={{ marginLeft:"auto", display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
           <select value={entidad} onChange={e=>setEntidad(e.target.value)} style={{ padding:"6px 10px", borderRadius:8, border:`1px solid ${C.border}`, background:C.white, color:C.text, fontSize:12, fontWeight:600, cursor:"pointer", outline:"none" }}>
-            {ENTIDADES.map(e=><option key={e} value={e}>{SIGLAS[e]||e}</option>)}
+            {ENTIDADES.map(e=>{ const code=`${e.codigo_area}${String(e.codigo_entidad).padStart(2,'0')}`; return <option key={e.nombre} value={e.nombre}>{code} {e.siglas||e.nombre}</option>; })}
           </select>
           <div style={{ display:"flex", background:C.bg, borderRadius:8, padding:3, gap:2 }}>
             <button onClick={()=>setTab("anual")} style={{ padding:"5px 14px", borderRadius:6, border:"none", background:tab==="anual"?C.navDash:"transparent", color:tab==="anual"?"white":C.textMid, fontSize:12, fontWeight:700, cursor:"pointer" }}>Por Año</button>
@@ -665,27 +585,45 @@ function Dashboard() {
               </div>
             </div>
 
-            {/* Programas de inversión + Mapa calor */}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+            {/* Programas de funcionamiento + Inversión */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+              <div style={{ background:C.white, borderRadius:12, padding:"18px 20px", border:`1px solid ${C.border}` }}>
+                <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:14 }}>Funcionamiento por Programa</div>
+                {!data.funcProgramas?.length || (data.funcProgramas.length===1 && data.funcProgramas[0].name==="Sin Programa") ? <div style={{ color:C.textMid, fontSize:12, textAlign:"center", padding:"30px 0" }}>No hay datos de programas de funcionamiento</div> : (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={data.funcProgramas} layout="vertical" margin={{ left:110, right:30 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={C.border}/>
+                      <XAxis type="number" tick={{ fontSize:10 }} tickFormatter={v=>`${v}M`}/>
+                      <YAxis type="category" dataKey="name" tick={{ fontSize:9 }} width={110}/>
+                      <Tooltip formatter={v=>`B/. ${v}M`}/>
+                      <Legend wrapperStyle={{ fontSize:11 }}/>
+                      <Bar dataKey="mod" name="Modificado" fill={C.navHistorico+"99"} barSize={10}/>
+                      <Bar dataKey="eje" name="Ejecutado" fill={C.navHistorico} barSize={10}/>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
               <div style={{ background:C.white, borderRadius:12, padding:"18px 20px", border:`1px solid ${C.border}` }}>
                 <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:14 }}>Inversión por Programa</div>
-                {data.programas.length === 0 ? <div style={{ color:C.textMid, fontSize:12, textAlign:"center", padding:"30px 0" }}>No hay datos de inversión para este año</div> : (
+                {!data.programas?.length ? <div style={{ color:C.textMid, fontSize:12, textAlign:"center", padding:"30px 0" }}>No hay datos de inversión para este año</div> : (
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={data.programas} layout="vertical" margin={{ left:100, right:30 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={C.border}/>
                       <XAxis type="number" tick={{ fontSize:10 }} tickFormatter={v=>`${v}M`}/>
                       <YAxis type="category" dataKey="name" tick={{ fontSize:9 }} width={100}/>
                       <Tooltip formatter={v=>`B/. ${v}M`}/>
+                      <Legend wrapperStyle={{ fontSize:11 }}/>
                       <Bar dataKey="mod" name="Modificado" fill={C.navInformes+"99"} barSize={10}/>
                       <Bar dataKey="eje" name="Ejecutado" fill={C.navInformes} barSize={10}/>
                     </BarChart>
                   </ResponsiveContainer>
                 )}
               </div>
-              <div style={{ background:C.white, borderRadius:12, padding:"18px 20px", border:`1px solid ${C.border}`, gridColumn:"1 / -1" }}>
-                <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:12 }}>Mapa de Calor · Distribución por Provincia/Comarca</div>
-                <PanamaMap provincias={data.provincias}/>
-              </div>
+            </div>
+            {/* Mapa calor */}
+            <div style={{ background:C.white, borderRadius:12, padding:"18px 20px", border:`1px solid ${C.border}` }}>
+              <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:12 }}>Mapa de Calor · Distribución por Provincia/Comarca</div>
+              <PanamaMap provincias={data.provincias}/>
             </div>
           </>
         )}
@@ -752,6 +690,14 @@ function Entidades({ user }) {
   const ENTIDADES = useContext(EntidadesCtx);
   const [view, setView] = useState("lista");
   const [selected, setSelected] = useState(null);
+  const [openGroups, setOpenGroups] = useState({0:true,1:false,2:false,3:false});
+  const GRUPO_NAMES = ["GOBIERNO CENTRAL","INSTITUCIONES DESCENTRALIZADAS","EMPRESAS PÚBLICAS","INTERMEDIARIOS FINANCIEROS"];
+  const GRUPO_COLORS = [C.navDash, C.navHistorico, C.navInformes, C.navEntidades];
+  const GRUPO_ICONS = ["🏛","🏢","🏭","🏦"];
+  const toggleGroup = i => setOpenGroups(prev => ({...prev,[i]:!prev[i]}));
+  const grouped = {0:[],1:[],2:[],3:[]};
+  ENTIDADES.forEach(e => { if (grouped[e.codigo_area] !== undefined) grouped[e.codigo_area].push(e); });
+
   return (
     <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"'Segoe UI',system-ui,sans-serif" }}>
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, padding:"14px 28px", display:"flex", alignItems:"center", gap:12 }}>
@@ -778,21 +724,43 @@ function Entidades({ user }) {
             </div>
           </div>
         ) : (
-          <>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:12 }}>
-              {ENTIDADES.map(e=>(
-                <div key={e} onClick={()=>setSelected(selected===e?null:e)}
-                  style={{ background:C.white, borderRadius:12, padding:"16px 18px", border:`1px solid ${selected===e?C.navEntidades:C.border}`, cursor:"pointer", transition:"all 0.2s", boxShadow:selected===e?"0 4px 16px rgba(229,57,53,0.15)":"none" }}
-                  onMouseEnter={e2=>{ if(selected!==e) e2.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.08)"; }}
-                  onMouseLeave={e2=>{ if(selected!==e) e2.currentTarget.style.boxShadow="none"; }}>
-                  <div style={{ width:36, height:36, borderRadius:8, background:C.navEntidades+"15", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, marginBottom:10 }}>🏛</div>
-                  <div style={{ fontSize:11, fontWeight:800, color:C.navEntidades, letterSpacing:"0.06em", marginBottom:4 }}>{SIGLAS[e]}</div>
-                  <div style={{ fontSize:11, color:C.textMid, lineHeight:1.4 }}>{e}</div>
-                  <div style={{ marginTop:10, padding:"5px 10px", background:C.bg, borderRadius:6, fontSize:10, color:C.textLight, textAlign:"center" }}>Sin informes cargados aún</div>
+          <div>
+            {[0,1,2,3].map(i => (
+              <div key={i} style={{ marginBottom:12, borderRadius:12, border:`1px solid ${GRUPO_COLORS[i]}30`, overflow:"hidden" }}>
+                <div onClick={()=>toggleGroup(i)} style={{ background:GRUPO_COLORS[i]+"12", padding:"12px 18px", display:"flex", alignItems:"center", gap:10, cursor:"pointer", borderBottom: openGroups[i]?`1px solid ${GRUPO_COLORS[i]}25`:"none" }}>
+                  <span style={{ fontSize:16 }}>{GRUPO_ICONS[i]}</span>
+                  <div style={{ flex:1 }}>
+                    <span style={{ fontSize:13, fontWeight:800, color:GRUPO_COLORS[i], letterSpacing:"0.04em" }}>{i} {GRUPO_NAMES[i]}</span>
+                    <span style={{ marginLeft:10, fontSize:11, color:C.textMid, fontWeight:500 }}>{grouped[i].length} entidades</span>
+                  </div>
+                  <span style={{ fontSize:11, color:GRUPO_COLORS[i], fontWeight:700 }}>{openGroups[i]?"▲":"▼"}</span>
                 </div>
-              ))}
-            </div>
-          </>
+                {openGroups[i] && (
+                  <div style={{ background:C.white, padding:"16px 18px" }}>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:10 }}>
+                      {grouped[i].map(e => {
+                        const code = `${e.codigo_area}${String(e.codigo_entidad).padStart(2,'0')}`;
+                        const isSelected = selected===e.nombre;
+                        return (
+                          <div key={e.nombre} onClick={()=>setSelected(isSelected?null:e.nombre)}
+                            style={{ background:C.white, borderRadius:10, padding:"14px 16px", border:`1px solid ${isSelected?GRUPO_COLORS[i]:C.border}`, cursor:"pointer", transition:"all 0.2s", boxShadow:isSelected?`0 4px 16px ${GRUPO_COLORS[i]}25`:"none" }}
+                            onMouseEnter={ev=>{ if(!isSelected) ev.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.08)"; }}
+                            onMouseLeave={ev=>{ if(!isSelected) ev.currentTarget.style.boxShadow="none"; }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                              <div style={{ padding:"3px 7px", background:GRUPO_COLORS[i]+"18", borderRadius:5, fontSize:10, fontWeight:800, color:GRUPO_COLORS[i], letterSpacing:"0.05em" }}>{code}</div>
+                              <div style={{ fontSize:11, fontWeight:800, color:GRUPO_COLORS[i], letterSpacing:"0.04em" }}>{e.siglas}</div>
+                            </div>
+                            <div style={{ fontSize:11, color:C.textMid, lineHeight:1.4 }}>{e.nombre}</div>
+                            <div style={{ marginTop:8, padding:"4px 8px", background:C.bg, borderRadius:5, fontSize:10, color:C.textLight, textAlign:"center" }}>Sin informes cargados aún</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -1070,11 +1038,10 @@ export default function App() {
   const [entidades, setEntidades] = useState(ENTIDADES_FALLBACK);
 
   useEffect(() => {
-    sbQuery("entidades", "select=nombre,siglas&order=nombre")
+    sbQuery("entidades", "select=nombre,siglas,codigo_area,codigo_entidad&order=codigo_area,codigo_entidad")
       .then(rows => {
         if (rows?.length) {
-          setEntidades(rows.map(r => r.nombre).filter(Boolean).sort());
-          // Build dynamic SIGLAS map from DB
+          setEntidades(rows.filter(r => r.nombre));
           const sigMap = {};
           rows.forEach(r => { if (r.nombre && r.siglas) sigMap[r.nombre] = r.siglas; });
           Object.assign(SIGLAS, sigMap);

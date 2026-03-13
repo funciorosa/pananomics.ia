@@ -987,7 +987,7 @@ function Biblioteca() {
 // ── CHAT ──────────────────────────────────────────────────────────────────────
 function ChatView({ user }) {
   const ENTIDADES = useContext(EntidadesCtx);
-  const [messages, setMessages] = useState([{ role:"assistant", text:`¡Hola ${user.name}! Soy **Panamita** 👋 Estoy conectada a la base de datos en tiempo real.\n\nTengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos** (normativa + PEI/POA de 28 instituciones). Puedes preguntarme:\n\n• _¿Cómo ejecutó MEDUCA en 2024?_\n• _Compara MINSA vs MIDA en inversión 2023_\n• _¿Cuáles entidades están por debajo de la meta?_\n• _Analiza la tendencia de MOP últimos 5 años_\n\n¿Qué quieres analizar?` }]);
+  const [messages, setMessages] = useState([{ role:"assistant", text:`¡Hola ${user.name}! Soy **Panamita** 👋 Estoy conectada a la base de datos en tiempo real.\n\nTengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos** (normativa + PEI/POA de 28 instituciones). Puedes preguntarme:\n\n• _¿Cómo ejecutó MEDUCA en 2024?_\n• _¿Qué entidades reciben fondos FECCI en el sector agropecuario?_\n• _Compara MINSA vs MIDA en inversión 2023_\n• _Entidades financiadas con Dividendos del Canal_\n\n¿Qué quieres analizar?` }]);
   const [input, setInput] = useState(""); const [loading, setLoading] = useState(false);
   const [mood, setMood] = useState("idle"); const [dbCtx, setDbCtx] = useState(""); const [libCtx, setLibCtx] = useState("");
   const bottomRef = useRef(null);
@@ -1001,9 +1001,9 @@ function ChatView({ user }) {
 Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos** (normativa + PEI/POA de 28 instituciones). Puedes preguntarme:
 
 • _¿Cómo ejecutó MEDUCA en 2024?_
+• _¿Qué entidades reciben fondos FECCI en el sector agropecuario?_
 • _Compara MINSA vs MIDA en inversión 2023_
-• _¿Cuáles entidades están por debajo de la meta?_
-• _Analiza la tendencia de MOP últimos 5 años_
+• _Entidades financiadas con Dividendos del Canal_
 
 ¿Qué quieres analizar?` }];
       }
@@ -1027,22 +1027,81 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos*
     } catch { setLibCtx(peiCtx); }
   };
 
+  const PANAMITA_TOOLS = [{
+    name: "consultar_presupuesto",
+    description: "Consulta datos detallados del presupuesto de Panamá filtrados por fuente de ingreso, entidad, año, tipo o programa. Úsala para preguntas cruzadas como: entidades que reciben fondos de una fuente específica, comparaciones sectoriales, análisis por fuente de financiamiento, o detalles no disponibles en el resumen general.",
+    input_schema: {
+      type: "object",
+      properties: {
+        fuente_ingreso: { type:"string", description:"Fuente de financiamiento (ej: 'FECCI', 'BID', 'Ingresos Corrientes', 'Dividendos del Canal')" },
+        nombre_entidad: { type:"string", description:"Nombre parcial o completo de la entidad (ej: 'MIDA', 'Ministerio de Salud')" },
+        anio:           { type:"integer", description:"Año fiscal entre 2016 y 2025" },
+        tipo_presupuesto:{ type:"string", description:"FUNCIONAMIENTO o INVERSION" },
+        nombre_programa:{ type:"string", description:"Nombre parcial del programa presupuestario" }
+      }
+    }
+  }];
+
+  const SYSTEM_PROMPT = `Eres Panamita, asistente de análisis presupuestario de PANANOMICS.IA (DIPRENA — MEF de Panamá).
+
+RESUMEN PRESUPUESTARIO (872 combinaciones entidad/año, 2016–2025):
+${dbCtx}
+
+BIBLIOTECA DOCUMENTAL (normativa + PEI/POA/planes de 28 instituciones):
+${libCtx}
+
+REGLAS: Meta ≥76%=✓ | 60-75%=⚠ | <60%=✗. Responde en español con markdown. Sé preciso con cifras.
+Cuando necesites datos cruzados (por fuente de ingreso, sector, programa, etc.) usa la herramienta consultar_presupuesto.`;
+
   const send = async () => {
     if (!input.trim() || loading) return;
     const txt = input.trim(); setInput("");
     setMessages(p=>[...p,{ role:"user", text:txt }]);
     setLoading(true); setMood("thinking");
+
+    // Construir historial API (solo mensajes texto del estado)
+    const apiMsgs = messages.slice(1).concat([{role:"user",text:txt}]).map(m=>({role:m.role,content:m.text}));
+
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      let d = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1200,
-          system:`Eres Panamita, asistente de análisis presupuestario de PANANOMICS.IA (DIPRENA — MEF de Panamá).\n\nDATOS PRESUPUESTARIOS REALES (872 combinaciones entidad/año, 2016–2025):\n${dbCtx}\n\nBIBLIOTECA DOCUMENTAL (normativa + PEI/POA/planes de 28 instituciones):\n${libCtx}\n\nREGLAS: Meta ≥76%=✓ | 60-75%=⚠ | <60%=✗. Responde en español con markdown. Sé preciso con cifras y cita la fuente.`,
-          messages:messages.slice(1).concat([{role:"user",text:txt}]).map(m=>({role:m.role,content:m.text})) })
-      });
-      const d = await res.json();
-      setMessages(p=>[...p,{role:"assistant",text:d.content?.[0]?.text||"Error al procesar."}]);
+        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:2000,
+          system:SYSTEM_PROMPT, tools:PANAMITA_TOOLS, messages:apiMsgs })
+      }).then(r=>r.json());
+
+      // Loop de tool use: Panamita puede llamar a la BD las veces que necesite
+      while (d.stop_reason === "tool_use") {
+        const toolBlock = d.content.find(b=>b.type==="tool_use");
+        const inp = toolBlock.input;
+        // Indicador visual mientras consulta BD
+        setMessages(p=>[...p,{role:"assistant",text:`🔍 _Consultando base de datos..._`}]);
+        // Llamar RPC
+        const rows = await sbRpc("consultar_presupuesto_chat",{
+          p_fuente:   inp.fuente_ingreso || null,
+          p_entidad:  inp.nombre_entidad || null,
+          p_anio:     inp.anio           || null,
+          p_tipo:     inp.tipo_presupuesto || null,
+          p_programa: inp.nombre_programa  || null,
+        });
+        const toolResult = rows.length
+          ? rows.map(r=>`${r.nombre_entidad} | ${r.fuente_ingreso||'-'} | ${r.anio} | ${r.tipo_presupuesto}: B/.${(+r.total_mod/1e6).toFixed(2)}M mod | B/.${(+r.total_eje/1e6).toFixed(2)}M eje | ${r.pct_ejecucion}%`).join("\n")
+          : "Sin resultados para los filtros indicados.";
+        // Eliminar el indicador temporal
+        setMessages(p=>p.filter(m=>m.text!==`🔍 _Consultando base de datos..._`));
+        // Continuar con tool_result
+        apiMsgs.push({ role:"assistant", content: d.content });
+        apiMsgs.push({ role:"user", content:[{ type:"tool_result", tool_use_id:toolBlock.id, content:toolResult }] });
+        d = await fetch("https://api.anthropic.com/v1/messages",{
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:2000,
+            system:SYSTEM_PROMPT, tools:PANAMITA_TOOLS, messages:apiMsgs })
+        }).then(r=>r.json());
+      }
+
+      const text = d.content?.find(b=>b.type==="text")?.text || d.content?.[0]?.text || "Error al procesar.";
+      setMessages(p=>[...p,{role:"assistant",text}]);
       setMood("happy"); setTimeout(()=>setMood("idle"),2000);
-    } catch { setMessages(p=>[...p,{role:"assistant",text:"Error de conexión."}]); setMood("idle"); }
+    } catch(e) { setMessages(p=>[...p,{role:"assistant",text:"Error de conexión."}]); setMood("idle"); }
     setLoading(false);
   };
 

@@ -23,6 +23,68 @@ async function sbRpc(fn, body = {}) {
   return res.json();
 }
 
+// ── INFORME HTML (client-side generation) ────────────────────────────────────
+function buildInformeHTML(rows, opts = {}) {
+  const { nombre_entidad, area, anio_inicio, anio_fin, report_type = 1, report_title = "Ejecución Presupuestaria", report_icon = "📊" } = opts;
+  const fmtM = n => { const v=+n||0; if(Math.abs(v)>=1e9)return `B/.${(v/1e9).toFixed(2)}B`; if(Math.abs(v)>=1e6)return `B/.${(v/1e6).toFixed(1)}M`; if(Math.abs(v)>=1e3)return `B/.${(v/1e3).toFixed(0)}K`; return `B/.${Math.round(v).toLocaleString("en-US")}`; };
+  const fmt = n => Math.round(+n||0).toLocaleString("en-US");
+  const semColor = p => +p>=90?"#0B6E4F":+p>=70?"#C8922A":"#C0392B";
+  const short = (s,n=30) => s&&s.length>n?s.slice(0,n)+"…":(s||"");
+  const entityLabel = nombre_entidad || (area ? `Sector: ${area}` : "Panamá (consolidado)");
+  const periodoLabel = (!anio_inicio&&!anio_fin)?"Todos los años":anio_inicio===anio_fin?String(anio_inicio):`${anio_inicio}–${anio_fin}`;
+  const fechaHoy = new Date().toLocaleDateString("es-PA",{day:"2-digit",month:"long",year:"numeric"});
+  const totalLey = rows.reduce((s,r)=>s+(+r.total_ley||0),0);
+  const totalMod = rows.reduce((s,r)=>s+(+r.total_mod||0),0);
+  const totalEje = rows.reduce((s,r)=>s+(+r.total_eje||0),0);
+  const pctGlobal = totalMod>0?(totalEje/totalMod*100):0;
+  const sinEjecutar = totalMod-totalEje;
+  const byYearMap={};
+  for(const r of rows){if(!byYearMap[r.anio])byYearMap[r.anio]={ley:0,mod:0,eje:0};byYearMap[r.anio].ley+=+r.total_ley||0;byYearMap[r.anio].mod+=+r.total_mod||0;byYearMap[r.anio].eje+=+r.total_eje||0;}
+  const byYear=Object.entries(byYearMap).sort((a,b)=>+a[0]-+b[0]).map(([y,v])=>({anio:+y,...v,pct:v.mod>0?+(v.eje/v.mod*100).toFixed(1):0}));
+  const DIM={1:"tipo_presupuesto",2:"fuente_ingreso",3:"nombre_programa",4:"anio",5:"grupo_gasto",6:"area_desarrollo",7:"nombre_entidad"};
+  const dimKey=DIM[report_type]||"tipo_presupuesto";
+  const dimLabel={1:"Tipo de Presupuesto",2:"Fuente de Ingreso",3:"Programa",4:"Año",5:"Grupo de Gasto",6:"Área de Desarrollo",7:"Entidad"}[report_type]||"Categoría";
+  const byDimMap={};
+  for(const r of rows){const k=r[dimKey]||"(Sin clasificar)";if(!byDimMap[k])byDimMap[k]={ley:0,mod:0,eje:0};byDimMap[k].ley+=+r.total_ley||0;byDimMap[k].mod+=+r.total_mod||0;byDimMap[k].eje+=+r.total_eje||0;}
+  const byDim=Object.entries(byDimMap).sort((a,b)=>b[1].mod-a[1].mod).slice(0,20).map(([k,v])=>({label:k,...v,pct:v.mod>0?+(v.eje/v.mod*100).toFixed(1):0}));
+  const topAlerta=byDim.filter(d=>d.pct<70).sort((a,b)=>b.mod-a.mod).slice(0,3);
+  const topBueno=byDim.filter(d=>d.pct>=90).sort((a,b)=>b.mod-a.mod).slice(0,3);
+  const PALETTE=["#0B6E4F","#C8922A","#1B4FBF","#7B3F9A","#C0392B","#2196F3","#FF9800","#4CAF50","#9C27B0","#F44336","#00BCD4","#795548","#607D8B","#E91E63","#009688"];
+  const cYears=JSON.stringify(byYear.map(y=>y.anio));
+  const cLey=JSON.stringify(byYear.map(y=>+(y.ley/1e6).toFixed(2)));
+  const cMod=JSON.stringify(byYear.map(y=>+(y.mod/1e6).toFixed(2)));
+  const cEje=JSON.stringify(byYear.map(y=>+(y.eje/1e6).toFixed(2)));
+  const cPct=JSON.stringify(byYear.map(y=>+y.pct.toFixed(1)));
+  const cDimLbls=JSON.stringify(byDim.slice(0,12).map(d=>short(d.label,28)));
+  const cDimMod=JSON.stringify(byDim.slice(0,12).map(d=>+(d.mod/1e6).toFixed(2)));
+  const cDimEje=JSON.stringify(byDim.slice(0,12).map(d=>+(d.eje/1e6).toFixed(2)));
+  const cColors=JSON.stringify(byDim.slice(0,12).map((_,i)=>PALETTE[i%PALETTE.length]));
+  const cSem=JSON.stringify(byDim.slice(0,12).map(d=>semColor(d.pct)));
+  const narr=`<p>La entidad <strong>${entityLabel}</strong> registró durante <strong>${periodoLabel}</strong> un presupuesto modificado de <strong>${fmtM(totalMod)}</strong> frente a un Ley de <strong>${fmtM(totalLey)}</strong>, con un ejecutado de <strong>${fmtM(totalEje)}</strong> (${pctGlobal.toFixed(1)}% de ejecución global).</p><p>El análisis por ${dimLabel.toLowerCase()} identifica <strong>${byDim[0]?.label||"—"}</strong> como el componente de mayor peso (<strong>${fmtM(byDim[0]?.mod||0)}</strong> modificados, ${byDim[0]?.pct||0}% ejecutado). Los componentes oscilan entre <strong>${byDim.length?Math.min(...byDim.map(d=>d.pct)).toFixed(1):0}%</strong> y <strong>${byDim.length?Math.max(...byDim.map(d=>d.pct)).toFixed(1):0}%</strong>.</p><p>${pctGlobal<70?`⚠️ Tasa de ejecución <strong>crítica</strong> (${pctGlobal.toFixed(1)}%). Se recomienda revisión inmediata de cuellos de botella.`:pctGlobal<90?`El indicador del <strong>${pctGlobal.toFixed(1)}%</strong> requiere seguimiento para evitar subejecución al cierre del período.`:`Desempeño <strong>eficiente</strong> con ${pctGlobal.toFixed(1)}%, superando el umbral óptimo del 90% establecido por DIPRENA.`}</p>`;
+  const tableRows=byDim.map(d=>`<tr><td>${d.label}</td><td class="td-num">${fmt(d.ley)}</td><td class="td-num">${fmt(d.mod)}</td><td class="td-num">${fmt(d.eje)}</td><td class="td-num"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-block;width:50px;height:7px;border-radius:4px;background:#DDE3EC;"><span style="display:block;width:${Math.min(d.pct,100)}%;height:7px;border-radius:4px;background:${semColor(d.pct)};"></span></span><strong style="color:${semColor(d.pct)}">${d.pct.toFixed(1)}%</strong></span></td></tr>`).join("");
+  const tableYears=byYear.map(y=>`<tr><td><strong>${y.anio}</strong></td><td class="td-num">${fmt(y.ley)}</td><td class="td-num">${fmt(y.mod)}</td><td class="td-num">${fmt(y.eje)}</td><td class="td-num"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-block;width:50px;height:7px;border-radius:4px;background:#DDE3EC;"><span style="display:block;width:${Math.min(y.pct,100)}%;height:7px;border-radius:4px;background:${semColor(y.pct)};"></span></span><strong style="color:${semColor(y.pct)}">${y.pct.toFixed(1)}%</strong></span></td></tr>`).join("");
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Informe ${report_title} — ${entityLabel}</title><script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script><style>@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');:root{--verde:#0B6E4F;--verde-claro:#1A9E72;--verde-palido:#E8F5F0;--dorado:#C8922A;--dorado-claro:#F5C842;--azul:#1B4FBF;--rojo:#C0392B;--gris-oscuro:#1A1A2E;--gris-medio:#4A4A6A;--gris-claro:#F4F6F8;--borde:#DDE3EC;--blanco:#FFFFFF;--texto:#1A1A2E;--texto-suave:#5A6070;}*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Sora',sans-serif;background:var(--gris-claro);color:var(--texto);font-size:14px;line-height:1.7;}.portada{background:var(--gris-oscuro);color:white;padding:60px 80px 50px;position:relative;overflow:hidden;page-break-after:always;}.logo-row{display:flex;align-items:center;gap:12px;margin-bottom:48px;}.logo-badge{background:var(--verde);color:white;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:.08em;}.logo-sub{color:rgba(255,255,255,.5);font-size:12px;}.ia-badge{margin-left:auto;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.07);padding:5px 12px;border-radius:20px;font-size:11px;color:rgba(255,255,255,.7);}.ia-dot{width:7px;height:7px;border-radius:50%;background:var(--verde-claro);}.portada-tipo{font-size:12px;font-weight:600;letter-spacing:.12em;color:var(--verde-claro);text-transform:uppercase;margin-bottom:16px;}.portada-titulo{font-size:36px;font-weight:700;line-height:1.2;margin-bottom:16px;}.portada-titulo span{color:var(--dorado-claro);}.portada-subtitulo{font-size:14px;color:rgba(255,255,255,.6);margin-bottom:40px;}.portada-meta{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}.meta-item{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:14px 16px;}.meta-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:4px;}.meta-valor{font-size:13px;font-weight:600;color:white;}.contenido{max-width:1100px;margin:0 auto;padding:40px 40px 60px;}.resumen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:36px;}.kpi-card{background:var(--blanco);border-radius:14px;padding:22px 24px;border:1px solid var(--borde);position:relative;overflow:hidden;}.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;}.kpi-card.verde::before{background:var(--verde);}.kpi-card.dorado::before{background:var(--dorado);}.kpi-card.azul::before{background:var(--azul);}.kpi-card.rojo::before{background:var(--rojo);}.kpi-label{font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--texto-suave);text-transform:uppercase;margin-bottom:10px;}.kpi-valor{font-size:26px;font-weight:700;color:var(--gris-oscuro);margin-bottom:4px;font-family:'IBM Plex Mono',monospace;}.kpi-sub{font-size:11px;color:var(--texto-suave);margin-bottom:8px;}.kpi-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:700;}.badge-verde{background:var(--verde-palido);color:var(--verde);}.badge-amarillo{background:#FFF8E1;color:#7A4800;}.badge-rojo{background:#FFEBEE;color:var(--rojo);}.seccion{background:var(--blanco);border-radius:16px;border:1px solid var(--borde);padding:32px;margin-bottom:24px;}.seccion-header{display:flex;align-items:flex-start;gap:16px;margin-bottom:24px;}.seccion-num{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--gris-oscuro);color:white;font-size:13px;font-weight:700;flex-shrink:0;}.seccion-titulo{font-size:17px;font-weight:700;color:var(--gris-oscuro);margin-bottom:3px;}.seccion-desc{font-size:12px;color:var(--texto-suave);}.analisis p{color:var(--texto-suave);font-size:13.5px;line-height:1.75;margin-bottom:14px;}.analisis p strong{color:var(--gris-oscuro);}.hallazgo{background:var(--verde-palido);border-left:4px solid var(--verde);border-radius:8px;padding:14px 18px;margin-top:18px;font-size:13px;}.alerta{background:#FFEBEE;border-left:4px solid var(--rojo);border-radius:8px;padding:14px 18px;margin-top:14px;font-size:13px;}.chart-grid{display:grid;gap:24px;margin:20px 0;}.chart-grid-2{grid-template-columns:1fr 1fr;}.chart-box{background:var(--gris-claro);border-radius:12px;padding:20px;}.chart-titulo{font-size:13px;font-weight:600;color:var(--gris-oscuro);margin-bottom:3px;}.chart-subtitulo{font-size:11px;color:var(--texto-suave);margin-bottom:14px;}.tabla-wrap{overflow-x:auto;margin:20px 0;border-radius:10px;border:1px solid var(--borde);}table{width:100%;border-collapse:collapse;}th{background:var(--gris-oscuro);color:white;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.05em;white-space:nowrap;}th.td-num,td.td-num{text-align:right;}td{padding:9px 14px;border-bottom:1px solid var(--borde);font-size:12.5px;}tr:last-child td{border-bottom:none;}tr:nth-child(even) td{background:#F9FAFB;}.footer-informe{text-align:center;padding:32px 40px;color:var(--texto-suave);font-size:11px;border-top:1px solid var(--borde);}@media print{.portada{page-break-after:always;}.seccion{page-break-inside:avoid;}body{background:white;}}</style></head><body>
+<div class="portada"><div class="logo-row"><span class="logo-badge">PANANOMICS.IA</span><span style="color:rgba(255,255,255,.3)">·</span><span class="logo-sub">MEF · DIPRENA</span><span class="ia-badge"><span class="ia-dot"></span> Generado con Panamita IA</span></div><div class="portada-tipo">Informe #${report_type} — ${report_title}</div><h1 class="portada-titulo">${report_icon} <span>${report_title}</span><br>${entityLabel}</h1><p class="portada-subtitulo">Análisis presupuestario basado en datos reales de DIPRENA · MEF Panamá</p><div class="portada-meta"><div class="meta-item"><div class="meta-label">Entidad / Alcance</div><div class="meta-valor">${entityLabel}</div></div><div class="meta-item"><div class="meta-label">Período</div><div class="meta-valor">${periodoLabel}</div></div><div class="meta-item"><div class="meta-label">Registros analizados</div><div class="meta-valor">${rows.length.toLocaleString()} filas</div></div><div class="meta-item"><div class="meta-label">Fecha de generación</div><div class="meta-valor">${fechaHoy}</div></div></div></div>
+<div class="contenido">
+<div class="resumen-grid"><div class="kpi-card verde"><div class="kpi-label">Presupuesto Ley</div><div class="kpi-valor">${fmtM(totalLey)}</div><div class="kpi-sub">Asignación original aprobada</div><span class="kpi-badge badge-verde">${periodoLabel}</span></div><div class="kpi-card azul"><div class="kpi-label">Presupuesto Modificado</div><div class="kpi-valor">${fmtM(totalMod)}</div><div class="kpi-sub">Vigente con modificaciones</div><span class="kpi-badge ${totalMod>totalLey?"badge-amarillo":"badge-verde"}">${totalMod>totalLey?"↑ Ampliado":"Sin cambios"}</span></div><div class="kpi-card dorado"><div class="kpi-label">Total Ejecutado</div><div class="kpi-valor">${fmtM(totalEje)}</div><div class="kpi-sub">Devengado acumulado</div><span class="kpi-badge ${pctGlobal>=90?"badge-verde":pctGlobal>=70?"badge-amarillo":"badge-rojo"}">${pctGlobal>=90?"↑":"↓"} ${pctGlobal.toFixed(1)}% ejecución</span></div><div class="kpi-card rojo"><div class="kpi-label">Sin Ejecutar</div><div class="kpi-valor">${fmtM(sinEjecutar)}</div><div class="kpi-sub">Presupuesto no utilizado</div><span class="kpi-badge ${sinEjecutar/totalMod<0.1?"badge-verde":sinEjecutar/totalMod<0.3?"badge-amarillo":"badge-rojo"}">${(sinEjecutar/totalMod*100).toFixed(1)}% del total</span></div></div>
+<div class="seccion"><div class="seccion-header"><span class="seccion-num">01</span><div><div class="seccion-titulo">Resumen Ejecutivo</div><div class="seccion-desc">Hallazgos principales generados por Panamita IA · ${fechaHoy}</div></div></div><div class="analisis">${narr}</div>${topAlerta.length>0?`<div class="alerta">⚠️ <strong>Alerta de subejecución:</strong> ${topAlerta.map(d=>`<strong>${d.label}</strong> (${d.pct.toFixed(1)}% — ${fmtM(d.mod)} modificados)`).join(", ")} registran ejecución crítica.</div>`:""}${topBueno.length>0&&topAlerta.length===0?`<div class="hallazgo">✅ <strong>Desempeño destacado:</strong> ${topBueno.map(d=>`<strong>${d.label}</strong> (${d.pct.toFixed(1)}%)`).join(", ")} superan el 90%.</div>`:""}</div>
+<div class="seccion"><div class="seccion-header"><span class="seccion-num">02</span><div><div class="seccion-titulo">Visualización por ${dimLabel}</div><div class="seccion-desc">Presupuesto Modificado vs Ejecutado · en millones de balboas (B/.M)</div></div></div><div style="background:var(--gris-claro);border-radius:12px;padding:20px;margin:20px 0;"><div class="chart-titulo">Ejecución por ${dimLabel}</div><div class="chart-subtitulo">Modificado vs Ejecutado · B/.M</div><div style="position:relative;height:${Math.max(240,byDim.slice(0,12).length*34)}px"><canvas id="barDim"></canvas></div></div>${byYear.length>1?`<div class="chart-grid chart-grid-2"><div class="chart-box"><div class="chart-titulo">Evolución anual — Ley · Modificado · Ejecutado</div><div class="chart-subtitulo">en millones de balboas (B/.M)</div><div style="position:relative;height:240px"><canvas id="lineAnual"></canvas></div></div><div class="chart-box"><div class="chart-titulo">Tasa de ejecución por año (%)</div><div class="chart-subtitulo">Verde ≥90% · Amarillo ≥70% · Rojo &lt;70%</div><div style="position:relative;height:240px"><canvas id="barPct"></canvas></div></div></div>`:""}</div>
+<div class="seccion"><div class="seccion-header"><span class="seccion-num">03</span><div><div class="seccion-titulo">Detalle por ${dimLabel}</div><div class="seccion-desc">Presupuesto Ley · Modificado · Ejecutado · % Ejecución — en Balboas (B/.)</div></div></div><div class="tabla-wrap"><table><thead><tr><th>${dimLabel}</th><th class="td-num">Ley (B/.)</th><th class="td-num">Modificado (B/.)</th><th class="td-num">Ejecutado (B/.)</th><th class="td-num">% Ejecución</th></tr></thead><tbody>${tableRows}</tbody></table></div></div>
+${byYear.length>1?`<div class="seccion"><div class="seccion-header"><span class="seccion-num">04</span><div><div class="seccion-titulo">Evolución Anual</div><div class="seccion-desc">Comparativo año a año · en Balboas (B/.)</div></div></div><div class="tabla-wrap"><table><thead><tr><th>Año</th><th class="td-num">Ley (B/.)</th><th class="td-num">Modificado (B/.)</th><th class="td-num">Ejecutado (B/.)</th><th class="td-num">% Ejecución</th></tr></thead><tbody>${tableYears}</tbody></table></div></div>`:""}
+</div>
+<div class="footer-informe"><strong>PANANOMICS.IA</strong> · Dirección de Presupuesto de la Nación · MEF Panamá · Datos: DIPRENA<br>Este informe fue generado automáticamente con datos reales de ejecución presupuestaria.</div>
+<script>
+const VERDE='#0B6E4F',AZUL='#1B4FBF',DORADO='#C8922A',ROJO='#C0392B',GRIS='#6B7A8D';
+const PALETTE=${cColors};const SEM=${cSem};
+const ctxDim=document.getElementById('barDim');
+if(ctxDim){new Chart(ctxDim,{type:'bar',data:{labels:${cDimLbls},datasets:[{label:'Modificado (B/.M)',data:${cDimMod},backgroundColor:PALETTE.map(c=>c+'55'),borderColor:PALETTE,borderWidth:1.5,borderRadius:3},{label:'Ejecutado (B/.M)',data:${cDimEje},backgroundColor:PALETTE,borderRadius:3}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{beginAtZero:true,title:{display:true,text:'B/.M'}},y:{ticks:{font:{size:11}}}}}})}
+const ctxLine=document.getElementById('lineAnual');
+if(ctxLine){new Chart(ctxLine,{type:'line',data:{labels:${cYears},datasets:[{label:'Ley',data:${cLey},borderColor:GRIS,borderDash:[5,5],pointRadius:4,tension:0.3,fill:false},{label:'Modificado',data:${cMod},borderColor:AZUL,pointRadius:4,tension:0.3,fill:false,borderWidth:2},{label:'Ejecutado',data:${cEje},borderColor:VERDE,backgroundColor:'rgba(11,110,79,0.07)',fill:true,pointRadius:4,tension:0.3,borderWidth:2.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:11}}},y:{beginAtZero:false,ticks:{font:{size:11}}}}}})}
+const ctxPct=document.getElementById('barPct');
+if(ctxPct){new Chart(ctxPct,{type:'bar',data:{labels:${cYears},datasets:[{label:'% Ejecución',data:${cPct},backgroundColor:${cPct}.map(p=>p>=90?VERDE:p>=70?DORADO:ROJO),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw+'%'}}},scales:{x:{ticks:{font:{size:11}}},y:{beginAtZero:true,max:110,ticks:{font:{size:11},callback:v=>v+'%'}}}}})}
+<\/script></body></html>`;
+}
+
 // ── COLORS ────────────────────────────────────────────────────────────────────
 const C = {
   // New sidebar palette from screenshot
@@ -748,26 +810,30 @@ function Informes() {
     try {
       const f = wizFilters;
       const rpt = reportes.find(r => r.id === activeCard);
-      const resp = await fetch("/api/generate-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombre_entidad:   wizEnt?.nombre   || null,
-          area:             wizEnt ? null : (wizArea ?? null),
-          fuente_ingreso:   f.fuente         ?? null,
-          tipo_presupuesto: f.tipo           ?? null,
-          anio_inicio:      wizAnioInicio,
-          anio_fin:         wizAnioFin,
-          grupo_gasto:      f.grupo_gasto    ?? null,
-          report_type:      activeCard,
-          report_title:     rpt?.title       || "Informe Presupuestario",
-          report_icon:      rpt?.icon        || "📊",
-        })
+      // Llamar Supabase RPC directamente desde el frontend
+      const rows = await sbRpc("consultar_informe", {
+        p_entidad:     wizEnt?.nombre        || null,
+        p_area:        wizEnt ? null : (wizArea ?? null),
+        p_fuente:      f.fuente              ?? null,
+        p_tipo:        f.tipo                ?? null,
+        p_anio_inicio: wizAnioInicio         || null,
+        p_anio_fin:    wizAnioFin            || null,
+        p_grupo_gasto: f.grupo_gasto         ?? null,
       });
-      const json = await resp.json();
-      if (!resp.ok) throw new Error(json.error || `Error ${resp.status}`);
-      if (!json.htmlBase64) throw new Error(json.message || "El servidor no devolvió el documento.");
-      setWizResult({ htmlBase64: json.htmlBase64, filename: json.filename, filas: json.filas });
+      if (!rows || rows.length === 0) throw new Error("Sin resultados para los filtros indicados.");
+      // Generar HTML en el cliente
+      const html = buildInformeHTML(rows, {
+        nombre_entidad: wizEnt?.nombre || null,
+        area:           wizEnt ? null : (wizArea ?? null),
+        anio_inicio:    wizAnioInicio,
+        anio_fin:       wizAnioFin,
+        report_type:    activeCard,
+        report_title:   rpt?.title || "Informe Presupuestario",
+        report_icon:    rpt?.icon  || "📊",
+      });
+      const entSlug = (wizEnt?.nombre || wizArea || "Panama").replace(/\s+/g,"_").slice(0,25);
+      const filename = `informe_${entSlug}_${wizAnioInicio||"all"}.html`.replace(/[^a-zA-Z0-9_.\-]/g,"_");
+      setWizResult({ html, filename, filas: rows.length });
       const entry = {
         id: Date.now(),
         reportType: rpt?.title || "",
@@ -784,11 +850,8 @@ function Informes() {
   };
 
   const downloadHTML = () => {
-    if (!wizResult?.htmlBase64) return;
-    const bytes = atob(wizResult.htmlBase64);
-    const arr = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-    const blob = new Blob([arr], { type: "text/html;charset=utf-8" });
+    if (!wizResult?.html) return;
+    const blob = new Blob([wizResult.html], { type: "text/html;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = wizResult.filename;
@@ -797,9 +860,8 @@ function Informes() {
   };
 
   const previewHTML = () => {
-    if (!wizResult?.htmlBase64) return;
-    const html = atob(wizResult.htmlBase64);
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    if (!wizResult?.html) return;
+    const blob = new Blob([wizResult.html], { type: "text/html;charset=utf-8" });
     window.open(URL.createObjectURL(blob), "_blank");
   };
 

@@ -19,16 +19,21 @@ async function generateNarratives(ent, data, apiKey, contexto, periodo) {
   const inv = data.inversion;
 
   const gruposText = (f.grupos || [])
-    .map(g => `  ${g.nombre}: Mod ${fmtM(g.mod)}, Dev ${fmtM(g.eje)}, ${g.pct}%`)
+    .map(g => `  • ${g.nombre}: Mod B/. ${fmtM(g.mod)}, Dev B/. ${fmtM(g.eje)}, Ejec ${g.pct}%`)
     .join("\n");
 
-  const progFunText = (f.programas || []).slice(0, 8)
-    .map(p => `  ${p.nombre}: Mod ${fmtM(p.mod)}, Dev ${fmtM(p.eje)}, ${p.pct}%`)
+  const progFunText = (f.programas || []).slice(0, 10)
+    .map(p => `  • ${p.nombre}: Mod B/. ${fmtM(p.mod)}, Dev B/. ${fmtM(p.eje)}, Ejec ${p.pct}%`)
     .join("\n");
 
   const progInvText = inv.mod > 0
-    ? (inv.programas || []).slice(0, 6)
-        .map(p => `  ${p.nombre}: Mod ${fmtM(p.mod)}, Dev ${fmtM(p.eje)}, ${p.pct}%`)
+    ? (inv.programas || []).slice(0, 8)
+        .map(p => {
+          const subs = (p.subprogramas || []).slice(0, 5)
+            .map(s => `      - ${s.nombre}: Mod B/. ${fmtM(s.mod)}, Dev B/. ${fmtM(s.eje)}, Ejec ${s.pct}%`)
+            .join("\n");
+          return `  • ${p.nombre}: Mod B/. ${fmtM(p.mod)}, Dev B/. ${fmtM(p.eje)}, Ejec ${p.pct}%${subs ? "\n" + subs : ""}`;
+        })
         .join("\n")
     : "No aplica (entidad sin presupuesto de inversión)";
 
@@ -48,16 +53,16 @@ async function generateNarratives(ent, data, apiKey, contexto, periodo) {
   }
   const periodoInfo = getPeriodoInfo(periodo);
 
-  const prompt = `Eres un analista presupuestario del MEF de Panamá. Redacta en español formal, con enfoque técnico y objetivo. Los montos son en miles de balboas (B/.).
+  const prompt = `Eres un analista presupuestario senior del MEF de Panamá. Redacta en español formal, técnico y objetivo. Los montos son en miles de balboas (B/.).
 
 ENTIDAD: ${ent.nombre} (${ent.siglas}) — Código ${ent.codigo}
 SECTOR: ${ent.sector || "Gobierno Central"}
 PERÍODO: ${periodoInfo.rango}
 ${contextoSection}
 RESUMEN DE EJECUCIÓN:
-- Total:          Ley ${fmtM(data.total.ley)}, Mod ${fmtM(data.total.mod)}, Dev ${fmtM(data.total.eje)}, Ejec ${data.total.pct}%
-- Funcionamiento: Ley ${fmtM(f.ley)}, Mod ${fmtM(f.mod)}, Dev ${fmtM(f.eje)}, Ejec ${f.pct}% (${f.dist}% del total)
-- Inversión:      Ley ${fmtM(inv.ley)}, Mod ${fmtM(inv.mod)}, Dev ${fmtM(inv.eje)}, Ejec ${inv.pct}% (${inv.dist}% del total)
+  Total:          Ley ${fmtM(data.total.ley)}, Mod ${fmtM(data.total.mod)}, Dev ${fmtM(data.total.eje)}, Ejec ${data.total.pct}%
+  Funcionamiento: Ley ${fmtM(f.ley)}, Mod ${fmtM(f.mod)}, Dev ${fmtM(f.eje)}, Ejec ${f.pct}% (${f.dist}% del total)
+  Inversión:      Ley ${fmtM(inv.ley)}, Mod ${fmtM(inv.mod)}, Dev ${fmtM(inv.eje)}, Ejec ${inv.pct}% (${inv.dist}% del total)
 
 GRUPOS DE GASTO (Funcionamiento):
 ${gruposText || "  No disponible"}
@@ -65,29 +70,45 @@ ${gruposText || "  No disponible"}
 PROGRAMAS DE FUNCIONAMIENTO:
 ${progFunText || "  No disponible"}
 
-PROGRAMAS DE INVERSIÓN:
+PROGRAMAS DE INVERSIÓN (con subprogramas):
 ${progInvText}
 
 PARTIDA CRÍTICA: ${data.partidaCritica.nombre} (${data.partidaCritica.pct}%)
 
-Devuelve ÚNICAMENTE un JSON válido, sin markdown, sin texto adicional, con exactamente esta estructura:
+═══════════════════════════════════════════════
+INSTRUCCIONES DE FORMATO — MUY IMPORTANTE
+═══════════════════════════════════════════════
+
+narrativaFun (~180 palabras):
+  Párrafo 1 (2-3 oraciones): Resumen general de funcionamiento con Presupuesto Modificado total, devengado, % de ejecución y su proporción del total institucional.
+  Luego, UN bullet (•) por cada grupo de gasto disponible, con: nombre del grupo, monto modificado, devengado, % ejecución, y breve análisis de su desempeño. Menciona los rubros o subpartidas más relevantes dentro de cada grupo si los datos lo permiten.
+  Párrafo final (1-2 oraciones): Análisis programático — programa de mayor ejecución, programa de menor ejecución, con cifras.
+
+narrativaInv (~200 palabras, solo si hay inversión):
+  Párrafo 1 (2-3 oraciones): Resumen general de inversión con Presupuesto Modificado total, devengado, % ejecución y proporción del total.
+  Luego, UN bloque por cada programa de inversión con: nombre, monto modificado, devengado, % ejecución. Si tiene subprogramas, menciona los más relevantes (mayor y menor ejecución) en el mismo bloque.
+  Párrafo final (1-2 oraciones): Síntesis de los programas con mejor y peor rendimiento y su impacto en la ejecución total.
+
+═══════════════════════════════════════════════
+
+Devuelve ÚNICAMENTE un objeto JSON válido sin markdown, sin texto antes ni después. Estructura exacta:
 {
-  "narrativaFun": "2-3 párrafos detallados analizando el funcionamiento del período ${periodoInfo.rango}: resumen general con montos y % total, luego análisis de cada grupo de gasto con cifras específicas (Modificado, Devengado, %), y finalmente análisis por programa con los de mayor y menor ejecución. Menciona partidas críticas y fortalezas.",
-  "narrativaInv": ${inv.mod > 0 ? `"2-3 párrafos analizando la inversión del período ${periodoInfo.rango}: resumen general, análisis por programa con cifras específicas, subprogramas y proyectos destacados o rezagados, y alertas sobre ejecuciones bajas."` : "null"},
+  "narrativaFun": "texto aquí — párrafo inicial, bullets con • por cada grupo, párrafo final programático",
+  "narrativaInv": ${inv.mod > 0 ? '"texto aquí — párrafo inicial, análisis por programa con subprogramas, párrafo síntesis"' : "null"},
   "aspectos": [
-    { "texto": "Aspecto relevante positivo o neutral con cifras específicas.", "esCritico": false },
-    { "texto": "Aspecto de atención o bajo rendimiento con cifras específicas.", "esCritico": true }
+    { "texto": "Aspecto positivo o neutral con cifras específicas.", "esCritico": false },
+    { "texto": "Aspecto crítico o de bajo rendimiento con cifras específicas.", "esCritico": true }
   ],
   "recomendaciones": [
-    "Recomendación 1 accionable y específica para la entidad basada en datos reales.",
+    "Recomendación 1 accionable y específica basada en los datos reales.",
     "Recomendación 2.",
     "Recomendación 3.",
     "Recomendación 4."
   ],
-  "conclusion1": "Párrafo conclusivo sobre el desempeño general y de funcionamiento en el período ${periodoInfo.rango}, con cifras clave.",
-  "conclusion2": ${inv.mod > 0 ? `"Párrafo conclusivo sobre la inversión en el período ${periodoInfo.rango}, perspectivas y áreas de mejora."` : "null"}
+  "conclusion1": "Párrafo conclusivo (2-3 oraciones) sobre desempeño general y funcionamiento en ${periodoInfo.rango}, con cifras clave.",
+  "conclusion2": ${inv.mod > 0 ? `"Párrafo conclusivo (2-3 oraciones) sobre inversión en ${periodoInfo.rango}, perspectivas y áreas de mejora."` : "null"}
 }
-Incluye entre 3 y 4 aspectos y entre 3 y 4 recomendaciones. Sé muy específico: menciona nombres reales de grupos, programas y cifras concretas del presupuesto.`;
+Incluye 3-4 aspectos y 3-4 recomendaciones. Usa SIEMPRE cifras reales de los datos proporcionados.`;
 
   console.log("[narr] Llamando Claude API para narrativas...");
   const controller = new AbortController();
@@ -105,7 +126,7 @@ Incluye entre 3 y 4 aspectos y entre 3 y 4 recomendaciones. Sé muy específico:
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 2000,
+        max_tokens: 3000,
         messages: [{ role: "user", content: prompt }],
       }),
     });

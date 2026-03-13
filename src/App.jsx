@@ -1246,7 +1246,7 @@ function Entidades({ user }) {
                         const {kpis} = s;
                         return (
                           <div style={{flex:1,overflow:"hidden"}}>
-                            {pvObj && <div style={{display:"flex",alignItems:"stretch",margin:"5px 10px 4px",background:ICE,borderRadius:2,overflow:"hidden"}}><div style={{width:3,background:NAV,flexShrink:0}}/><div style={{padding:"4px 8px"}}><div style={{fontSize:5.5,fontWeight:700,color:NAV,letterSpacing:"0.4px"}}>OBJETIVO GENERAL</div><div style={{fontSize:6.5,color:"#333",lineHeight:1.4,marginTop:1}}>{pvObj.length>160?pvObj.slice(0,160)+"…":pvObj}</div></div></div>}
+                            {pvObj && <div style={{display:"flex",alignItems:"stretch",margin:"5px 10px 4px",background:ICE,borderRadius:2,overflow:"hidden"}}><div style={{width:3,background:NAV,flexShrink:0}}/><div style={{padding:"4px 8px"}}><div style={{fontSize:5.5,fontWeight:700,color:NAV,letterSpacing:"0.4px"}}>OBJETIVO GENERAL</div><div style={{fontSize:6.5,color:"#333",lineHeight:1.4,marginTop:1}}>{pvObj}</div></div></div>}
                             <div style={{display:"flex",gap:8,padding:"4px 10px"}}>
                               <div style={{flex:"0 0 46%",border:`1px solid ${BDR}`,borderRadius:4,padding:"6px 8px"}}>
                                 <PanelHdr label="Resumen de Ejecución (en miles de B/.)"/>
@@ -1346,7 +1346,7 @@ function Entidades({ user }) {
                               </div>
                               <div style={{border:`1px solid ${BDR}`,borderRadius:4,padding:"5px 7px",background:ICE}}>
                                 <PanelHdr label="Análisis"/>
-                                <div style={{fontSize:6.5,color:"#333",lineHeight:1.5}}>{narrativa?narrativa.slice(0,320)+(narrativa.length>320?"…":""):"Narrativa generada por IA"}</div>
+                                <div style={{fontSize:6.5,color:"#333",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{narrativa||"Narrativa generada por IA"}</div>
                               </div>
                             </div>
                           </div>
@@ -1370,7 +1370,7 @@ function Entidades({ user }) {
                             </div>
                             <div style={{flex:1,border:`1px solid ${BDR}`,borderRadius:4,padding:"5px 7px",background:ICE}}>
                               <PanelHdr label="Análisis de Inversión"/>
-                              <div style={{fontSize:6.5,color:"#333",lineHeight:1.5}}>{narrativa?narrativa.slice(0,500)+(narrativa.length>500?"…":""):"Narrativa generada por IA"}</div>
+                              <div style={{fontSize:6.5,color:"#333",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{narrativa||"Narrativa generada por IA"}</div>
                             </div>
                           </div>
                         );
@@ -1409,8 +1409,8 @@ function Entidades({ user }) {
                               <div style={{flex:1,border:`1px solid ${BDR}`,borderRadius:4,padding:"5px 7px",background:ICE,overflow:"hidden"}}>
                                 <PanelHdr label="Conclusiones"/>
                                 {(conclusion1||conclusion2) ? <>
-                                  {conclusion1&&<div style={{fontSize:6,color:"#333",lineHeight:1.5,marginBottom:4}}>{conclusion1.slice(0,200)}{conclusion1.length>200?"…":""}</div>}
-                                  {conclusion2&&<><div style={{height:0.5,background:BDR,margin:"3px 0"}}/><div style={{fontSize:6,color:"#333",lineHeight:1.5}}>{conclusion2.slice(0,160)}{conclusion2.length>160?"…":""}</div></>}
+                                  {conclusion1&&<div style={{fontSize:6,color:"#333",lineHeight:1.5,marginBottom:4}}>{conclusion1}</div>}
+                                  {conclusion2&&<><div style={{height:0.5,background:BDR,margin:"3px 0"}}/><div style={{fontSize:6,color:"#333",lineHeight:1.5}}>{conclusion2}</div></>}
                                 </> : <div style={{fontSize:6.5,color:"#5A6E85",fontStyle:"italic",lineHeight:1.5}}>Las conclusiones se generarán con inteligencia artificial basándose en los datos de ejecución.</div>}
                               </div>
                             </div>

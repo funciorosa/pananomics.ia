@@ -2582,11 +2582,23 @@ function Historico() {
     </div>
   );
 
-  // ── Skeleton loader ──
+  // ── Loading con Panamita ──
   const Skel = () => (
-    <div style={{display:"flex", flexDirection:"column", gap:12, padding:20}}>
-      {[200,160,120].map((h,i)=><div key={i} style={{height:h, background:DK.panel, borderRadius:10, animation:"pulse 1.5s ease-in-out infinite"}}/>)}
-      <style>{`@keyframes pulse{0%,100%{opacity:0.4}50%{opacity:0.15}}`}</style>
+    <div style={{display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"80px 20px", gap:16}}>
+      <Panamita mood="thinking" size={88}/>
+      <div style={{color:DK.text, fontSize:15, fontWeight:700, letterSpacing:"0.04em"}}>Cargando Panorama General...</div>
+      <div style={{color:DK.textMid, fontSize:12}}>Consultando base de datos presupuestaria</div>
+      <div style={{display:"flex", gap:7, marginTop:6}}>
+        {[0,1,2].map(i=>(
+          <div key={i} style={{width:9, height:9, borderRadius:"50%", background:DK.accent, animation:`panaLoad 1.3s ease-in-out ${i*0.22}s infinite`}}/>
+        ))}
+      </div>
+      <style>{`
+        @keyframes panaLoad {
+          0%,80%,100% { transform:scale(0.5); opacity:0.3; }
+          40%          { transform:scale(1.2); opacity:1; }
+        }
+      `}</style>
     </div>
   );
 

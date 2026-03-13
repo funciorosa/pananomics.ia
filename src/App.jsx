@@ -1983,16 +1983,16 @@ Cuando necesites datos cruzados (por fuente de ingreso, sector, programa, etc.) 
     const apiMsgs = messages.slice(1).concat([{role:"user",text:txt}]).map(m=>({role:m.role,content:m.text}));
 
     try {
-      const AKEY = process.env.REACT_APP_ANTHROPIC_KEY || "";
-      const AI_HEADERS = {"Content-Type":"application/json","x-api-key":AKEY,"anthropic-version":"2023-06-01","anthropic-dangerous-allow-browser":"true"};
-      if (!AKEY) { setMessages(p=>[...p,{role:"assistant",text:"⚠️ API key no configurada. Contacta al administrador."}]); setMood("idle"); setLoading(false); return; }
-      let resp = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST", headers:AI_HEADERS,
-        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:2000,
-          system:SYSTEM_PROMPT, tools:PANAMITA_TOOLS, messages:apiMsgs })
-      });
-      let d = await resp.json();
-      if (!resp.ok) { setMessages(p=>[...p,{role:"assistant",text:`Error ${resp.status}: ${d?.error?.message||"Sin detalle"}`}]); setMood("idle"); setLoading(false); return; }
+      const callAI = async (msgs) => {
+        const r = await fetch("/api/chat", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:2000, system:SYSTEM_PROMPT, tools:PANAMITA_TOOLS, messages:msgs })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(`${r.status}: ${data?.error?.message || data?.error || "Sin detalle"}`);
+        return data;
+      };
+      let d = await callAI(apiMsgs);
 
       // Loop de tool use: Panamita puede llamar a la BD las veces que necesite
       while (d.stop_reason === "tool_use") {
@@ -2016,11 +2016,7 @@ Cuando necesites datos cruzados (por fuente de ingreso, sector, programa, etc.) 
         // Continuar con tool_result
         apiMsgs.push({ role:"assistant", content: d.content });
         apiMsgs.push({ role:"user", content:[{ type:"tool_result", tool_use_id:toolBlock.id, content:toolResult }] });
-        d = await fetch("https://api.anthropic.com/v1/messages",{
-          method:"POST", headers:AI_HEADERS,
-          body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:2000,
-            system:SYSTEM_PROMPT, tools:PANAMITA_TOOLS, messages:apiMsgs })
-        }).then(r=>r.json());
+        d = await callAI(apiMsgs);
       }
 
       const text = d.content?.find(b=>b.type==="text")?.text || d.content?.[0]?.text || "Error al procesar.";

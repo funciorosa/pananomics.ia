@@ -485,7 +485,7 @@ function Sidebar({ active, setActive, user, onLogout }) {
   const nav = [
     { id:"chat",      emoji:"✦", label:"Panamita IA",  color:C.navChat },
     { id:"dashboard", emoji:"📊", label:"Dashboard",    color:C.navDash },
-    { id:"historico", emoji:"📈", label:"Histórico",    color:C.navHistorico },
+    { id:"historico", emoji:"📈", label:"Panorama General", color:C.navHistorico },
     { id:"informes",  emoji:"📋", label:"Informes",     color:C.navInformes },
     { id:"entidades", emoji:"🏛",  label:"Monitoreo",   color:C.navEntidades },
     { id:"biblioteca",emoji:"📚", label:"Biblioteca",   color:C.navBiblioteca },
@@ -2509,6 +2509,19 @@ function Historico() {
   const [m10asc, setM10asc] = useState(true);
   const [m10page, setM10page] = useState(0);
   const PAGE = 15;
+  const DK = {
+    bg:      "#0D1117",
+    card:    "#161B22",
+    panel:   "#1C2128",
+    border:  "#30363D",
+    text:    "#E6EDF3",
+    textMid: "#8B949E",
+    textMuted:"#6E7681",
+    green:   "#3FB950",
+    orange:  "#D29922",
+    red:     "#F85149",
+    accent:  "#58A6FF",
+  };
 
   useEffect(() => {
     loadStatic();
@@ -2558,22 +2571,22 @@ function Historico() {
   const fmtM = v => v == null ? "—" : `B/.${Number(v).toFixed(1)}M`;
   const fmtB = v => v == null ? "—" : `B/.${(+v*1e6/1e9).toFixed(2)}B`;
   const semaforo = p => +p >= 90 ? "🟢" : +p >= 70 ? "🟡" : "🔴";
-  const colPct = p => +p >= 90 ? C.green : +p >= 70 ? C.orange : C.red;
+  const colPct = p => +p >= 90 ? DK.green : +p >= 70 ? DK.orange : DK.red;
 
   // ── KPI card ──
-  const KpiH = ({label, value, sub, accent=C.headerBg}) => (
-    <div style={{background:C.white, borderRadius:12, padding:"14px 18px", border:`1px solid ${C.border}`, boxShadow:"0 2px 8px rgba(0,0,0,0.06)", flex:1, minWidth:140}}>
-      <div style={{fontSize:10, fontWeight:700, color:C.textMid, letterSpacing:"0.1em", marginBottom:4}}>{label}</div>
+  const KpiH = ({label, value, sub, accent=DK.accent}) => (
+    <div style={{background:DK.card, borderRadius:12, padding:"14px 18px", border:`1px solid ${DK.border}`, borderLeft:`3px solid ${accent}`, boxShadow:"0 4px 16px rgba(0,0,0,0.4)", flex:1, minWidth:140}}>
+      <div style={{fontSize:10, fontWeight:700, color:DK.textMid, letterSpacing:"0.1em", marginBottom:4}}>{label}</div>
       <div style={{fontSize:18, fontWeight:800, color:accent, lineHeight:1.2}}>{value}</div>
-      {sub && <div style={{fontSize:10, color:C.textLight, marginTop:2}}>{sub}</div>}
+      {sub && <div style={{fontSize:10, color:DK.textMuted, marginTop:2}}>{sub}</div>}
     </div>
   );
 
   // ── Skeleton loader ──
   const Skel = () => (
     <div style={{display:"flex", flexDirection:"column", gap:12, padding:20}}>
-      {[200,160,120].map((h,i)=><div key={i} style={{height:h, background:"#E8EDF5", borderRadius:10, animation:"pulse 1.5s ease-in-out infinite"}}/>)}
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
+      {[200,160,120].map((h,i)=><div key={i} style={{height:h, background:DK.panel, borderRadius:10, animation:"pulse 1.5s ease-in-out infinite"}}/>)}
+      <style>{`@keyframes pulse{0%,100%{opacity:0.4}50%{opacity:0.15}}`}</style>
     </div>
   );
 
@@ -2601,51 +2614,51 @@ function Historico() {
     return (
       <div>
         <div style={{display:"flex", gap:10, flexWrap:"wrap", marginBottom:20}}>
-          <KpiH label="LEY ACUMULADO 2016–2026" value={`B/.${(total.ley/1000).toFixed(1)}B`} accent={C.headerBg}/>
-          <KpiH label="MODIFICADO ACUMULADO" value={`B/.${(total.mod/1000).toFixed(1)}B`} accent={C.navHistorico}/>
-          <KpiH label="EJECUTADO ACUMULADO" value={`B/.${(total.eje/1000).toFixed(1)}B`} accent={C.green}/>
+          <KpiH label="LEY ACUMULADO 2016–2026" value={`B/.${(total.ley/1000).toFixed(1)}B`} accent={DK.accent}/>
+          <KpiH label="MODIFICADO ACUMULADO" value={`B/.${(total.mod/1000).toFixed(1)}B`} accent={DK.accent}/>
+          <KpiH label="EJECUTADO ACUMULADO" value={`B/.${(total.eje/1000).toFixed(1)}B`} accent={DK.green}/>
           <KpiH label="EJECUCIÓN PROMEDIO" value={`${pctProm}%`} accent={colPct(pctProm)}/>
-          <KpiH label="VARIACIÓN 2016→ÚLITMO" value={`${varPct > 0 ? '+' : ''}${varPct}%`} accent={+varPct>=0?C.green:C.red}/>
+          <KpiH label="VARIACIÓN 2016→ÚLITMO" value={`${varPct > 0 ? '+' : ''}${varPct}%`} accent={+varPct>=0?DK.green:DK.red}/>
         </div>
-        <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`, marginBottom:16}}>
-          <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Evolución Presupuestaria 2016–2026 (B/. millones)</div>
+        <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`, marginBottom:16}}>
+          <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Evolución Presupuestaria 2016–2026 (B/. millones)</div>
           <ResponsiveContainer width="100%" height={260}>
             <ComposedChart data={d} margin={{top:4,right:20,bottom:4,left:10}}>
-              <XAxis dataKey="anio" tick={{fontSize:10}} stroke={C.border}/>
-              <YAxis tick={{fontSize:10}} stroke={C.border}/>
-              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n]} contentStyle={{fontSize:11, borderRadius:8}}/>
+              <XAxis dataKey="anio" tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <YAxis tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n]} contentStyle={{fontSize:11, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
               <Legend iconSize={10} wrapperStyle={{fontSize:11}}/>
-              <Line type="monotone" dataKey="ley" name="Ley" stroke={C.textLight} strokeWidth={1.5} dot={false} strokeDasharray="4 2"/>
-              <Line type="monotone" dataKey="mod" name="Modificado" stroke={C.navHistorico} strokeWidth={2.5} dot={false}/>
-              <Line type="monotone" dataKey="eje" name="Ejecutado" stroke={C.green} strokeWidth={2.5} dot={{r:3}}/>
+              <Line type="monotone" dataKey="ley" name="Ley" stroke={DK.textMuted} strokeWidth={1.5} dot={false} strokeDasharray="4 2"/>
+              <Line type="monotone" dataKey="mod" name="Modificado" stroke={DK.accent} strokeWidth={2.5} dot={false}/>
+              <Line type="monotone" dataKey="eje" name="Ejecutado" stroke={DK.green} strokeWidth={2.5} dot={{r:3}}/>
             </ComposedChart>
           </ResponsiveContainer>
         </div>
-        <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`, marginBottom:16}}>
-          <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Funcionamiento vs Inversión por Año (B/. millones)</div>
+        <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`, marginBottom:16}}>
+          <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Funcionamiento vs Inversión por Año (B/. millones)</div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={d} margin={{top:4,right:20,bottom:4,left:10}}>
-              <XAxis dataKey="anio" tick={{fontSize:10}} stroke={C.border}/>
-              <YAxis tick={{fontSize:10}} stroke={C.border}/>
-              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n]} contentStyle={{fontSize:11, borderRadius:8}}/>
+              <XAxis dataKey="anio" tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <YAxis tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n]} contentStyle={{fontSize:11, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
               <Legend iconSize={10} wrapperStyle={{fontSize:11}}/>
-              <Bar dataKey="func_mod" name="Funcionamiento" stackId="a" fill={C.navHistorico+"cc"} barSize={20}/>
+              <Bar dataKey="func_mod" name="Funcionamiento" stackId="a" fill={DK.accent+"cc"} barSize={20}/>
               <Bar dataKey="inv_mod" name="Inversión" stackId="a" fill={C.navInformes+"cc"} barSize={20}/>
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div style={{background:C.white, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden"}}>
+        <div style={{background:DK.card, borderRadius:14, border:`1px solid ${DK.border}`, overflow:"hidden"}}>
           <table style={{width:"100%", borderCollapse:"collapse", fontSize:11}}>
-            <thead><tr style={{background:C.headerBg+"15"}}>
-              {["Año","Ley (M)","Modificado (M)","Ejecutado (M)","Devengado (M)","% Ejec"].map(h=><th key={h} style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:C.text, whiteSpace:"nowrap", borderBottom:`1px solid ${C.border}`}}>{h}</th>)}
+            <thead><tr style={{background:DK.panel}}>
+              {["Año","Ley (M)","Modificado (M)","Ejecutado (M)","Devengado (M)","% Ejec"].map(h=><th key={h} style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:DK.text, whiteSpace:"nowrap", borderBottom:`1px solid ${DK.border}`}}>{h}</th>)}
             </tr></thead>
             <tbody>{d.map((r,i)=>{
               const pct = +r.mod>0?(+r.eje/+r.mod*100).toFixed(1):0;
-              return <tr key={r.anio} style={{background:i%2===0?C.white:C.bg}}>
-                <td style={{padding:"7px 12px", textAlign:"right", fontWeight:700, color:C.navHistorico}}>
-                  {r.anio}{r.anio===2026&&<span style={{marginLeft:4,background:C.orange+"30",color:C.orange,borderRadius:4,padding:"1px 4px",fontSize:9,fontWeight:700}}>Parcial</span>}
+              return <tr key={r.anio} style={{background:i%2===0?DK.card:DK.panel}}>
+                <td style={{padding:"7px 12px", textAlign:"right", fontWeight:700, color:DK.accent}}>
+                  {r.anio}{r.anio===2026&&<span style={{marginLeft:4,background:DK.orange+"30",color:DK.orange,borderRadius:4,padding:"1px 4px",fontSize:9,fontWeight:700}}>Parcial</span>}
                 </td>
-                {[r.ley,r.mod,r.eje,r.dev].map((v,j)=><td key={j} style={{padding:"7px 12px", textAlign:"right", color:C.text}}>{fmtM(v)}</td>)}
+                {[r.ley,r.mod,r.eje,r.dev].map((v,j)=><td key={j} style={{padding:"7px 12px", textAlign:"right", color:DK.text}}>{fmtM(v)}</td>)}
                 <td style={{padding:"7px 12px", textAlign:"right", fontWeight:700, color:colPct(pct)}}>{pct}%</td>
               </tr>;
             })}</tbody>
@@ -2676,25 +2689,25 @@ function Historico() {
             return <KpiH key={a} label={AREA_SHORT[a].toUpperCase()} value={fmtM(totMod)} sub={`${pct}% ejecución acumulada`} accent={AREA_COLORS_H[a]}/>;
           })}
         </div>
-        <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`, marginBottom:16}}>
-          <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Presupuesto Modificado por Área (B/. millones)</div>
+        <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`, marginBottom:16}}>
+          <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Presupuesto Modificado por Área (B/. millones)</div>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={byYear} margin={{top:4,right:20,bottom:4,left:10}}>
-              <XAxis dataKey="anio" tick={{fontSize:10}} stroke={C.border}/>
-              <YAxis tick={{fontSize:10}} stroke={C.border}/>
-              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n]} contentStyle={{fontSize:11, borderRadius:8}}/>
+              <XAxis dataKey="anio" tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <YAxis tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n]} contentStyle={{fontSize:11, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
               <Legend iconSize={10} wrapperStyle={{fontSize:11}}/>
               {[0,1,2,3].map(a=><Bar key={a} dataKey={`a${a}_mod`} name={AREA_SHORT[a]} stackId="s" fill={AREA_COLORS_H[a]+"cc"} barSize={18}/>)}
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`}}>
-          <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Tasa de Ejecución por Área (%)</div>
+        <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`}}>
+          <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Tasa de Ejecución por Área (%)</div>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={byYear} margin={{top:4,right:20,bottom:4,left:10}}>
-              <XAxis dataKey="anio" tick={{fontSize:10}} stroke={C.border}/>
-              <YAxis domain={[0,110]} tick={{fontSize:10}} stroke={C.border}/>
-              <Tooltip formatter={(v,n)=>[`${v}%`,n]} contentStyle={{fontSize:11, borderRadius:8}}/>
+              <XAxis dataKey="anio" tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <YAxis domain={[0,110]} tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <Tooltip formatter={(v,n)=>[`${v}%`,n]} contentStyle={{fontSize:11, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
               <Legend iconSize={10} wrapperStyle={{fontSize:11}}/>
               {[0,1,2,3].map(a=><Line key={a} type="monotone" dataKey={`a${a}_pct`} name={AREA_SHORT[a]} stroke={AREA_COLORS_H[a]} strokeWidth={2} dot={false}/>)}
             </LineChart>
@@ -2714,44 +2727,44 @@ function Historico() {
       <div>
         <div style={{display:"flex", gap:10, marginBottom:20, flexWrap:"wrap", alignItems:"center"}}>
           <select value={m3Ent} onChange={e=>setM3Ent(e.target.value)}
-            style={{flex:2, minWidth:260, padding:"8px 12px", borderRadius:8, border:`1px solid ${C.border}`, fontSize:13, background:C.white, color:C.text}}>
+            style={{flex:2, minWidth:260, padding:"8px 12px", borderRadius:8, border:`1px solid ${DK.border}`, fontSize:13, background:DK.panel, color:DK.text}}>
             <option value="">— Seleccionar entidad —</option>
             {ENTIDADES.map(e=>{const code=`${e.codigo_area}${String(e.codigo_entidad).padStart(2,'0')}`; return <option key={e.nombre} value={e.nombre}>{code} {e.siglas||e.nombre}</option>;})}
           </select>
         </div>
-        {!m3Ent && <div style={{textAlign:"center", padding:60, color:C.textLight, fontSize:13}}>Selecciona una entidad para ver su historial presupuestario</div>}
+        {!m3Ent && <div style={{textAlign:"center", padding:60, color:DK.textMuted, fontSize:13}}>Selecciona una entidad para ver su historial presupuestario</div>}
         {m3Ent && m3Loading && <Skel/>}
         {m3Ent && !m3Loading && m3Data.length > 0 && <>
           <div style={{display:"flex", gap:10, flexWrap:"wrap", marginBottom:20}}>
             <KpiH label="ENTIDAD" value={e?.siglas||m3Ent.slice(0,20)} sub={AREA_NAMES[e?.codigo_area]} accent={AREA_COLORS_H[e?.codigo_area||0]}/>
-            <KpiH label="MODIFICADO TOTAL" value={fmtM(m3Data.reduce((s,r)=>s+r.Modificado,0).toFixed(1))} accent={C.navHistorico}/>
-            <KpiH label="EJECUTADO TOTAL" value={fmtM(m3Data.reduce((s,r)=>s+r.Ejecutado,0).toFixed(1))} accent={C.green}/>
+            <KpiH label="MODIFICADO TOTAL" value={fmtM(m3Data.reduce((s,r)=>s+r.Modificado,0).toFixed(1))} accent={DK.accent}/>
+            <KpiH label="EJECUTADO TOTAL" value={fmtM(m3Data.reduce((s,r)=>s+r.Ejecutado,0).toFixed(1))} accent={DK.green}/>
             <KpiH label="EJECUCIÓN PROMEDIO" value={`${pctProm}%`} accent={colPct(pctProm)}/>
-            <KpiH label="AÑO MAYOR PRESUPUESTO" value={maxBudgetYr?.year} sub={fmtM(maxBudgetYr?.Modificado)} accent={C.gold}/>
-            <KpiH label="AÑO MEJOR EJECUCIÓN" value={maxPctYr?.year} sub={`${maxPctYr?.pct}%`} accent={C.green}/>
+            <KpiH label="AÑO MAYOR PRESUPUESTO" value={maxBudgetYr?.year} sub={fmtM(maxBudgetYr?.Modificado)} accent={DK.orange}/>
+            <KpiH label="AÑO MEJOR EJECUCIÓN" value={maxPctYr?.year} sub={`${maxPctYr?.pct}%`} accent={DK.green}/>
           </div>
-          <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`, marginBottom:16}}>
-            <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Evolución Histórica (B/. millones)</div>
+          <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`, marginBottom:16}}>
+            <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Evolución Histórica (B/. millones)</div>
             <ResponsiveContainer width="100%" height={240}>
               <ComposedChart data={m3Data} margin={{top:4,right:20,bottom:4,left:10}}>
-                <XAxis dataKey="year" tick={{fontSize:10}} stroke={C.border}/>
-                <YAxis yAxisId="left" tick={{fontSize:10}} stroke={C.border}/>
-                <YAxis yAxisId="right" orientation="right" domain={[0,110]} tick={{fontSize:10}} stroke={C.border}/>
-                <Tooltip formatter={(v,n)=>n==="Ejec %"?[`${v}%`,n]:[`B/.${v}M`,n]} contentStyle={{fontSize:11, borderRadius:8}}/>
+                <XAxis dataKey="year" tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+                <YAxis yAxisId="left" tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+                <YAxis yAxisId="right" orientation="right" domain={[0,110]} tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+                <Tooltip formatter={(v,n)=>n==="Ejec %"?[`${v}%`,n]:[`B/.${v}M`,n]} contentStyle={{fontSize:11, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
                 <Legend iconSize={10} wrapperStyle={{fontSize:11}}/>
-                <Bar yAxisId="left" dataKey="Modificado" name="Modificado" fill={C.navHistorico+"55"} barSize={16}/>
-                <Bar yAxisId="left" dataKey="Ejecutado" name="Ejecutado" fill={C.navHistorico} barSize={16}/>
-                <Line yAxisId="right" type="monotone" dataKey="pct" name="Ejec %" stroke={C.gold} strokeWidth={2} dot={{r:3}}/>
+                <Bar yAxisId="left" dataKey="Modificado" name="Modificado" fill={DK.accent+"55"} barSize={16}/>
+                <Bar yAxisId="left" dataKey="Ejecutado" name="Ejecutado" fill={DK.accent} barSize={16}/>
+                <Line yAxisId="right" type="monotone" dataKey="pct" name="Ejec %" stroke={DK.orange} strokeWidth={2} dot={{r:3}}/>
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-          <div style={{background:C.white, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden"}}>
+          <div style={{background:DK.card, borderRadius:14, border:`1px solid ${DK.border}`, overflow:"hidden"}}>
             <table style={{width:"100%", borderCollapse:"collapse", fontSize:11}}>
-              <thead><tr style={{background:C.headerBg+"15"}}>
-                {["Año","Ley (M)","Modificado (M)","Ejecutado (M)","% Ejec"].map(h=><th key={h} style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:C.text, borderBottom:`1px solid ${C.border}`}}>{h}</th>)}
+              <thead><tr style={{background:DK.panel}}>
+                {["Año","Ley (M)","Modificado (M)","Ejecutado (M)","% Ejec"].map(h=><th key={h} style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:DK.text, borderBottom:`1px solid ${DK.border}`}}>{h}</th>)}
               </tr></thead>
-              <tbody>{m3Data.map((r,i)=><tr key={r.year} style={{background:i%2===0?C.white:C.bg}}>
-                <td style={{padding:"7px 12px", textAlign:"right", fontWeight:700, color:C.navHistorico}}>{r.year}{r.year===2026&&<span style={{marginLeft:4,background:C.orange+"30",color:C.orange,borderRadius:4,padding:"1px 4px",fontSize:9}}>Parcial</span>}</td>
+              <tbody>{m3Data.map((r,i)=><tr key={r.year} style={{background:i%2===0?DK.card:DK.panel}}>
+                <td style={{padding:"7px 12px", textAlign:"right", fontWeight:700, color:DK.accent}}>{r.year}{r.year===2026&&<span style={{marginLeft:4,background:DK.orange+"30",color:DK.orange,borderRadius:4,padding:"1px 4px",fontSize:9}}>Parcial</span>}</td>
                 <td style={{padding:"7px 12px", textAlign:"right"}}>{fmtM(r.Ley)}</td>
                 <td style={{padding:"7px 12px", textAlign:"right"}}>{fmtM(r.Modificado)}</td>
                 <td style={{padding:"7px 12px", textAlign:"right"}}>{fmtM(r.Ejecutado)}</td>
@@ -2768,7 +2781,7 @@ function Historico() {
   const M4 = () => {
     const d = dynData.rankings || [];
     if (loadingDyn) return <Skel/>;
-    if (!d.length) return <div style={{textAlign:"center",padding:60,color:C.textLight}}>Sin datos para el año seleccionado</div>;
+    if (!d.length) return <div style={{textAlign:"center",padding:60,color:DK.textMuted}}>Sin datos para el año seleccionado</div>;
     const sorted = [...d].sort((a,b) => m4sort==="mod" ? +b.mod - +a.mod : m4sort==="eje" ? +b.eje - +a.eje : +b.pct - +a.pct);
     const top10 = sorted.slice(0,10);
     const bot10 = [...d].sort((a,b)=>+a.pct - +b.pct).filter(r=>+r.mod>0).slice(0,10);
@@ -2777,30 +2790,30 @@ function Historico() {
       <div>
         <div style={{display:"flex", gap:8, marginBottom:20}}>
           {[["mod","Por Presupuesto"],["pct","Por Ejecución %"]].map(([k,lbl])=>(
-            <button key={k} onClick={()=>setM4sort(k)} style={{padding:"6px 16px", borderRadius:7, border:"none", background:m4sort===k?C.navHistorico:"transparent", color:m4sort===k?"white":C.textMid, fontSize:12, fontWeight:700, cursor:"pointer"}}>{lbl}</button>
+            <button key={k} onClick={()=>setM4sort(k)} style={{padding:"6px 16px", borderRadius:7, border:"none", background:m4sort===k?DK.accent:"transparent", color:m4sort===k?DK.bg:DK.textMid, fontSize:12, fontWeight:700, cursor:"pointer"}}>{lbl}</button>
           ))}
         </div>
         <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16}}>
-          <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`}}>
-            <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>🏆 Top 10 {m4sort==="mod"?"Mayor Presupuesto":"Mejor Ejecución"} — {gYear}</div>
+          <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`}}>
+            <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>🏆 Top 10 {m4sort==="mod"?"Mayor Presupuesto":"Mejor Ejecución"} — {gYear}</div>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart layout="vertical" data={top10.map(r=>({name:r.nombre_entidad.slice(0,26), val:+(m4sort==="mod"?r.mod:r.pct), area:r.codigo_area}))} margin={{top:4,right:30,bottom:4,left:4}}>
-                <XAxis type="number" tick={{fontSize:9}} stroke={C.border}/>
-                <YAxis type="category" dataKey="name" tick={{fontSize:9}} width={160} stroke={C.border}/>
-                <Tooltip formatter={(v)=>[m4sort==="mod"?`B/.${v}M`:`${v}%`]} contentStyle={{fontSize:11, borderRadius:8}}/>
+                <XAxis type="number" tick={{fontSize:9, fill:DK.textMid}} stroke={DK.border}/>
+                <YAxis type="category" dataKey="name" tick={{fontSize:9, fill:DK.textMid}} width={160} stroke={DK.border}/>
+                <Tooltip formatter={(v)=>[m4sort==="mod"?`B/.${v}M`:`${v}%`]} contentStyle={{fontSize:11, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
                 <Bar dataKey="val" barSize={12} radius={[0,4,4,0]}>
-                  {top10.map((r,i)=><Cell key={i} fill={AREA_COLORS_H[r.codigo_area]||C.navHistorico}/>)}
+                  {top10.map((r,i)=><Cell key={i} fill={AREA_COLORS_H[r.codigo_area]||DK.accent}/>)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`}}>
-            <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>⚠️ Bottom 10 Menor Ejecución — {gYear}</div>
+          <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`}}>
+            <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>⚠️ Bottom 10 Menor Ejecución — {gYear}</div>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart layout="vertical" data={bot10.map(r=>({name:r.nombre_entidad.slice(0,26), val:+r.pct, area:r.codigo_area}))} margin={{top:4,right:30,bottom:4,left:4}}>
-                <XAxis type="number" domain={[0,100]} tick={{fontSize:9}} stroke={C.border}/>
-                <YAxis type="category" dataKey="name" tick={{fontSize:9}} width={160} stroke={C.border}/>
-                <Tooltip formatter={(v)=>[`${v}%`]} contentStyle={{fontSize:11, borderRadius:8}}/>
+                <XAxis type="number" domain={[0,100]} tick={{fontSize:9, fill:DK.textMid}} stroke={DK.border}/>
+                <YAxis type="category" dataKey="name" tick={{fontSize:9, fill:DK.textMid}} width={160} stroke={DK.border}/>
+                <Tooltip formatter={(v)=>[`${v}%`]} contentStyle={{fontSize:11, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
                 <Bar dataKey="val" barSize={12} radius={[0,4,4,0]}>
                   {bot10.map((r,i)=><Cell key={i} fill={colPct(r.pct)}/>)}
                 </Bar>
@@ -2808,13 +2821,13 @@ function Historico() {
             </ResponsiveContainer>
           </div>
         </div>
-        <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`}}>
-          <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Presupuesto vs Ejecución por Entidad — {gYear}</div>
+        <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`}}>
+          <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Presupuesto vs Ejecución por Entidad — {gYear}</div>
           <ResponsiveContainer width="100%" height={280}>
             <ScatterChart margin={{top:4,right:20,bottom:20,left:10}}>
-              <XAxis dataKey="mod" name="Presupuesto (M)" type="number" tick={{fontSize:9}} stroke={C.border} label={{value:"B/. millones", position:"insideBottom", offset:-10, fontSize:9}}/>
-              <YAxis dataKey="pct" name="Ejecución" type="number" domain={[0,110]} tick={{fontSize:9}} stroke={C.border} label={{value:"%",angle:-90, position:"insideLeft", fontSize:9}}/>
-              <Tooltip cursor={{strokeDasharray:"3 3"}} content={({active,payload})=>active&&payload?.length?(<div style={{background:"white",padding:"6px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:10}}><b>{payload[0]?.payload?.name}</b><br/>B/.{payload[0]?.payload?.mod}M · {payload[0]?.payload?.pct}%</div>):null}/>
+              <XAxis dataKey="mod" name="Presupuesto (M)" type="number" tick={{fontSize:9, fill:DK.textMid}} stroke={DK.border} label={{value:"B/. millones", position:"insideBottom", offset:-10, fontSize:9}}/>
+              <YAxis dataKey="pct" name="Ejecución" type="number" domain={[0,110]} tick={{fontSize:9, fill:DK.textMid}} stroke={DK.border} label={{value:"%",angle:-90, position:"insideLeft", fontSize:9}}/>
+              <Tooltip cursor={{strokeDasharray:"3 3"}} content={({active,payload})=>active&&payload?.length?(<div style={{background:DK.card,padding:"6px 10px",borderRadius:8,border:`1px solid ${DK.border}`,fontSize:10,color:DK.text}}><b>{payload[0]?.payload?.name}</b><br/>B/.{payload[0]?.payload?.mod}M · {payload[0]?.payload?.pct}%</div>):null}/>
               {[0,1,2,3].map(a=>(
                 <Scatter key={a} name={AREA_SHORT[a]} data={scatter.filter(r=>r.area===a)} fill={AREA_COLORS_H[a]+"cc"}/>
               ))}
@@ -2844,38 +2857,38 @@ function Historico() {
     return (
       <div>
         <div style={{display:"grid", gridTemplateColumns:"1fr 1.6fr", gap:16, marginBottom:16}}>
-          <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`}}>
-            <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Composición de Fuentes — {gYear}</div>
+          <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`}}>
+            <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Composición de Fuentes — {gYear}</div>
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie data={pieData} cx="50%" cy="50%" outerRadius={100} innerRadius={50} dataKey="value" label={({name,percent})=>`${(percent*100).toFixed(0)}%`} labelLine={false} fontSize={9}>
                   {pieData.map((_,i)=><Cell key={i} fill={COLORS_F[i%COLORS_F.length]}/>)}
                 </Pie>
-                <Tooltip formatter={(v)=>[`B/.${v}M`]} contentStyle={{fontSize:11, borderRadius:8}}/>
+                <Tooltip formatter={(v)=>[`B/.${v}M`]} contentStyle={{fontSize:11, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`}}>
-            <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Evolución por Fuente 2016–2026 (B/. millones)</div>
+          <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`}}>
+            <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Evolución por Fuente 2016–2026 (B/. millones)</div>
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={byYear} margin={{top:4,right:20,bottom:4,left:10}}>
-                <XAxis dataKey="anio" tick={{fontSize:10}} stroke={C.border}/>
-                <YAxis tick={{fontSize:10}} stroke={C.border}/>
-                <Tooltip formatter={(v,n)=>[`B/.${v}M`,n.slice(0,24)]} contentStyle={{fontSize:10, borderRadius:8}}/>
+                <XAxis dataKey="anio" tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+                <YAxis tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+                <Tooltip formatter={(v,n)=>[`B/.${v}M`,n.slice(0,24)]} contentStyle={{fontSize:10, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
                 {fuentes.slice(0,8).map((f,i)=><Area key={f} type="monotone" dataKey={f} name={f.slice(0,24)} stackId="1" stroke={COLORS_F[i]} fill={COLORS_F[i]+"88"}/>)}
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
-        <div style={{background:C.white, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden"}}>
+        <div style={{background:DK.card, borderRadius:14, border:`1px solid ${DK.border}`, overflow:"hidden"}}>
           <table style={{width:"100%", borderCollapse:"collapse", fontSize:11}}>
-            <thead><tr style={{background:C.headerBg+"15"}}><th style={{padding:"8px 12px", textAlign:"left", fontWeight:700, color:C.text, borderBottom:`1px solid ${C.border}`}}>Fuente de Ingreso</th><th style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:C.text, borderBottom:`1px solid ${C.border}`}}>Total Acumulado (M)</th><th style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:C.text, borderBottom:`1px solid ${C.border}`}}>%</th></tr></thead>
+            <thead><tr style={{background:DK.panel}}><th style={{padding:"8px 12px", textAlign:"left", fontWeight:700, color:DK.text, borderBottom:`1px solid ${DK.border}`}}>Fuente de Ingreso</th><th style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:DK.text, borderBottom:`1px solid ${DK.border}`}}>Total Acumulado (M)</th><th style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:DK.text, borderBottom:`1px solid ${DK.border}`}}>%</th></tr></thead>
             <tbody>{totByFuente.slice(0,12).map((r,i)=>{
               const total = totByFuente.reduce((s,x)=>s+x.value,0);
-              return <tr key={i} style={{background:i%2===0?C.white:C.bg}}>
-                <td style={{padding:"7px 12px", color:C.text}}>{r.name}</td>
+              return <tr key={i} style={{background:i%2===0?DK.card:DK.panel}}>
+                <td style={{padding:"7px 12px", color:DK.text}}>{r.name}</td>
                 <td style={{padding:"7px 12px", textAlign:"right"}}>{fmtM(r.value.toFixed(1))}</td>
-                <td style={{padding:"7px 12px", textAlign:"right", color:C.textMid}}>{total>0?(r.value/total*100).toFixed(1):0}%</td>
+                <td style={{padding:"7px 12px", textAlign:"right", color:DK.textMid}}>{total>0?(r.value/total*100).toFixed(1):0}%</td>
               </tr>;
             })}</tbody>
           </table>
@@ -2902,32 +2915,32 @@ function Historico() {
     return (
       <div>
         <div style={{display:"flex", gap:10, flexWrap:"wrap", marginBottom:20}}>
-          <KpiH label={`% FUNCIONAMIENTO ${gYear}`} value={total>0?`${(+yearData.func/total*100).toFixed(1)}%`:"—"} accent={C.navHistorico}/>
-          <KpiH label={`% INVERSIÓN ${gYear}`} value={total>0?`${(+yearData.inv/total*100).toFixed(1)}%`:"—"} accent={C.navInformes}/>
-          <KpiH label="RATIO INV/TOTAL PROM." value={`${(byYear.reduce((s,r)=>s+(+r.ratioInv||0),0)/byYear.filter(r=>r.ratioInv>0).length).toFixed(1)}%`} accent={C.teal}/>
+          <KpiH label={`% FUNCIONAMIENTO ${gYear}`} value={total>0?`${(+yearData.func/total*100).toFixed(1)}%`:"—"} accent={DK.accent}/>
+          <KpiH label={`% INVERSIÓN ${gYear}`} value={total>0?`${(+yearData.inv/total*100).toFixed(1)}%`:"—"} accent={DK.orange}/>
+          <KpiH label="RATIO INV/TOTAL PROM." value={`${(byYear.reduce((s,r)=>s+(+r.ratioInv||0),0)/byYear.filter(r=>r.ratioInv>0).length).toFixed(1)}%`} accent={DK.green}/>
         </div>
-        <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`, marginBottom:16}}>
-          <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Funcionamiento vs Inversión — Modificado y Ejecutado (B/. millones)</div>
+        <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`, marginBottom:16}}>
+          <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Funcionamiento vs Inversión — Modificado y Ejecutado (B/. millones)</div>
           <ResponsiveContainer width="100%" height={240}>
             <ComposedChart data={byYear} margin={{top:4,right:20,bottom:4,left:10}}>
-              <XAxis dataKey="anio" tick={{fontSize:10}} stroke={C.border}/>
-              <YAxis tick={{fontSize:10}} stroke={C.border}/>
-              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n]} contentStyle={{fontSize:11, borderRadius:8}}/>
+              <XAxis dataKey="anio" tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <YAxis tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n]} contentStyle={{fontSize:11, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
               <Legend iconSize={10} wrapperStyle={{fontSize:11}}/>
-              <Bar dataKey="func" name="Func. Modificado" fill={C.navHistorico+"88"} barSize={14}/>
-              <Bar dataKey="funcEje" name="Func. Ejecutado" fill={C.navHistorico} barSize={14}/>
+              <Bar dataKey="func" name="Func. Modificado" fill={DK.accent+"88"} barSize={14}/>
+              <Bar dataKey="funcEje" name="Func. Ejecutado" fill={DK.accent} barSize={14}/>
               <Bar dataKey="inv" name="Inv. Modificado" fill={C.navInformes+"88"} barSize={14}/>
               <Bar dataKey="invEje" name="Inv. Ejecutado" fill={C.navInformes} barSize={14}/>
             </ComposedChart>
           </ResponsiveContainer>
         </div>
-        <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`}}>
-          <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Tendencia Ratio Inversión/Total (%)</div>
+        <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`}}>
+          <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Tendencia Ratio Inversión/Total (%)</div>
           <ResponsiveContainer width="100%" height={180}>
             <LineChart data={byYear} margin={{top:4,right:20,bottom:4,left:10}}>
-              <XAxis dataKey="anio" tick={{fontSize:10}} stroke={C.border}/>
-              <YAxis domain={[0,50]} tick={{fontSize:10}} stroke={C.border}/>
-              <Tooltip formatter={(v)=>[`${v}%`,"Ratio Inv/Total"]} contentStyle={{fontSize:11, borderRadius:8}}/>
+              <XAxis dataKey="anio" tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <YAxis domain={[0,50]} tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <Tooltip formatter={(v)=>[`${v}%`,"Ratio Inv/Total"]} contentStyle={{fontSize:11, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
               <Line type="monotone" dataKey="ratioInv" name="Ratio Inv/Total" stroke={C.navInformes} strokeWidth={2.5} dot={{r:3}}/>
             </LineChart>
           </ResponsiveContainer>
@@ -2952,24 +2965,24 @@ function Historico() {
     const total = totByGrupo.reduce((s,r)=>s+r.value,0);
     return (
       <div>
-        <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`, marginBottom:16}}>
-          <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Composición por Grupo de Gasto — Acumulado</div>
+        <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`, marginBottom:16}}>
+          <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Composición por Grupo de Gasto — Acumulado</div>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={byYear} margin={{top:4,right:20,bottom:4,left:10}}>
-              <XAxis dataKey="anio" tick={{fontSize:10}} stroke={C.border}/>
-              <YAxis tick={{fontSize:10}} stroke={C.border}/>
-              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n.slice(0,28)]} contentStyle={{fontSize:11, borderRadius:8}}/>
+              <XAxis dataKey="anio" tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <YAxis tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n.slice(0,28)]} contentStyle={{fontSize:11, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
               {grupos.slice(0,8).map((g,i)=><Bar key={g} dataKey={g} name={g.slice(0,28)} stackId="a" fill={GCOLORS[i%GCOLORS.length]+"cc"} barSize={16}/>)}
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div style={{background:C.white, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden"}}>
+        <div style={{background:DK.card, borderRadius:14, border:`1px solid ${DK.border}`, overflow:"hidden"}}>
           <table style={{width:"100%", borderCollapse:"collapse", fontSize:11}}>
-            <thead><tr style={{background:C.headerBg+"15"}}><th style={{padding:"8px 12px", textAlign:"left", fontWeight:700, color:C.text, borderBottom:`1px solid ${C.border}`}}>Grupo de Gasto</th><th style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:C.text, borderBottom:`1px solid ${C.border}`}}>Total Acumulado (M)</th><th style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:C.text, borderBottom:`1px solid ${C.border}`}}>% del Total</th></tr></thead>
-            <tbody>{totByGrupo.map((r,i)=><tr key={i} style={{background:i%2===0?C.white:C.bg}}>
+            <thead><tr style={{background:DK.panel}}><th style={{padding:"8px 12px", textAlign:"left", fontWeight:700, color:DK.text, borderBottom:`1px solid ${DK.border}`}}>Grupo de Gasto</th><th style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:DK.text, borderBottom:`1px solid ${DK.border}`}}>Total Acumulado (M)</th><th style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:DK.text, borderBottom:`1px solid ${DK.border}`}}>% del Total</th></tr></thead>
+            <tbody>{totByGrupo.map((r,i)=><tr key={i} style={{background:i%2===0?DK.card:DK.panel}}>
               <td style={{padding:"7px 12px"}}><span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:GCOLORS[i%GCOLORS.length],marginRight:8}}/>  {r.name}</td>
               <td style={{padding:"7px 12px", textAlign:"right"}}>{fmtM(r.value.toFixed(1))}</td>
-              <td style={{padding:"7px 12px", textAlign:"right", color:C.textMid}}>{total>0?(r.value/total*100).toFixed(1):0}%</td>
+              <td style={{padding:"7px 12px", textAlign:"right", color:DK.textMid}}>{total>0?(r.value/total*100).toFixed(1):0}%</td>
             </tr>)}</tbody>
           </table>
         </div>
@@ -2996,34 +3009,34 @@ function Historico() {
     return (
       <div>
         <div style={{display:"flex", gap:10, alignItems:"center", marginBottom:16}}>
-          <label style={{display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.textMid, cursor:"pointer"}}>
-            <input type="checkbox" checked={exclNac} onChange={e=>setExclNac(e.target.checked)} style={{accentColor:C.navHistorico}}/>
+          <label style={{display:"flex", alignItems:"center", gap:6, fontSize:12, color:DK.textMid, cursor:"pointer"}}>
+            <input type="checkbox" checked={exclNac} onChange={e=>setExclNac(e.target.checked)} style={{accentColor:DK.accent}}/>
             Excluir "A Nivel Nacional"
           </label>
         </div>
         <div style={{display:"flex", gap:10, flexWrap:"wrap", marginBottom:20}}>
           {top3.map((r,i)=><KpiH key={i} label={`#${i+1} ${gYear}`} value={r.provincia_comarca} sub={`B/.${r.eje}M ejecutado`} accent={PCOLORS[i]}/>)}
         </div>
-        <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`, marginBottom:16}}>
-          <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Ejecutado por Provincia — {gYear} (B/. millones)</div>
+        <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`, marginBottom:16}}>
+          <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Ejecutado por Provincia — {gYear} (B/. millones)</div>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart layout="vertical" data={yearD.slice(0,15).map(r=>({name:r.provincia_comarca.slice(0,22), eje:+r.eje, mod:+r.mod}))} margin={{top:4,right:60,bottom:4,left:4}}>
-              <XAxis type="number" tick={{fontSize:9}} stroke={C.border}/>
-              <YAxis type="category" dataKey="name" tick={{fontSize:9}} width={155} stroke={C.border}/>
-              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n]} contentStyle={{fontSize:11, borderRadius:8}}/>
+              <XAxis type="number" tick={{fontSize:9, fill:DK.textMid}} stroke={DK.border}/>
+              <YAxis type="category" dataKey="name" tick={{fontSize:9, fill:DK.textMid}} width={155} stroke={DK.border}/>
+              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n]} contentStyle={{fontSize:11, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
               <Legend iconSize={10} wrapperStyle={{fontSize:11}}/>
-              <Bar dataKey="mod" name="Modificado" fill={C.navHistorico+"55"} barSize={11}/>
-              <Bar dataKey="eje" name="Ejecutado" fill={C.navHistorico} barSize={11}/>
+              <Bar dataKey="mod" name="Modificado" fill={DK.accent+"55"} barSize={11}/>
+              <Bar dataKey="eje" name="Ejecutado" fill={DK.accent} barSize={11}/>
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`}}>
-          <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Ejecutado por Provincia — Histórico (B/. millones)</div>
+        <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`}}>
+          <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Ejecutado por Provincia — Histórico (B/. millones)</div>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={byYear} margin={{top:4,right:20,bottom:4,left:10}}>
-              <XAxis dataKey="anio" tick={{fontSize:10}} stroke={C.border}/>
-              <YAxis tick={{fontSize:10}} stroke={C.border}/>
-              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n.slice(0,22)]} contentStyle={{fontSize:10, borderRadius:8}}/>
+              <XAxis dataKey="anio" tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <YAxis tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n.slice(0,22)]} contentStyle={{fontSize:10, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
               {provs.filter(p=>p!=="A NIVEL NACIONAL").slice(0,10).map((p,i)=><Line key={p} type="monotone" dataKey={p} name={p.slice(0,22)} stroke={PCOLORS[i%PCOLORS.length]} strokeWidth={1.5} dot={false}/>)}
             </LineChart>
           </ResponsiveContainer>
@@ -3048,28 +3061,28 @@ function Historico() {
     const bySector = [...new Map(yearD.map(r=>[r.sector,{sector:r.sector.slice(0,32), area:r.area_desarrollo, mod:yearD.filter(x=>x.sector===r.sector).reduce((s,x)=>s+(+x.mod||0),0)}])).values()].sort((a,b)=>b.mod-a.mod).slice(0,20);
     return (
       <div>
-        <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`, marginBottom:16}}>
-          <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Evolución por Área de Desarrollo (B/. millones)</div>
+        <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`, marginBottom:16}}>
+          <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Evolución por Área de Desarrollo (B/. millones)</div>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={byYear} margin={{top:4,right:20,bottom:4,left:10}}>
-              <XAxis dataKey="anio" tick={{fontSize:10}} stroke={C.border}/>
-              <YAxis tick={{fontSize:10}} stroke={C.border}/>
-              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n.slice(0,30)]} contentStyle={{fontSize:11, borderRadius:8}}/>
+              <XAxis dataKey="anio" tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <YAxis tick={{fontSize:10, fill:DK.textMid}} stroke={DK.border}/>
+              <Tooltip formatter={(v,n)=>[`B/.${v}M`,n.slice(0,30)]} contentStyle={{fontSize:11, borderRadius:8, background:DK.card, color:DK.text, border:`1px solid ${DK.border}`}}/>
               {areas.slice(0,7).map((a,i)=><Bar key={a} dataKey={a} name={a.slice(0,30)} stackId="a" fill={SCOLORS[i%SCOLORS.length]+"cc"} barSize={16}/>)}
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div style={{background:C.white, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden"}}>
-          <div style={{fontSize:12, fontWeight:700, color:C.text, padding:"12px 16px", borderBottom:`1px solid ${C.border}`}}>Sectores por Presupuesto Modificado — {gYear}</div>
+        <div style={{background:DK.card, borderRadius:14, border:`1px solid ${DK.border}`, overflow:"hidden"}}>
+          <div style={{fontSize:12, fontWeight:700, color:DK.text, padding:"12px 16px", borderBottom:`1px solid ${DK.border}`}}>Sectores por Presupuesto Modificado — {gYear}</div>
           <table style={{width:"100%", borderCollapse:"collapse", fontSize:11}}>
-            <thead><tr style={{background:C.headerBg+"15"}}>
-              <th style={{padding:"8px 12px", textAlign:"left", fontWeight:700, color:C.text, borderBottom:`1px solid ${C.border}`}}>Sector</th>
-              <th style={{padding:"8px 12px", textAlign:"left", fontWeight:700, color:C.text, borderBottom:`1px solid ${C.border}`}}>Área de Desarrollo</th>
-              <th style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:C.text, borderBottom:`1px solid ${C.border}`}}>Modificado (M)</th>
+            <thead><tr style={{background:DK.panel}}>
+              <th style={{padding:"8px 12px", textAlign:"left", fontWeight:700, color:DK.text, borderBottom:`1px solid ${DK.border}`}}>Sector</th>
+              <th style={{padding:"8px 12px", textAlign:"left", fontWeight:700, color:DK.text, borderBottom:`1px solid ${DK.border}`}}>Área de Desarrollo</th>
+              <th style={{padding:"8px 12px", textAlign:"right", fontWeight:700, color:DK.text, borderBottom:`1px solid ${DK.border}`}}>Modificado (M)</th>
             </tr></thead>
-            <tbody>{bySector.map((r,i)=><tr key={i} style={{background:i%2===0?C.white:C.bg}}>
-              <td style={{padding:"7px 12px", color:C.text, maxWidth:200}}>{r.sector}</td>
-              <td style={{padding:"7px 12px", color:C.textMid, fontSize:10}}>{r.area}</td>
+            <tbody>{bySector.map((r,i)=><tr key={i} style={{background:i%2===0?DK.card:DK.panel}}>
+              <td style={{padding:"7px 12px", color:DK.text, maxWidth:200}}>{r.sector}</td>
+              <td style={{padding:"7px 12px", color:DK.textMid, fontSize:10}}>{r.area}</td>
               <td style={{padding:"7px 12px", textAlign:"right"}}>{fmtM(r.mod.toFixed(1))}</td>
             </tr>)}</tbody>
           </table>
@@ -3082,7 +3095,7 @@ function Historico() {
   const M10 = () => {
     const d = dynData.ejecucion || [];
     if (loadingDyn) return <Skel/>;
-    if (!d.length) return <div style={{textAlign:"center",padding:60,color:C.textLight}}>Sin datos</div>;
+    if (!d.length) return <div style={{textAlign:"center",padding:60,color:DK.textMuted}}>Sin datos</div>;
     const withMod = d.filter(r=>+r.mod>0);
     const totMod = withMod.reduce((s,r)=>s+(+r.mod||0),0);
     const totEje = withMod.reduce((s,r)=>s+(+r.eje||0),0);
@@ -3111,69 +3124,69 @@ function Historico() {
       <div>
         <div style={{display:"flex", gap:10, flexWrap:"wrap", marginBottom:20}}>
           <KpiH label={`EJECUCIÓN NACIONAL ${gYear}`} value={`${pctNac}%`} accent={colPct(pctNac)}/>
-          <KpiH label="MODIFICADO TOTAL" value={fmtM(totMod.toFixed(1))} accent={C.navHistorico}/>
-          <KpiH label="EJECUTADO TOTAL" value={fmtM(totEje.toFixed(1))} accent={C.green}/>
-          <KpiH label="NO EJECUTADO" value={fmtM(noEje)} sub="Modificado − Ejecutado" accent={C.red}/>
-          <KpiH label="ENTIDADES < 70%" value={cnt70} accent={C.red}/>
-          <KpiH label="ENTIDADES ≥ 95%" value={cnt95} accent={C.green}/>
+          <KpiH label="MODIFICADO TOTAL" value={fmtM(totMod.toFixed(1))} accent={DK.accent}/>
+          <KpiH label="EJECUTADO TOTAL" value={fmtM(totEje.toFixed(1))} accent={DK.green}/>
+          <KpiH label="NO EJECUTADO" value={fmtM(noEje)} sub="Modificado − Ejecutado" accent={DK.red}/>
+          <KpiH label="ENTIDADES < 70%" value={cnt70} accent={DK.red}/>
+          <KpiH label="ENTIDADES ≥ 95%" value={cnt95} accent={DK.green}/>
         </div>
         <div style={{display:"grid", gridTemplateColumns:"220px 1fr", gap:16, marginBottom:16}}>
-          <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center"}}>
-            <div style={{fontSize:11, fontWeight:700, color:C.textMid, marginBottom:10}}>EJECUCIÓN NACIONAL {gYear}</div>
+          <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center"}}>
+            <div style={{fontSize:11, fontWeight:700, color:DK.textMid, marginBottom:10}}>EJECUCIÓN NACIONAL {gYear}</div>
             <svg width="180" height="100" viewBox="0 0 180 100">
-              <path d="M20,90 A70,70 0 0,1 160,90" stroke="#E5E7EB" strokeWidth="16" fill="none" strokeLinecap="round"/>
+              <path d="M20,90 A70,70 0 0,1 160,90" stroke="#30363D" strokeWidth="16" fill="none" strokeLinecap="round"/>
               <path d="M20,90 A70,70 0 0,1 160,90" stroke={colPct(pctNac)} strokeWidth="16" fill="none" strokeLinecap="round" strokeDasharray={`${+pctNac * 2.198} 220`}/>
               <line x1="90" y1="90" x2={90+60*Math.cos((gaugeAngle)*Math.PI/180)} y2={90+60*Math.sin((gaugeAngle)*Math.PI/180)} stroke={colPct(pctNac)} strokeWidth="2.5" strokeLinecap="round"/>
               <circle cx="90" cy="90" r="5" fill={colPct(pctNac)}/>
               <text x="90" y="70" textAnchor="middle" fontSize="22" fontWeight="800" fill={colPct(pctNac)}>{pctNac}%</text>
-              <text x="20" y="100" textAnchor="middle" fontSize="9" fill={C.textLight}>0%</text>
-              <text x="160" y="100" textAnchor="middle" fontSize="9" fill={C.textLight}>100%</text>
+              <text x="20" y="100" textAnchor="middle" fontSize="9" fill="#6E7681">0%</text>
+              <text x="160" y="100" textAnchor="middle" fontSize="9" fill="#6E7681">100%</text>
             </svg>
-            <div style={{fontSize:9, color:C.textLight, marginTop:4}}>Referencia: 90% meta</div>
+            <div style={{fontSize:9, color:DK.textMuted, marginTop:4}}>Referencia: 90% meta</div>
           </div>
-          <div style={{background:C.white, borderRadius:14, padding:20, border:`1px solid ${C.border}`}}>
-            <div style={{fontSize:12, fontWeight:700, color:C.text, marginBottom:12}}>Presupuesto vs % Ejecución por Entidad</div>
+          <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`}}>
+            <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Presupuesto vs % Ejecución por Entidad</div>
             <ResponsiveContainer width="100%" height={180}>
               <ScatterChart margin={{top:4,right:20,bottom:20,left:10}}>
-                <XAxis dataKey="mod" name="Presupuesto (M)" type="number" tick={{fontSize:9}} stroke={C.border} label={{value:"B/. millones", position:"insideBottom", offset:-10, fontSize:9}}/>
-                <YAxis dataKey="pct" name="Ejecución" type="number" domain={[0,110]} tick={{fontSize:9}} stroke={C.border} label={{value:"%",angle:-90, position:"insideLeft", fontSize:9}}/>
-                <Tooltip cursor={{strokeDasharray:"3 3"}} content={({active,payload})=>active&&payload?.length?(<div style={{background:"white",padding:"6px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:10}}><b>{payload[0]?.payload?.name}</b><br/>B/.{payload[0]?.payload?.mod}M · {payload[0]?.payload?.pct}%</div>):null}/>
+                <XAxis dataKey="mod" name="Presupuesto (M)" type="number" tick={{fontSize:9, fill:DK.textMid}} stroke={DK.border} label={{value:"B/. millones", position:"insideBottom", offset:-10, fontSize:9}}/>
+                <YAxis dataKey="pct" name="Ejecución" type="number" domain={[0,110]} tick={{fontSize:9, fill:DK.textMid}} stroke={DK.border} label={{value:"%",angle:-90, position:"insideLeft", fontSize:9}}/>
+                <Tooltip cursor={{strokeDasharray:"3 3"}} content={({active,payload})=>active&&payload?.length?(<div style={{background:DK.card,padding:"6px 10px",borderRadius:8,border:`1px solid ${DK.border}`,fontSize:10,color:DK.text}}><b>{payload[0]?.payload?.name}</b><br/>B/.{payload[0]?.payload?.mod}M · {payload[0]?.payload?.pct}%</div>):null}/>
                 {[0,1,2,3].map(a=><Scatter key={a} name={AREA_SHORT[a]} data={scatter.filter(r=>r.area===a)} fill={AREA_COLORS_H[a]+"cc"}/>)}
                 <Legend iconSize={10} wrapperStyle={{fontSize:11}}/>
               </ScatterChart>
             </ResponsiveContainer>
           </div>
         </div>
-        <div style={{background:C.white, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden"}}>
-          <div style={{padding:"10px 16px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:10, flexWrap:"wrap"}}>
-            <div style={{fontSize:12, fontWeight:700, color:C.text}}>Ejecución por Entidad — {gYear}</div>
+        <div style={{background:DK.card, borderRadius:14, border:`1px solid ${DK.border}`, overflow:"hidden"}}>
+          <div style={{padding:"10px 16px", borderBottom:`1px solid ${DK.border}`, display:"flex", alignItems:"center", gap:10, flexWrap:"wrap"}}>
+            <div style={{fontSize:12, fontWeight:700, color:DK.text}}>Ejecución por Entidad — {gYear}</div>
             <div style={{marginLeft:"auto", display:"flex", gap:6}}>
               {[["mod","Modificado"],["eje","Ejecutado"],["pct","% Ejec"]].map(([k,lbl])=>(
                 <button key={k} onClick={()=>{setM10sort(k); setM10asc(m10sort===k?!m10asc:true); setM10page(0);}}
-                  style={{padding:"4px 10px",borderRadius:6,border:"none",background:m10sort===k?C.navHistorico:C.bg,color:m10sort===k?"white":C.textMid,fontSize:10,fontWeight:700,cursor:"pointer"}}>
+                  style={{padding:"4px 10px",borderRadius:6,border:"none",background:m10sort===k?DK.accent:DK.panel,color:m10sort===k?DK.bg:DK.textMid,fontSize:10,fontWeight:700,cursor:"pointer"}}>
                   {lbl} {m10sort===k?(m10asc?"↑":"↓"):""}
                 </button>
               ))}
-              <button onClick={exportCSV} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:C.white,color:C.textMid,fontSize:10,cursor:"pointer"}}>⬇ CSV</button>
+              <button onClick={exportCSV} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${DK.border}`,background:DK.panel,color:DK.textMid,fontSize:10,cursor:"pointer"}}>⬇ CSV</button>
             </div>
           </div>
           <table style={{width:"100%", borderCollapse:"collapse", fontSize:11}}>
-            <thead><tr style={{background:C.headerBg+"15"}}>
-              {["","Entidad","Área","Ley (M)","Modificado (M)","Ejecutado (M)","Dev (M)","% Ejec"].map(h=><th key={h} style={{padding:"8px 12px", textAlign:h?"right":"center", fontWeight:700, color:C.text, borderBottom:`1px solid ${C.border}`, whiteSpace:"nowrap"}}>{h}</th>)}
+            <thead><tr style={{background:DK.panel}}>
+              {["","Entidad","Área","Ley (M)","Modificado (M)","Ejecutado (M)","Dev (M)","% Ejec"].map(h=><th key={h} style={{padding:"8px 12px", textAlign:h?"right":"center", fontWeight:700, color:DK.text, borderBottom:`1px solid ${DK.border}`, whiteSpace:"nowrap"}}>{h}</th>)}
             </tr></thead>
-            <tbody>{page.map((r,i)=><tr key={r.nombre_entidad} style={{background:i%2===0?C.white:C.bg}}>
+            <tbody>{page.map((r,i)=><tr key={r.nombre_entidad} style={{background:i%2===0?DK.card:DK.panel}}>
               <td style={{padding:"6px 12px", textAlign:"center", fontSize:14}}>{semaforo(r.pct)}</td>
-              <td style={{padding:"6px 12px", color:C.text, fontWeight:600, maxWidth:220, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{r.nombre_entidad}</td>
-              <td style={{padding:"6px 12px", color:C.textMid, fontSize:10}}>{AREA_SHORT[r.codigo_area]}</td>
+              <td style={{padding:"6px 12px", color:DK.text, fontWeight:600, maxWidth:220, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{r.nombre_entidad}</td>
+              <td style={{padding:"6px 12px", color:DK.textMid, fontSize:10}}>{AREA_SHORT[r.codigo_area]}</td>
               <td style={{padding:"6px 12px", textAlign:"right"}}>{fmtM(r.ley)}</td>
               <td style={{padding:"6px 12px", textAlign:"right", fontWeight:600}}>{fmtM(r.mod)}</td>
               <td style={{padding:"6px 12px", textAlign:"right"}}>{fmtM(r.eje)}</td>
-              <td style={{padding:"6px 12px", textAlign:"right", color:C.textLight}}>{fmtM(r.dev)}</td>
+              <td style={{padding:"6px 12px", textAlign:"right", color:DK.textMuted}}>{fmtM(r.dev)}</td>
               <td style={{padding:"6px 12px", textAlign:"right"}}><span style={{padding:"2px 8px", borderRadius:20, background:colPct(r.pct)+"20", color:colPct(r.pct), fontWeight:800, fontSize:11}}>{r.pct}%</span></td>
             </tr>)}</tbody>
           </table>
-          {pages > 1 && <div style={{padding:"10px 16px", display:"flex", gap:6, justifyContent:"center", borderTop:`1px solid ${C.border}`}}>
-            {Array.from({length:pages},(_,i)=><button key={i} onClick={()=>setM10page(i)} style={{width:28,height:28,borderRadius:6,border:"none",background:m10page===i?C.navHistorico:C.bg,color:m10page===i?"white":C.textMid,fontSize:11,cursor:"pointer",fontWeight:m10page===i?700:400}}>{i+1}</button>)}
+          {pages > 1 && <div style={{padding:"10px 16px", display:"flex", gap:6, justifyContent:"center", borderTop:`1px solid ${DK.border}`}}>
+            {Array.from({length:pages},(_,i)=><button key={i} onClick={()=>setM10page(i)} style={{width:28,height:28,borderRadius:6,border:"none",background:m10page===i?DK.accent:DK.panel,color:m10page===i?DK.bg:DK.textMid,fontSize:11,cursor:"pointer",fontWeight:m10page===i?700:400}}>{i+1}</button>)}
           </div>}
         </div>
       </div>
@@ -3183,55 +3196,55 @@ function Historico() {
   const MODULE_MAP = {m1:<M1/>,m2:<M2/>,m3:<M3/>,m4:<M4/>,m5:<M5/>,m6:<M6/>,m7:<M7/>,m8:<M8/>,m9:<M9/>,m10:<M10/>};
 
   return (
-    <div style={{minHeight:"100vh", background:C.bg, fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
+    <div style={{minHeight:"100vh", background:DK.bg, fontFamily:"'Segoe UI',system-ui,sans-serif", color:DK.text}}>
       {/* Header */}
-      <div style={{background:C.white, borderBottom:`1px solid ${C.border}`, padding:"12px 24px", display:"flex", alignItems:"center", gap:12}}>
+      <div style={{background:DK.card, borderBottom:`1px solid ${DK.border}`, padding:"12px 24px", display:"flex", alignItems:"center", gap:12}}>
         <span style={{fontSize:22}}>📈</span>
         <div>
-          <div style={{fontSize:17, fontWeight:700, color:C.text}}>Análisis Histórico</div>
-          <div style={{fontSize:12, color:C.textMid}}>10 módulos analíticos · Presupuesto del Estado panameño 2016–2026</div>
+          <div style={{fontSize:17, fontWeight:700, color:DK.text}}>Panorama General</div>
+          <div style={{fontSize:12, color:DK.textMid}}>10 módulos analíticos · Presupuesto del Estado panameño 2016–2026</div>
         </div>
         <div style={{marginLeft:"auto", display:"flex", gap:8, alignItems:"center"}}>
-          {gYear===2026&&<span style={{padding:"3px 10px",background:C.orange+"25",color:C.orange,borderRadius:20,fontSize:10,fontWeight:700}}>Datos al 28 feb 2026</span>}
+          {gYear===2026&&<span style={{padding:"3px 10px",background:DK.orange+"25",color:DK.orange,borderRadius:20,fontSize:10,fontWeight:700}}>Datos al 28 feb 2026</span>}
         </div>
       </div>
 
       {/* Global filters */}
-      <div style={{background:C.white, borderBottom:`1px solid ${C.border}`, padding:"10px 24px", display:"flex", gap:10, flexWrap:"wrap", alignItems:"center"}}>
-        <label style={{fontSize:11, fontWeight:700, color:C.textMid}}>AÑO</label>
+      <div style={{background:DK.card, borderBottom:`1px solid ${DK.border}`, padding:"10px 24px", display:"flex", gap:10, flexWrap:"wrap", alignItems:"center"}}>
+        <label style={{fontSize:11, fontWeight:700, color:DK.textMid}}>AÑO</label>
         <select value={gYear} onChange={e=>setGYear(+e.target.value)}
-          style={{padding:"5px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:12, background:C.white, color:C.text}}>
+          style={{padding:"5px 10px", borderRadius:7, border:`1px solid ${DK.border}`, fontSize:12, background:DK.panel, color:DK.text}}>
           {YEARS_H.map(y=><option key={y} value={y}>{y}{y===2026?" (parcial)":""}</option>)}
         </select>
-        <label style={{fontSize:11, fontWeight:700, color:C.textMid, marginLeft:8}}>ÁREA</label>
+        <label style={{fontSize:11, fontWeight:700, color:DK.textMid, marginLeft:8}}>ÁREA</label>
         <select value={gArea} onChange={e=>setGArea(+e.target.value)}
-          style={{padding:"5px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:12, background:C.white, color:C.text}}>
+          style={{padding:"5px 10px", borderRadius:7, border:`1px solid ${DK.border}`, fontSize:12, background:DK.panel, color:DK.text}}>
           <option value={-1}>Todas las áreas</option>
           {[0,1,2,3].map(a=><option key={a} value={a}>{AREA_NAMES[a]}</option>)}
         </select>
-        <label style={{fontSize:11, fontWeight:700, color:C.textMid, marginLeft:8}}>TIPO</label>
+        <label style={{fontSize:11, fontWeight:700, color:DK.textMid, marginLeft:8}}>TIPO</label>
         <select value={gTipo} onChange={e=>setGTipo(e.target.value)}
-          style={{padding:"5px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:12, background:C.white, color:C.text}}>
+          style={{padding:"5px 10px", borderRadius:7, border:`1px solid ${DK.border}`, fontSize:12, background:DK.panel, color:DK.text}}>
           <option value="">Ambos</option>
           <option value="FUNCIONAMIENTO">Funcionamiento</option>
           <option value="INVERSION">Inversión</option>
         </select>
-        {loadingDyn && <span style={{fontSize:11, color:C.textLight, marginLeft:8}}>⟳ Actualizando...</span>}
+        {loadingDyn && <span style={{fontSize:11, color:DK.textMuted, marginLeft:8}}>⟳ Actualizando...</span>}
       </div>
 
       <div style={{display:"flex", minHeight:"calc(100vh - 120px)"}}>
         {/* Sidebar módulos */}
-        <div style={{width:200, background:C.white, borderRight:`1px solid ${C.border}`, padding:"16px 0", flexShrink:0}}>
+        <div style={{width:200, background:DK.card, borderRight:`1px solid ${DK.border}`, padding:"16px 0", flexShrink:0}}>
           {MODULOS.map(m=>(
             <button key={m.id} onClick={()=>setMod(m.id)}
-              style={{width:"100%", textAlign:"left", padding:"9px 16px", border:"none", background:mod===m.id?C.navHistorico+"15":"transparent", color:mod===m.id?C.navHistorico:C.textMid, fontSize:11, fontWeight:mod===m.id?700:500, cursor:"pointer", display:"flex", alignItems:"center", gap:8, borderLeft:mod===m.id?`3px solid ${C.navHistorico}`:"3px solid transparent"}}>
+              style={{width:"100%", textAlign:"left", padding:"9px 16px", border:"none", background:mod===m.id?"#58A6FF18":"transparent", color:mod===m.id?DK.accent:DK.textMid, fontSize:11, fontWeight:mod===m.id?700:500, cursor:"pointer", display:"flex", alignItems:"center", gap:8, borderLeft:mod===m.id?`3px solid ${DK.accent}`:"3px solid transparent"}}>
               <span>{m.icon}</span><span>{m.label}</span>
             </button>
           ))}
         </div>
 
         {/* Contenido módulo */}
-        <div style={{flex:1, padding:24, overflowY:"auto"}}>
+        <div style={{flex:1, padding:24, overflowY:"auto", background:DK.bg}}>
           {loadingStatic && mod!=="m4"&&mod!=="m10" ? <Skel/> : (MODULE_MAP[mod] || null)}
         </div>
       </div>

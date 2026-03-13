@@ -44,6 +44,85 @@ function calcPct(p) {
   return 0;
 }
 
+/**
+ * Dibuja barras horizontales manuales con badge semáforo coloreado.
+ * items: [{ nombre, mod, eje, pct? }]
+ * showValues: muestra monto devengado dentro de la barra
+ */
+function drawBarChart(pres, sl, { x, y, w, h, items, showValues = false }) {
+  if (!items || !items.length) return;
+  const maxVal = Math.max(...items.flatMap(p => [p.mod || 0, p.eje || 0]), 1);
+
+  const LABEL_W    = 1.52;
+  const PILL_W     = 0.46;
+  const LGND_H     = 0.17;
+  const BAR_AREA_W = w - LABEL_W - PILL_W - 0.07;
+  const CONTENT_H  = h - LGND_H;
+  const n          = items.length;
+  const SLOT_H     = CONTENT_H / n;
+  const BAR_H      = Math.min(Math.max(SLOT_H * 0.28, 0.055), 0.1);
+  const GAP        = Math.max(BAR_H * 0.15, 0.008);
+  const barX       = x + LABEL_W;
+  const pillX      = barX + BAR_AREA_W + 0.07;
+
+  // Leyenda
+  const legY = y + 0.02;
+  sl.addShape(pres.shapes.RECTANGLE, { x: barX, y: legY + 0.025, w: 0.07, h: 0.07, fill: { color: NAV }, line: { color: NAV } });
+  sl.addText("Devengado", { x: barX + 0.09, y: legY, w: 0.8, h: 0.13, fontSize: 6, color: MUT, fontFace: "Arial", margin: 0 });
+  sl.addShape(pres.shapes.RECTANGLE, { x: barX + 0.95, y: legY + 0.025, w: 0.07, h: 0.07, fill: { color: "7A9BBF" }, line: { color: "7A9BBF" } });
+  sl.addText("Modificado", { x: barX + 1.04, y: legY, w: 0.8, h: 0.13, fontSize: 6, color: MUT, fontFace: "Arial", margin: 0 });
+
+  items.forEach((item, i) => {
+    const slotY = y + LGND_H + i * SLOT_H;
+    const modY  = slotY + (SLOT_H - 2 * BAR_H - GAP) / 2;
+    const ejeY  = modY + BAR_H + GAP;
+    const pillH = 2 * BAR_H + GAP;
+    const pct   = calcPct(item);
+    const s     = sColor(pct);
+
+    // Nombre del programa
+    sl.addText(sanitize(item.nombre), {
+      x, y: slotY + 0.01, w: LABEL_W - 0.06, h: SLOT_H - 0.02,
+      fontSize: 5.8, color: TXT, fontFace: "Arial", valign: "middle", wrap: true, margin: [0, 2, 0, 0]
+    });
+
+    // Track gris de fondo
+    sl.addShape(pres.shapes.RECTANGLE, { x: barX, y: modY, w: BAR_AREA_W, h: BAR_H, fill: { color: "E8EEF5" }, line: { color: "E8EEF5" } });
+    sl.addShape(pres.shapes.RECTANGLE, { x: barX, y: ejeY, w: BAR_AREA_W, h: BAR_H, fill: { color: "E8EEF5" }, line: { color: "E8EEF5" } });
+
+    // Barra Modificado (azul claro)
+    const modW = Math.max((item.mod / maxVal) * BAR_AREA_W, 0.015);
+    sl.addShape(pres.shapes.RECTANGLE, { x: barX, y: modY, w: modW, h: BAR_H, fill: { color: "7A9BBF" }, line: { color: "7A9BBF" } });
+
+    // Barra Devengado (navy)
+    const ejeW = Math.max((item.eje / maxVal) * BAR_AREA_W, 0.015);
+    sl.addShape(pres.shapes.RECTANGLE, { x: barX, y: ejeY, w: ejeW, h: BAR_H, fill: { color: NAV }, line: { color: NAV } });
+
+    // Monto sobre barra Devengado (solo si showValues y hay espacio)
+    if (showValues && ejeW > 0.38) {
+      sl.addText(fmt(item.eje), {
+        x: barX + 0.02, y: ejeY, w: ejeW - 0.04, h: BAR_H,
+        fontSize: 5, color: WHT, fontFace: "Arial", align: "right", valign: "middle", margin: 0
+      });
+    }
+
+    // Separador entre filas
+    if (i < n - 1) {
+      sl.addShape(pres.shapes.RECTANGLE, {
+        x: barX, y: slotY + SLOT_H - 0.007, w: BAR_AREA_W + PILL_W + 0.07, h: 0.007,
+        fill: { color: "E8EEF5" }, line: { color: "E8EEF5" }
+      });
+    }
+
+    // Badge semáforo coloreado
+    sl.addShape(pres.shapes.RECTANGLE, { x: pillX, y: modY, w: PILL_W, h: pillH, fill: { color: s.bg }, line: { color: s.bg } });
+    sl.addText(`${pct}%`, {
+      x: pillX, y: modY, w: PILL_W, h: pillH,
+      fontSize: 7.5, color: s.fg, bold: true, fontFace: "Arial", align: "center", valign: "middle", margin: 0
+    });
+  });
+}
+
 /** Abreviar nombre para gráficos */
 function short(name, maxLen = 18) {
   if (!name) return "";
@@ -822,23 +901,10 @@ function slide2(pres, ent, data, narr, periodo) {
 
   const progFun = f.programas.slice(0, 7);
   if (progFun.length > 0) {
-    const programasData = [
-      { name: "Modificado", labels: progFun.map(p => p.nombre + " (" + calcPct(p) + "%)"), values: progFun.map(p => p.mod) },
-      { name: "Devengado",  labels: progFun.map(p => p.nombre + " (" + calcPct(p) + "%)"), values: progFun.map(p => p.eje) }
-    ];
-    sl.addChart(pres.charts.BAR, programasData, {
+    drawBarChart(pres, sl, {
       x: rx + 0.1, y: cy + 0.2, w: 4.52, h: pbH - 0.25,
-      barDir: "bar",
-      barGrouping: "clustered",
-      chartColors: ["7A9BBF", "1B2F4E"],
-      chartArea: { fill: { color: WHT } },
-      catAxisLabelColor: MUT, catAxisLabelFontSize: 6.5,
-      valAxisLabelColor: MUT, valAxisLabelFontSize: 6,
-      valGridLine: { color: "E8EEF5", size: 0.5 },
-      catGridLine: { style: "none" },
-      showLegend: true, legendPos: "t", legendFontSize: 6.5, legendColor: MUT,
-      showValue: true,
-      dataLabelFontSize: 6, dataLabelColor: WHT
+      items: progFun,
+      showValues: true
     });
   } else {
     sl.addText("Sin programas de funcionamiento disponibles.", {
@@ -882,21 +948,10 @@ function slide3(pres, ent, data, narr, periodo) {
   addPanelTitle(pres, sl, lx, cy, 4.7, "Programas de Inversión  (en miles de B/.)");
 
   if (progInv.length > 0) {
-    const invProgData = [
-      { name: "Modificado", labels: progInv.map(p => p.nombre + " (" + calcPct(p) + "%)"), values: progInv.map(p => p.mod) },
-      { name: "Devengado",  labels: progInv.map(p => p.nombre + " (" + calcPct(p) + "%)"), values: progInv.map(p => p.eje) }
-    ];
-    sl.addChart(pres.charts.BAR, invProgData, {
+    drawBarChart(pres, sl, {
       x: lx + 0.1, y: cy + 0.2, w: 4.5, h: pbH - 0.28,
-      barDir: "bar", barGrouping: "clustered",
-      chartColors: ["7A9BBF", "1B2F4E"],
-      chartArea: { fill: { color: WHT } },
-      catAxisLabelColor: MUT, catAxisLabelFontSize: 6.5,
-      valAxisLabelColor: MUT, valAxisLabelFontSize: 6,
-      valGridLine: { color: "E8EEF5", size: 0.5 },
-      catGridLine: { style: "none" },
-      showLegend: true, legendPos: "t", legendFontSize: 6.5, legendColor: MUT,
-      showValue: false
+      items: progInv,
+      showValues: false
     });
   } else {
     sl.addText("Sin programas de inversión disponibles.", {
@@ -917,21 +972,10 @@ function slide3(pres, ent, data, narr, periodo) {
     .slice(0, 8);
 
   if (allSubs.length > 0) {
-    const subprogData = [
-      { name: "Modificado", labels: allSubs.map(s => s.nombre + " (" + calcPct(s) + "%)"), values: allSubs.map(s => s.mod) },
-      { name: "Devengado",  labels: allSubs.map(s => s.nombre + " (" + calcPct(s) + "%)"), values: allSubs.map(s => s.eje) }
-    ];
-    sl.addChart(pres.charts.BAR, subprogData, {
+    drawBarChart(pres, sl, {
       x: lx + 0.1, y: spY + 0.2, w: 4.5, h: spH - 0.3,
-      barDir: "bar", barGrouping: "clustered",
-      chartColors: ["7A9BBF", "1B2F4E"],
-      chartArea: { fill: { color: WHT } },
-      catAxisLabelColor: MUT, catAxisLabelFontSize: 6,
-      valAxisLabelColor: MUT, valAxisLabelFontSize: 5.5,
-      valGridLine: { color: "E8EEF5", size: 0.5 },
-      catGridLine: { style: "none" },
-      showLegend: false,
-      showValue: false
+      items: allSubs,
+      showValues: false
     });
   } else {
     sl.addText("Sin subprogramas disponibles.", {

@@ -26,12 +26,13 @@ async function sbRpc(fn, body = {}) {
 // ── INFORME HTML (client-side generation) ────────────────────────────────────
 function buildInformeHTML(rows, opts = {}) {
   const { nombre_entidad, area, anio_inicio, anio_fin, report_type = 1, report_title = "Ejecución Presupuestaria", report_icon = "📊", filters = {} } = opts;
-  // Aplicar filtros multi-selección client-side
-  if (Array.isArray(filters.tipo) && filters.tipo.length > 1)        rows = rows.filter(r => filters.tipo.includes(r.tipo_presupuesto));
-  if (Array.isArray(filters.fuente) && filters.fuente.length > 1)    rows = rows.filter(r => filters.fuente.includes(r.fuente_ingreso));
-  if (Array.isArray(filters.grupo_gasto) && filters.grupo_gasto.length > 1) rows = rows.filter(r => filters.grupo_gasto.includes(r.grupo_gasto));
-  if (Array.isArray(filters.areaDesarrollo) && filters.areaDesarrollo.length > 1) rows = rows.filter(r => filters.areaDesarrollo.includes(r.area_desarrollo));
-  if (Array.isArray(filters.sector) && filters.sector.length > 1)    rows = rows.filter(r => filters.sector.includes(r.sector));
+  // Aplicar filtros multi-selección client-side (case-insensitive, trim)
+  const ciMatch = (rowVal, arr) => arr.some(v => rowVal?.trim().toLowerCase() === v?.trim().toLowerCase());
+  if (Array.isArray(filters.tipo) && filters.tipo.length > 1)        rows = rows.filter(r => ciMatch(r.tipo_presupuesto, filters.tipo));
+  if (Array.isArray(filters.fuente) && filters.fuente.length > 1)    rows = rows.filter(r => ciMatch(r.fuente_ingreso, filters.fuente));
+  if (Array.isArray(filters.grupo_gasto) && filters.grupo_gasto.length > 1) rows = rows.filter(r => ciMatch(r.grupo_gasto, filters.grupo_gasto));
+  if (Array.isArray(filters.areaDesarrollo) && filters.areaDesarrollo.length > 1) rows = rows.filter(r => ciMatch(r.area_desarrollo, filters.areaDesarrollo));
+  if (Array.isArray(filters.sector) && filters.sector.length > 1)    rows = rows.filter(r => ciMatch(r.sector, filters.sector));
   const fmtM = n => { const v=+n||0; if(Math.abs(v)>=1e9)return `B/.${(v/1e9).toFixed(2)}B`; if(Math.abs(v)>=1e6)return `B/.${(v/1e6).toFixed(1)}M`; if(Math.abs(v)>=1e3)return `B/.${(v/1e3).toFixed(0)}K`; return `B/.${Math.round(v).toLocaleString("en-US")}`; };
   const fmt = n => Math.round(+n||0).toLocaleString("en-US");
   const semColor = p => +p>=90?"#0B6E4F":+p>=70?"#C8922A":"#C0392B";

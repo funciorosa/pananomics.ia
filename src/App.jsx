@@ -2166,20 +2166,36 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos*
     } catch { setLibCtx(peiCtx); }
   };
 
-  const PANAMITA_TOOLS = [{
-    name: "consultar_presupuesto",
-    description: "Consulta datos detallados del presupuesto de Panamá filtrados por fuente de ingreso, entidad, año, tipo o programa. Úsala para preguntas cruzadas como: entidades que reciben fondos de una fuente específica, comparaciones sectoriales, análisis por fuente de financiamiento, o detalles no disponibles en el resumen general.",
-    input_schema: {
-      type: "object",
-      properties: {
-        fuente_ingreso: { type:"string", description:"Fuente de financiamiento (ej: 'FECCI', 'BID', 'Ingresos Corrientes', 'Dividendos del Canal')" },
-        nombre_entidad: { type:"string", description:"Nombre parcial o completo de la entidad (ej: 'MIDA', 'Ministerio de Salud')" },
-        anio:           { type:"integer", description:"Año fiscal entre 2016 y 2025" },
-        tipo_presupuesto:{ type:"string", description:"FUNCIONAMIENTO o INVERSION" },
-        nombre_programa:{ type:"string", description:"Nombre parcial del programa presupuestario" }
+  const PANAMITA_TOOLS = [
+    {
+      name: "consultar_presupuesto",
+      description: "Consulta datos detallados del presupuesto de Panamá filtrados por fuente de ingreso, entidad, año, tipo o programa. Úsala para preguntas cruzadas como: entidades que reciben fondos de una fuente específica, comparaciones sectoriales, análisis por fuente de financiamiento, o detalles no disponibles en el resumen general.",
+      input_schema: {
+        type: "object",
+        properties: {
+          fuente_ingreso:  { type:"string",  description:"Fuente de financiamiento (ej: 'FECCI', 'BID', 'Ingresos Corrientes', 'Dividendos del Canal')" },
+          nombre_entidad:  { type:"string",  description:"Nombre parcial o completo de la entidad (ej: 'MIDA', 'Ministerio de Salud')" },
+          anio:            { type:"integer", description:"Año fiscal entre 2016 y 2025" },
+          tipo_presupuesto:{ type:"string",  description:"FUNCIONAMIENTO o INVERSION" },
+          nombre_programa: { type:"string",  description:"Nombre parcial del programa presupuestario" }
+        }
+      }
+    },
+    {
+      name: "generar_excel",
+      description: "Genera y provee un archivo Excel (.xlsx) descargable con datos del presupuesto. Úsala cuando el usuario pida explícitamente un Excel, archivo descargable, exportar datos, tabla para descargar, o similar. Acepta los mismos filtros que consultar_presupuesto.",
+      input_schema: {
+        type: "object",
+        properties: {
+          fuente_ingreso:  { type:"string",  description:"Fuente de financiamiento (opcional)" },
+          nombre_entidad:  { type:"string",  description:"Nombre parcial o completo de la entidad (opcional)" },
+          anio:            { type:"integer", description:"Año fiscal entre 2016 y 2025 (opcional)" },
+          tipo_presupuesto:{ type:"string",  description:"FUNCIONAMIENTO o INVERSION (opcional)" },
+          nombre_programa: { type:"string",  description:"Nombre parcial del programa (opcional)" }
+        }
       }
     }
-  }];
+  ];
 
   const SYSTEM_PROMPT = `Eres Panamita, asistente de análisis presupuestario de PANANOMICS.IA (DIPRENA — MEF de Panamá).
 
@@ -2216,6 +2232,7 @@ REGLAS:
         return data;
       };
       let d = await callAI(apiMsgs);
+      const pendingDownloads = [];
 
       // Loop de tool use: Panamita puede llamar a la BD las veces que necesite
       while (d.stop_reason === "tool_use") {
@@ -2224,6 +2241,15 @@ REGLAS:
         // Ejecutar TODOS los tool_use en paralelo y devolver TODOS los resultados en un solo mensaje
         const toolResults = await Promise.all(toolBlocks.map(async tb => {
           const inp = tb.input;
+          if (tb.name === "generar_excel") {
+            const r = await fetch("/api/export-excel", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(inp) });
+            const json = await r.json();
+            if (json.xlsxBase64 && json.filas > 0) {
+              pendingDownloads.push({ base64: json.xlsxBase64, filename: json.filename, filas: json.filas });
+              return { type:"tool_result", tool_use_id:tb.id, content:`Excel generado con ${json.filas} filas. Archivo: ${json.filename}` };
+            }
+            return { type:"tool_result", tool_use_id:tb.id, content: json.message || "Sin datos para los filtros indicados." };
+          }
           const rows = await sbRpc("consultar_presupuesto_chat",{
             p_fuente:   inp.fuente_ingreso  || null,
             p_entidad:  inp.nombre_entidad  || null,
@@ -2243,7 +2269,7 @@ REGLAS:
       }
 
       const text = d.content?.find(b=>b.type==="text")?.text || d.content?.[0]?.text || "Error al procesar.";
-      setMessages(p=>[...p,{role:"assistant",text}]);
+      setMessages(p=>[...p,{ role:"assistant", text, downloads: pendingDownloads.length ? pendingDownloads : undefined }]);
       setMood("happy"); setTimeout(()=>setMood("idle"),2000);
     } catch(e) { setMessages(p=>[...p,{role:"assistant",text:`Error de conexión: ${e.message}`}]); setMood("idle"); }
     setLoading(false);
@@ -2269,7 +2295,29 @@ REGLAS:
         {messages.map((m,i)=>(
           <div key={i} style={{ display:"flex", justifyContent:m.role==="user"?"flex-end":"flex-start", alignItems:"flex-start", gap:10 }}>
             {m.role==="assistant" && <div style={{ flexShrink:0, marginTop:2 }}><Panamita mood="idle" size={34}/></div>}
-            <div style={{ maxWidth:"72%", padding:"12px 16px", borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px", background:m.role==="user"?C.headerBg:C.white, color:m.role==="user"?"white":C.text, fontSize:13, lineHeight:1.7, boxShadow:"0 2px 8px rgba(0,0,0,0.07)", border:m.role==="assistant"?`1px solid ${C.border}`:"none" }} dangerouslySetInnerHTML={{__html:fmtTxt(m.text)}}/>
+            <div style={{ display:"flex", flexDirection:"column", gap:8, maxWidth:"72%" }}>
+              <div style={{ padding:"12px 16px", borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px", background:m.role==="user"?C.headerBg:C.white, color:m.role==="user"?"white":C.text, fontSize:13, lineHeight:1.7, boxShadow:"0 2px 8px rgba(0,0,0,0.07)", border:m.role==="assistant"?`1px solid ${C.border}`:"none" }} dangerouslySetInnerHTML={{__html:fmtTxt(m.text)}}/>
+              {m.downloads?.map((dl,di)=>(
+                <div key={di} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12, boxShadow:"0 2px 8px rgba(0,0,0,0.07)" }}>
+                  <span style={{ fontSize:24, flexShrink:0 }}>📊</span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dl.filename}</div>
+                    <div style={{ fontSize:11, color:C.textMid }}>{dl.filas} filas · Excel (.xlsx)</div>
+                  </div>
+                  <button onClick={()=>{
+                    const blob = new Blob([Uint8Array.from(atob(dl.base64),c=>c.charCodeAt(0))],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href=url; a.download=dl.filename;
+                    document.body.appendChild(a); a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }} style={{ padding:"7px 16px", background:"#1B2F4E", color:"white", border:"none", borderRadius:8, fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+                    Descargar
+                  </button>
+                </div>
+              ))}
+            </div>
             {m.role==="user" && <div style={{ width:30, height:30, borderRadius:"50%", background:`linear-gradient(135deg,${C.headerBg},${C.gold})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:"white", flexShrink:0, marginTop:2 }}>M</div>}
           </div>
         ))}

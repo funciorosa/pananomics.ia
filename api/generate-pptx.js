@@ -392,14 +392,14 @@ module.exports = async function handler(req, res) {
         titulo: "Funcionamiento — Grupos y Programas",
         narrativa: narr?.narrativaFun || `Funcionamiento: B/. ${fmtM(data.funcionamiento.eje)} miles devengados (${data.funcionamiento.pct}%).`,
         grupos: (data.funcionamiento.grupos || []).slice(0, 5).map(g => ({ nombre: g.nombre, pct: g.pct, distPct: g.distPct || 0, color: g.color || "1B2F4E" })),
-        programas: (data.funcionamiento.programas || []).slice(0, 6).map(p => ({ nombre: p.nombre, pct: p.pct }))
+        programas: (data.funcionamiento.programas || []).slice(0, 6).map(p => ({ nombre: p.nombre, pct: (p.pct > 0 ? p.pct : (p.mod > 0 ? Math.round(p.eje / p.mod * 100) : 0)) }))
       },
       ...(hasInv ? [{
         num: 3,
         type: "inversion",
         titulo: "Inversión — Programas y Subprogramas",
         narrativa: narr?.narrativaInv || `Inversión: B/. ${fmtM(data.inversion.eje)} miles devengados (${data.inversion.pct}%).`,
-        programas: (data.inversion.programas || []).slice(0, 6).map(p => ({ nombre: p.nombre, pct: p.pct }))
+        programas: (data.inversion.programas || []).slice(0, 6).map(p => ({ nombre: p.nombre, pct: (p.pct > 0 ? p.pct : (p.mod > 0 ? Math.round(p.eje / p.mod * 100) : 0)) }))
       }] : []),
       {
         num: hasInv ? 4 : 3,

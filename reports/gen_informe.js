@@ -37,6 +37,13 @@ function fmt(n) {
   return Math.round(n).toLocaleString("en-US");
 }
 
+/** Calcular % de ejecución — usa p.pct si válido, sino calcula desde eje/mod */
+function calcPct(p) {
+  if (p.pct != null && p.pct > 0) return p.pct;
+  if (p.mod > 0) return Math.round((p.eje / p.mod) * 100);
+  return 0;
+}
+
 /** Abreviar nombre para gráficos */
 function short(name, maxLen = 18) {
   if (!name) return "";
@@ -816,8 +823,8 @@ function slide2(pres, ent, data, narr, periodo) {
   const progFun = f.programas.slice(0, 7);
   if (progFun.length > 0) {
     const programasData = [
-      { name: "Modificado", labels: progFun.map(p => p.nombre + " (" + p.pct + "%)"), values: progFun.map(p => p.mod) },
-      { name: "Devengado",  labels: progFun.map(p => p.nombre + " (" + p.pct + "%)"), values: progFun.map(p => p.eje) }
+      { name: "Modificado", labels: progFun.map(p => p.nombre + " (" + calcPct(p) + "%)"), values: progFun.map(p => p.mod) },
+      { name: "Devengado",  labels: progFun.map(p => p.nombre + " (" + calcPct(p) + "%)"), values: progFun.map(p => p.eje) }
     ];
     sl.addChart(pres.charts.BAR, programasData, {
       x: rx + 0.1, y: cy + 0.2, w: 4.52, h: pbH - 0.25,
@@ -876,8 +883,8 @@ function slide3(pres, ent, data, narr, periodo) {
 
   if (progInv.length > 0) {
     const invProgData = [
-      { name: "Modificado", labels: progInv.map(p => p.nombre + " (" + p.pct + "%)"), values: progInv.map(p => p.mod) },
-      { name: "Devengado",  labels: progInv.map(p => p.nombre + " (" + p.pct + "%)"), values: progInv.map(p => p.eje) }
+      { name: "Modificado", labels: progInv.map(p => p.nombre + " (" + calcPct(p) + "%)"), values: progInv.map(p => p.mod) },
+      { name: "Devengado",  labels: progInv.map(p => p.nombre + " (" + calcPct(p) + "%)"), values: progInv.map(p => p.eje) }
     ];
     sl.addChart(pres.charts.BAR, invProgData, {
       x: lx + 0.1, y: cy + 0.2, w: 4.5, h: pbH - 0.28,
@@ -911,8 +918,8 @@ function slide3(pres, ent, data, narr, periodo) {
 
   if (allSubs.length > 0) {
     const subprogData = [
-      { name: "Modificado", labels: allSubs.map(s => s.nombre + " (" + s.pct + "%)"), values: allSubs.map(s => s.mod) },
-      { name: "Devengado",  labels: allSubs.map(s => s.nombre + " (" + s.pct + "%)"), values: allSubs.map(s => s.eje) }
+      { name: "Modificado", labels: allSubs.map(s => s.nombre + " (" + calcPct(s) + "%)"), values: allSubs.map(s => s.mod) },
+      { name: "Devengado",  labels: allSubs.map(s => s.nombre + " (" + calcPct(s) + "%)"), values: allSubs.map(s => s.eje) }
     ];
     sl.addChart(pres.charts.BAR, subprogData, {
       x: lx + 0.1, y: spY + 0.2, w: 4.5, h: spH - 0.3,

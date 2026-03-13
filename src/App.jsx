@@ -116,6 +116,7 @@ function Panamita({ mood = "idle", size = 64 }) {
 }
 
 const fmt = v => v >= 1e6 ? `B/. ${(v/1e6).toFixed(2)}M` : v >= 1e3 ? `B/. ${(v/1e3).toFixed(0)}K` : `B/. ${v.toFixed(0)}`;
+const chunk = (arr, n) => Array.from({length:Math.ceil(arr.length/n)},(_,i)=>arr.slice(i*n,i*n+n));
 const pct = (a,b) => b > 0 ? (a/b*100).toFixed(1) : "0.0";
 const col = p => +p >= 76 ? C.green : +p >= 60 ? C.orange : C.red;
 
@@ -843,7 +844,6 @@ function Biblioteca() {
   };
 
   const normativa = docs.filter(d => d.categoria !== "PEI");
-  const peiByCategoria = PEI_DOCS.reduce((acc,d)=>{ (acc[d.categoria]??=[]).push(d); return acc; }, {});
 
   const Book = ({ doc, isSelected }) => {
     const [hovered, setHovered] = useState(false);
@@ -956,7 +956,7 @@ function Biblioteca() {
       <div style={{ padding:"24px 28px" }}>
         {/* Tabs */}
         <div style={{ display:"flex", gap:4, background:C.white, borderRadius:10, padding:4, boxShadow:`0 1px 4px rgba(0,0,0,0.07)`, marginBottom:24, width:"fit-content" }}>
-          {[["normativa","📜 Normativa y Metodología",C.navBiblioteca],["pei","🎯 Planes Estratégicos (PEI)",C.navHistorico]].map(([id,lbl,clr])=>(
+          {[["normativa","📜 Normativa y Metodología",C.navBiblioteca],["pei","🎯 PEI/POA",C.navHistorico]].map(([id,lbl,clr])=>(
             <button key={id} onClick={()=>{setTab(id);setSelected(null);}} style={{ padding:"7px 20px", borderRadius:7, border:"none", background:tab===id?clr:"transparent", color:tab===id?"white":C.textMid, fontSize:12, fontWeight:tab===id?700:500, cursor:"pointer", transition:"all 0.2s" }}>{lbl}</button>
           ))}
         </div>
@@ -972,8 +972,8 @@ function Biblioteca() {
           </>
         ) : (
           <>
-            {Object.entries(peiByCategoria).map(([cat, items]) => (
-              <Shelf key={cat} items={items} label={cat.toUpperCase()}/>
+            {chunk(PEI_DOCS, 12).map((row, i) => (
+              <Shelf key={i} items={row} label={i===0?"PLANES ESTRATÉGICOS INSTITUCIONALES · OPERATIVOS · NACIONALES":""}/>
             ))}
             {selected && <BookDetail doc={selected}/>}
           </>

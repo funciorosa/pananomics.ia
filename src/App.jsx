@@ -1983,8 +1983,10 @@ Cuando necesites datos cruzados (por fuente de ingreso, sector, programa, etc.) 
     const apiMsgs = messages.slice(1).concat([{role:"user",text:txt}]).map(m=>({role:m.role,content:m.text}));
 
     try {
+      const AKEY = process.env.REACT_APP_ANTHROPIC_KEY || "";
+      const AI_HEADERS = {"Content-Type":"application/json","x-api-key":AKEY,"anthropic-version":"2023-06-01","anthropic-dangerous-allow-browser":"true"};
       let d = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST", headers:{"Content-Type":"application/json"},
+        method:"POST", headers:AI_HEADERS,
         body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:2000,
           system:SYSTEM_PROMPT, tools:PANAMITA_TOOLS, messages:apiMsgs })
       }).then(r=>r.json());
@@ -2012,7 +2014,7 @@ Cuando necesites datos cruzados (por fuente de ingreso, sector, programa, etc.) 
         apiMsgs.push({ role:"assistant", content: d.content });
         apiMsgs.push({ role:"user", content:[{ type:"tool_result", tool_use_id:toolBlock.id, content:toolResult }] });
         d = await fetch("https://api.anthropic.com/v1/messages",{
-          method:"POST", headers:{"Content-Type":"application/json"},
+          method:"POST", headers:AI_HEADERS,
           body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:2000,
             system:SYSTEM_PROMPT, tools:PANAMITA_TOOLS, messages:apiMsgs })
         }).then(r=>r.json());

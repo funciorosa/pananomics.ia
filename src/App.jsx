@@ -33,6 +33,7 @@ function buildInformeHTML(rows, opts = {}) {
   if (Array.isArray(filters.grupo_gasto) && filters.grupo_gasto.length > 1) rows = rows.filter(r => ciMatch(r.grupo_gasto, filters.grupo_gasto));
   if (Array.isArray(filters.areaDesarrollo) && filters.areaDesarrollo.length > 1) rows = rows.filter(r => ciMatch(r.area_desarrollo, filters.areaDesarrollo));
   if (Array.isArray(filters.sector) && filters.sector.length > 1)    rows = rows.filter(r => ciMatch(r.sector, filters.sector));
+  if (report_type === 6) return buildInformeSectorial(rows, opts);
   const fmtM = n => { const v=+n||0; if(Math.abs(v)>=1e9)return `B/.${(v/1e9).toFixed(2)}B`; if(Math.abs(v)>=1e6)return `B/.${(v/1e6).toFixed(1)}M`; if(Math.abs(v)>=1e3)return `B/.${(v/1e3).toFixed(0)}K`; return `B/.${Math.round(v).toLocaleString("en-US")}`; };
   const fmt = n => Math.round(+n||0).toLocaleString("en-US");
   const semColor = p => +p>=90?"#0B6E4F":+p>=70?"#C8922A":"#C0392B";
@@ -91,6 +92,251 @@ const ctxPct=document.getElementById('barPct');
 if(ctxPct){new Chart(ctxPct,{type:'bar',data:{labels:${cYears},datasets:[{label:'% Ejecución',data:${cPct},backgroundColor:${cPct}.map(p=>p>=90?VERDE:p>=70?DORADO:ROJO),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw+'%'}}},scales:{x:{ticks:{font:{size:11}}},y:{beginAtZero:true,max:110,ticks:{font:{size:11},callback:v=>v+'%'}}}}})}
 <\/script></body></html>`;
 }
+
+// ── INFORME SECTORIAL (report_type 6) ────────────────────────────────────────
+function buildInformeSectorial(rows, opts = {}) {
+  const { nombre_entidad, area, anio_inicio, anio_fin, report_title = "Análisis Sectorial" } = opts;
+  const fmtM = n => { const v=+n||0; if(Math.abs(v)>=1e9)return `${(v/1e9).toFixed(2)}B`; if(Math.abs(v)>=1e6)return `${(v/1e6).toFixed(1)}M`; if(Math.abs(v)>=1e3)return `${(v/1e3).toFixed(0)}K`; return Math.round(v).toLocaleString("en-US"); };
+  const entityLabel = nombre_entidad || (area ? area : "Panamá — Gobierno Central");
+  const periodoLabel = (!anio_inicio&&!anio_fin)?"Todos los años":anio_inicio===anio_fin?String(anio_inicio):`${anio_inicio}–${anio_fin}`;
+  const fechaHoy = new Date().toLocaleDateString("es-PA",{day:"2-digit",month:"long",year:"numeric"});
+  const totalLey = rows.reduce((s,r)=>s+(+r.total_ley||0),0);
+  const totalMod = rows.reduce((s,r)=>s+(+r.total_mod||0),0);
+  const totalEje = rows.reduce((s,r)=>s+(+r.total_eje||0),0);
+  const pctGlobal = totalMod>0?(totalEje/totalMod*100):0;
+  // By area
+  const byAreaMap={};
+  for(const r of rows){const k=r.area_desarrollo||"(Sin área)";if(!byAreaMap[k])byAreaMap[k]={ley:0,mod:0,eje:0};byAreaMap[k].ley+=+r.total_ley||0;byAreaMap[k].mod+=+r.total_mod||0;byAreaMap[k].eje+=+r.total_eje||0;}
+  const byArea=Object.entries(byAreaMap).sort((a,b)=>b[1].mod-a[1].mod).map(([k,v])=>({label:k,...v,pct:v.mod>0?(v.eje/v.mod*100):0}));
+  // By sector
+  const bySectorMap={};
+  for(const r of rows){const k=r.sector||"(Sin sector)";if(!bySectorMap[k])bySectorMap[k]={ley:0,mod:0,eje:0,area:r.area_desarrollo||""};bySectorMap[k].ley+=+r.total_ley||0;bySectorMap[k].mod+=+r.total_mod||0;bySectorMap[k].eje+=+r.total_eje||0;}
+  const bySector=Object.entries(bySectorMap).sort((a,b)=>b[1].mod-a[1].mod).map(([k,v],i)=>({rank:i+1,label:k,...v,pct:v.mod>0?(v.eje/v.mod*100):0}));
+  // By entity
+  const byEntMap={};
+  for(const r of rows){const k=r.nombre_entidad||"(Sin entidad)";if(!byEntMap[k])byEntMap[k]={ley:0,mod:0,eje:0,area:r.area_desarrollo||"",sector:r.sector||""};byEntMap[k].ley+=+r.total_ley||0;byEntMap[k].mod+=+r.total_mod||0;byEntMap[k].eje+=+r.total_eje||0;}
+  const byEnt=Object.entries(byEntMap).sort((a,b)=>b[1].mod-a[1].mod).map(([k,v])=>({label:k,...v,pct:v.mod>0?(v.eje/v.mod*100):0}));
+  // By year
+  const byYearMap={};
+  for(const r of rows){if(!r.anio)continue;if(!byYearMap[r.anio])byYearMap[r.anio]={ley:0,mod:0,eje:0};byYearMap[r.anio].ley+=+r.total_ley||0;byYearMap[r.anio].mod+=+r.total_mod||0;byYearMap[r.anio].eje+=+r.total_eje||0;}
+  const byYear=Object.entries(byYearMap).sort((a,b)=>+a[0]-+b[0]).map(([y,v])=>({anio:+y,...v,pct:v.mod>0?(v.eje/v.mod*100):0}));
+  // By year × area
+  const byYAMap={};
+  for(const r of rows){if(!r.anio)continue;const y=r.anio,a=r.area_desarrollo||"(Sin área)";if(!byYAMap[y])byYAMap[y]={};if(!byYAMap[y][a])byYAMap[y][a]=0;byYAMap[y][a]+=+r.total_mod||0;}
+  // By tipo × area (F vs I)
+  const byTipoAreaMap={};
+  for(const r of rows){const a=r.area_desarrollo||"(Sin área)";const isInv=(r.tipo_presupuesto||"").toLowerCase().includes("inver")||(r.tipo_presupuesto||"").toLowerCase().includes("capital");if(!byTipoAreaMap[a])byTipoAreaMap[a]={func:0,inv:0};if(isInv)byTipoAreaMap[a].inv+=+r.total_mod||0;else byTipoAreaMap[a].func+=+r.total_mod||0;}
+  const ACLR=["#0F7173","#64748B","#3D5A80","#1B6CA8","#2E7D52","#7B4FBF","#C94040","#D4A017","#A0522D","#15A1A3"];
+  const topSectors=bySector.slice(0,12);
+  const topEnts=byEnt.slice(0,10);
+  const maxEntMod=topEnts[0]?.mod||1;
+  const topAreas=byArea.slice(0,5);
+  const hasMultiYear=byYear.length>1;
+  const hasEntities=byEnt.length>1;
+  // Pre-compute JSON
+  const jAreaLabels=JSON.stringify(byArea.map(a=>a.label));
+  const jAreaMod=JSON.stringify(byArea.map(a=>+(a.mod/1e6).toFixed(1)));
+  const jAreaPct=JSON.stringify(byArea.map(a=>+a.pct.toFixed(1)));
+  const jAreaColors=JSON.stringify(byArea.map((_,i)=>ACLR[i%ACLR.length]));
+  const jSecLabels=JSON.stringify(topSectors.map(s=>s.label.length>30?s.label.slice(0,28)+"…":s.label));
+  const jSecMod=JSON.stringify(topSectors.map(s=>+(s.mod/1e6).toFixed(1)));
+  const jSecTasa=JSON.stringify(topSectors.map(s=>+s.pct.toFixed(1)));
+  const jSecColors=JSON.stringify(topSectors.map((_,i)=>ACLR[i%ACLR.length]));
+  const jEntLabels=JSON.stringify(topEnts.slice(0,12).map(e=>e.label.length>22?e.label.slice(0,20)+"…":e.label));
+  const jEntTasa=JSON.stringify(topEnts.slice(0,12).map(e=>+e.pct.toFixed(1)));
+  const jYears=JSON.stringify(byYear.map(y=>y.anio));
+  const areaLineDsJS=topAreas.map((a)=>{const data=byYear.map(y=>+((byYAMap[y.anio]?.[a.label]||0)/1e6).toFixed(1));const color=ACLR[byArea.indexOf(a)%ACLR.length];return `{label:${JSON.stringify(a.label)},data:${JSON.stringify(data)},borderColor:${JSON.stringify(color)},tension:.35,fill:false,pointRadius:3,borderWidth:2}`;}).join(",");
+  const fviAreas=byArea.slice(0,6);
+  const jFviLabels=JSON.stringify(fviAreas.map(a=>a.label.length>22?a.label.slice(0,20)+"…":a.label));
+  const jFviFunc=JSON.stringify(fviAreas.map(a=>+((byTipoAreaMap[a.label]?.func||0)/1e6).toFixed(1)));
+  const jFviInv=JSON.stringify(fviAreas.map(a=>+((byTipoAreaMap[a.label]?.inv||0)/1e6).toFixed(1)));
+  // Area cards
+  const areaCardsHtml=byArea.slice(0,9).map((a,i)=>{const partPct=totalMod>0?(a.mod/totalMod*100).toFixed(1):"0.0";const color=ACLR[i%ACLR.length];const sc=a.pct>=76?"d-g":a.pct>=60?"d-a":"d-r";return `<div class="area-card"><div class="area-card-hdr" style="background:${color}20;border-left:4px solid ${color}"><span class="area-card-name">${a.label}</span><span class="dot-s ${sc}"></span></div><div class="area-card-body"><div class="area-stat"><span class="area-stat-lbl">Modificado</span><span class="area-stat-val">B/.${fmtM(a.mod)}</span></div><div class="area-stat"><span class="area-stat-lbl">Ejecutado</span><span class="area-stat-val">B/.${fmtM(a.eje)}</span></div><div class="area-stat"><span class="area-stat-lbl">% Part.</span><span class="area-stat-val">${partPct}%</span></div><div class="area-stat"><span class="area-stat-lbl">% Ejec.</span><span class="area-stat-val" style="color:${a.pct>=76?"#0F7173":a.pct>=60?"#D4A017":"#C94040"};font-weight:700">${a.pct.toFixed(1)}%</span></div></div></div>`;}).join("");
+  // Sector table rows
+  const sectorTableRows=bySector.slice(0,20).map(s=>{const partPct=totalMod>0?(s.mod/totalMod*100).toFixed(1):"0.0";const sc=s.pct>=76?"d-g":s.pct>=60?"d-a":"d-r";return `<tr><td class="num">${s.rank}</td><td><strong>${s.label}</strong></td><td>${s.area}</td><td class="num">${fmtM(s.mod)}</td><td class="num">${fmtM(s.eje)}</td><td class="num">${partPct}%</td><td class="cen">${s.pct.toFixed(1)}%</td><td class="cen"><span class="dot-s ${sc}"></span></td></tr>`;}).join("");
+  // Entity rank + table
+  const entRankHtml=topEnts.map((e,i)=>{const bw=Math.round(e.mod/maxEntMod*100);return `<div class="rank-row"><div class="rank-pos">${i+1}</div><div class="rank-name">${e.label.length>28?e.label.slice(0,26)+"…":e.label}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${bw}%;background:${ACLR[i%ACLR.length]}"></div></div><div class="rank-val">B/.${fmtM(e.mod)}</div></div>`;}).join("");
+  const entTableRows=topEnts.slice(0,12).map(e=>{const sc=e.pct>=76?"d-g":e.pct>=60?"d-a":"d-r";return `<tr><td>${e.label}</td><td>${e.area}</td><td>${e.sector}</td><td class="num">B/.${fmtM(e.mod)}</td><td class="num">B/.${fmtM(e.eje)}</td><td class="cen"><span class="dot-s ${sc}"></span> ${e.pct.toFixed(1)}%</td></tr>`;}).join("");
+  // Insights
+  const worstSector=bySector.length?[...bySector].sort((a,b)=>a.pct-b.pct)[0]:null;
+  const bestSector=bySector.filter(s=>s.pct>=76).sort((a,b)=>b.pct-a.pct)[0]||null;
+  // Conclusions
+  const concs=[];
+  if(byArea[0])concs.push(`<strong>El área de mayor peso es ${byArea[0].label}.</strong> Con B/.${fmtM(byArea[0].mod)} (${(byArea[0].mod/Math.max(totalMod,1)*100).toFixed(1)}% del total), concentra la mayor parte del presupuesto con una tasa de ejecución del ${byArea[0].pct.toFixed(1)}%.`);
+  if(byArea[1])concs.push(`<strong>${byArea[1].label} ocupa el segundo lugar.</strong> Con B/.${fmtM(byArea[1].mod)} y ${byArea[1].pct.toFixed(1)}% de ejecución, representa el ${(byArea[1].mod/Math.max(totalMod,1)*100).toFixed(1)}% del total.`);
+  if(worstSector)concs.push(`<strong>Brecha de ejecución en ${worstSector.label} (${worstSector.pct.toFixed(1)}%).</strong> Con B/.${fmtM(worstSector.mod-worstSector.eje)} sin ejecutar sobre B/.${fmtM(worstSector.mod)} modificados, este sector requiere atención prioritaria.`);
+  if(bestSector&&bestSector.label!==worstSector?.label)concs.push(`<strong>${bestSector.label} lidera la eficiencia con ${bestSector.pct.toFixed(1)}%.</strong> Es el referente de gestión presupuestaria eficiente en el período analizado.`);
+  concs.push(`<strong>La tasa global de ${pctGlobal.toFixed(1)}% ${pctGlobal>=76?"evidencia una gestión eficiente":pctGlobal>=60?"indica márgenes de mejora":"presenta una brecha crítica"} para ${periodoLabel}.</strong> ${pctGlobal>=76?"El indicador supera el umbral de 76% establecido por DIPRENA.":"Se recomienda un diagnóstico de los cuellos de botella en las áreas y sectores de menor desempeño."}`);
+  const concsHtml=concs.map((c,i)=>`<div class="concl-row" style="${i===concs.length-1?"border-bottom:none":""}"><div class="concl-num">C${i+1}</div><div class="concl-txt">${c}</div></div>`).join("");
+  const sEnt=hasEntities?"04":"";
+  const sFvi=hasEntities?"05":"04";
+  const sCon=hasEntities?"06":"05";
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Análisis Sectorial — ${entityLabel}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>
+<style>
+:root{--navy:#0D1B2A;--teal:#0F7173;--teal2:#15A1A3;--gold:#D4A017;--gold2:#F5C842;--coral:#C94040;--slate:#3D5A80;--mint:#2E7D52;--blue:#1B6CA8;--suave:#6B7280;--borde:#E2E8F0;--bg:#FAFBFC;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--navy);font-size:14px;line-height:1.7;}
+.portada{background:linear-gradient(135deg,var(--navy) 0%,#1a3a5e 60%,#0a2535 100%);color:white;padding:60px 80px 50px;position:relative;overflow:hidden;}
+.portada::before{content:'';position:absolute;top:-80px;right:-80px;width:380px;height:380px;border-radius:50%;background:rgba(15,113,115,0.12);pointer-events:none;}
+.accent-line{width:80px;height:4px;background:linear-gradient(90deg,var(--teal),var(--gold));border-radius:2px;margin-bottom:32px;}
+.logo-row{display:flex;align-items:center;gap:12px;margin-bottom:48px;}
+.logo-badge{background:var(--teal);color:white;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:.08em;}
+.ia-badge{margin-left:auto;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.07);padding:5px 12px;border-radius:20px;font-size:11px;color:rgba(255,255,255,.65);}
+.ia-dot{width:7px;height:7px;border-radius:50%;background:var(--teal2);display:inline-block;}
+.portada-tipo{font-size:12px;font-weight:600;letter-spacing:.12em;color:var(--teal2);text-transform:uppercase;margin-bottom:12px;}
+.portada-titulo{font-size:34px;font-weight:700;line-height:1.2;margin-bottom:14px;}
+.portada-titulo span{color:var(--gold2);}
+.portada-sub{font-size:13px;color:rgba(255,255,255,.55);margin-bottom:36px;}
+.p-meta{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;}
+.p-meta-item{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:14px 16px;}
+.p-meta-lbl{font-size:10px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.45);text-transform:uppercase;margin-bottom:4px;}
+.p-meta-val{font-size:13px;font-weight:600;color:white;}
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;padding:28px 40px;background:white;border-bottom:1px solid var(--borde);}
+.kpi{border-radius:12px;padding:16px 18px;border:1px solid var(--borde);position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.kpi.kt::before{background:var(--teal);}.kpi.kn::before{background:var(--navy);}.kpi.kg::before{background:var(--mint);}.kpi.kc::before{background:var(--coral);}.kpi.ks::before{background:var(--slate);}
+.kpi-lbl{font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--suave);text-transform:uppercase;margin-bottom:8px;}
+.kpi-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:600;color:var(--navy);margin-bottom:3px;}
+.kpi-sub{font-size:11px;color:var(--suave);}
+.wrap{max-width:1100px;margin:0 auto;padding:36px 40px 60px;}
+.sec{background:white;border-radius:14px;border:1px solid var(--borde);padding:26px 30px;margin-bottom:18px;}
+.sec-hdr{display:flex;align-items:flex-start;gap:14px;margin-bottom:20px;}
+.sec-num{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--teal2);background:rgba(15,161,163,.1);padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;margin-top:3px;}
+.sec-tit{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:3px;}
+.sec-desc{font-size:12px;color:var(--suave);}
+.area-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+.area-card{border:1px solid var(--borde);border-radius:10px;overflow:hidden;}
+.area-card-hdr{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.area-card-name{font-size:12px;font-weight:600;color:var(--navy);line-height:1.35;flex:1;}
+.area-card-body{padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.area-stat{display:flex;flex-direction:column;gap:1px;}
+.area-stat-lbl{font-size:10px;color:var(--suave);}
+.area-stat-val{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--navy);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.chart-box{background:#F8FAFC;border-radius:10px;padding:16px;}
+.ch-tit{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:3px;}
+.ch-sub{font-size:11px;color:var(--suave);margin-bottom:12px;}
+.twrap{overflow-x:auto;border-radius:10px;border:1px solid var(--borde);}
+table{width:100%;border-collapse:collapse;}thead tr{background:var(--navy);color:white;}
+th{padding:9px 13px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.04em;white-space:nowrap;}
+th.num,td.num{text-align:right;}th.cen,td.cen{text-align:center;}
+td{padding:8px 13px;border-bottom:1px solid var(--borde);font-size:12.5px;color:var(--navy);}
+tr:last-child td{border-bottom:none;}
+tfoot tr td{background:#EEF2F7;font-weight:600;border-top:2px solid var(--borde);}
+tr:nth-child(even) td{background:#FAFBFD;}
+.dot-s{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.d-g{background:#22C55E;}.d-a{background:var(--gold);}.d-r{background:var(--coral);}
+.callout{border-radius:8px;padding:14px 18px;margin-top:14px;font-size:13px;line-height:1.7;}
+.callout-v{background:#ECFDF5;border-left:4px solid #22C55E;}
+.callout-a{background:#FFFBEB;border-left:4px solid var(--gold);}
+.callout-r{background:#FEF2F2;border-left:4px solid var(--coral);}
+.rank-strip{display:flex;flex-direction:column;gap:9px;}
+.rank-row{display:flex;align-items:center;gap:10px;}
+.rank-pos{font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--suave);width:18px;text-align:right;flex-shrink:0;}
+.rank-name{font-size:12px;color:var(--navy);width:150px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rank-bar-wrap{flex:1;height:9px;background:#E2E8F0;border-radius:4px;overflow:hidden;}
+.rank-bar{height:9px;border-radius:4px;}
+.rank-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--suave);width:80px;text-align:right;flex-shrink:0;}
+.concl-row{display:flex;gap:16px;padding:14px 0;border-bottom:1px solid var(--borde);}
+.concl-num{font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:var(--teal2);width:28px;flex-shrink:0;padding-top:2px;}
+.concl-txt{font-size:14px;line-height:1.8;}
+.txt{font-size:13.5px;color:#374151;line-height:1.75;margin-top:14px;}
+.txt p{margin-bottom:12px;}.txt p:last-child{margin-bottom:0;}
+.pie-foot{text-align:center;padding:28px 40px;color:var(--suave);font-size:11px;border-top:1px solid var(--borde);line-height:2.2;}
+@media print{.sec{page-break-inside:avoid;}body{background:white;}.portada{page-break-after:always;}}
+</style></head><body>
+<div class="portada">
+  <div class="logo-row"><span class="logo-badge">PANANOMICS.IA</span><span style="color:rgba(255,255,255,.3)">·</span><span style="color:rgba(255,255,255,.5);font-size:12px">MEF · DIPRENA</span><span class="ia-badge"><span class="ia-dot"></span> Generado con Panamita IA</span></div>
+  <div class="accent-line"></div>
+  <div class="portada-tipo">Informe #6 — ${report_title}</div>
+  <h1 class="portada-titulo">Análisis Sectorial<br><span>${entityLabel}</span></h1>
+  <p class="portada-sub">Análisis presupuestario sectorial basado en datos reales de DIPRENA · MEF Panamá</p>
+  <div class="p-meta">
+    <div class="p-meta-item"><div class="p-meta-lbl">Entidad / Alcance</div><div class="p-meta-val">${entityLabel}</div></div>
+    <div class="p-meta-item"><div class="p-meta-lbl">Período</div><div class="p-meta-val">${periodoLabel}</div></div>
+    <div class="p-meta-item"><div class="p-meta-lbl">Sectores · Áreas</div><div class="p-meta-val">${bySector.length} sectores · ${byArea.length} áreas</div></div>
+    <div class="p-meta-item"><div class="p-meta-lbl">Fecha de generación</div><div class="p-meta-val">${fechaHoy}</div></div>
+  </div>
+</div>
+<div class="kpi-strip">
+  <div class="kpi kt"><div class="kpi-lbl">Presupuesto Ley</div><div class="kpi-val">B/.${fmtM(totalLey)}</div><div class="kpi-sub">Asignación original</div></div>
+  <div class="kpi kn"><div class="kpi-lbl">Presupuesto Modificado</div><div class="kpi-val">B/.${fmtM(totalMod)}</div><div class="kpi-sub">Vigente con modificaciones</div></div>
+  <div class="kpi kg"><div class="kpi-lbl">Total Ejecutado</div><div class="kpi-val">B/.${fmtM(totalEje)}</div><div class="kpi-sub">Devengado acumulado</div></div>
+  <div class="kpi kc"><div class="kpi-lbl">Sin Ejecutar</div><div class="kpi-val">B/.${fmtM(totalMod-totalEje)}</div><div class="kpi-sub">${((totalMod-totalEje)/Math.max(totalMod,1)*100).toFixed(1)}% del presupuesto</div></div>
+  <div class="kpi ks"><div class="kpi-lbl">Tasa Global</div><div class="kpi-val">${pctGlobal.toFixed(1)}%</div><div class="kpi-sub">${pctGlobal>=76?"Ejecución eficiente":pctGlobal>=60?"Ejecución moderada":"Ejecución crítica"}</div></div>
+</div>
+<div class="wrap">
+<div class="sec">
+  <div class="sec-hdr"><span class="sec-num">01</span><div><div class="sec-tit">Resumen Ejecutivo</div><div class="sec-desc">Hallazgos principales del análisis sectorial · ${fechaHoy}</div></div></div>
+  <div class="txt">
+    <p><strong>${entityLabel}</strong> registró durante <strong>${periodoLabel}</strong> un presupuesto modificado de <strong>B/.${fmtM(totalMod)}</strong> frente a un Ley de <strong>B/.${fmtM(totalLey)}</strong>, con un total ejecutado de <strong>B/.${fmtM(totalEje)}</strong> — equivalente al <strong>${pctGlobal.toFixed(1)}%</strong> de tasa de ejecución global. El análisis comprende <strong>${byArea.length} áreas de desarrollo</strong> y <strong>${bySector.length} sectores</strong>.</p>
+    <p>El área de mayor peso es <strong>${byArea[0]?.label||"—"}</strong> con B/.${fmtM(byArea[0]?.mod||0)} (${(((byArea[0]?.mod||0)/Math.max(totalMod,1))*100).toFixed(1)}% del total modificado). ${bySector[0]?`El sector con mayor presupuesto es <strong>${bySector[0].label}</strong> con B/.${fmtM(bySector[0].mod)} y una tasa de ejecución del ${bySector[0].pct.toFixed(1)}%`:""}</p>
+    ${worstSector?`<p>${worstSector.pct<60?`<strong>Alerta:</strong> El sector <strong>${worstSector.label}</strong> presenta ejecución crítica del ${worstSector.pct.toFixed(1)}%, con B/.${fmtM(worstSector.mod-worstSector.eje)} sin ejecutar.`:`El sector <strong>${worstSector.label}</strong> registra la tasa más baja con ${worstSector.pct.toFixed(1)}%, requiriendo seguimiento.`}</p>`:""}
+  </div>
+  ${worstSector&&worstSector.pct<60?`<div class="callout callout-r"><strong>Alerta de subejecución crítica — ${worstSector.label} (${worstSector.pct.toFixed(1)}%):</strong> Con B/.${fmtM(worstSector.mod-worstSector.eje)} sin ejecutar sobre B/.${fmtM(worstSector.mod)} modificados.</div>`:""}
+  ${bestSector?`<div class="callout callout-v"><strong>Mejor desempeño:</strong> El sector <strong>${bestSector.label}</strong> lidera con ${bestSector.pct.toFixed(1)}% de ejecución sobre B/.${fmtM(bestSector.mod)} modificados.</div>`:""}
+</div>
+<div class="sec">
+  <div class="sec-hdr"><span class="sec-num">02</span><div><div class="sec-tit">Distribución por Área de Desarrollo</div><div class="sec-desc">Participación y ejecución de cada área estratégica en el presupuesto total</div></div></div>
+  <div class="area-grid">${areaCardsHtml}</div>
+  <div class="g2">
+    <div class="chart-box"><div class="ch-tit">Presupuesto Modificado por Área</div><div class="ch-sub">en millones de Balboas (B/.M)</div><div style="height:${Math.max(200,byArea.length*32)}px;position:relative"><canvas id="areaBar"></canvas></div></div>
+    <div class="chart-box"><div class="ch-tit">Distribución porcentual del presupuesto</div><div class="ch-sub">% Presupuesto Modificado total</div><div style="height:${Math.max(200,byArea.length*32)}px;position:relative"><canvas id="areaDon"></canvas></div></div>
+  </div>
+  ${hasMultiYear?`<div class="chart-box" style="margin-top:18px"><div class="ch-tit">Evolución del presupuesto por Área de Desarrollo</div><div class="ch-sub">Presupuesto Modificado en millones B/. · ${byYear[0]?.anio||""}–${byYear[byYear.length-1]?.anio||""}</div><div style="height:260px;position:relative"><canvas id="areaLinea"></canvas></div></div>`:""}
+</div>
+<div class="sec">
+  <div class="sec-hdr"><span class="sec-num">03</span><div><div class="sec-tit">Análisis por Sector</div><div class="sec-desc">Ranking de sectores por presupuesto modificado y tasa de ejecución</div></div></div>
+  <div class="g2" style="margin-bottom:18px">
+    <div class="chart-box"><div class="ch-tit">Sectores por Presupuesto Modificado</div><div class="ch-sub">en millones B/.</div><div style="height:${Math.max(180,Math.min(topSectors.length,12)*28)}px;position:relative"><canvas id="sectorBar"></canvas></div></div>
+    <div class="chart-box"><div class="ch-tit">Tasa de ejecución por Sector</div><div class="ch-sub">Verde ≥76% · Amarillo ≥60% · Rojo &lt;60%</div><div style="height:${Math.max(180,Math.min(topSectors.length,12)*28)}px;position:relative"><canvas id="sectorTasa"></canvas></div></div>
+  </div>
+  <div class="twrap"><table><thead><tr><th class="num">#</th><th>Sector</th><th>Área de Desarrollo</th><th class="num">Modificado</th><th class="num">Ejecutado</th><th class="num">% Part.</th><th class="cen">% Ejec.</th><th class="cen">Sem.</th></tr></thead><tbody>${sectorTableRows}</tbody><tfoot><tr><td colspan="3"><strong>TOTAL</strong></td><td class="num"><strong>B/.${fmtM(totalMod)}</strong></td><td class="num"><strong>B/.${fmtM(totalEje)}</strong></td><td class="num"><strong>100%</strong></td><td class="cen"><strong>${pctGlobal.toFixed(1)}%</strong></td><td></td></tr></tfoot></table></div>
+  ${worstSector?`<div class="callout callout-${worstSector.pct<60?"r":"a"}"><strong>Nota sobre ${worstSector.label} (${worstSector.pct.toFixed(1)}%):</strong> Este sector registra la tasa de ejecución más baja del período, con B/.${fmtM(worstSector.mod-worstSector.eje)} sin ejecutar sobre B/.${fmtM(worstSector.mod)} modificados.</div>`:""}
+</div>
+${hasEntities?`<div class="sec">
+  <div class="sec-hdr"><span class="sec-num">${sEnt}</span><div><div class="sec-tit">Ranking de Entidades</div><div class="sec-desc">Las entidades con mayor presupuesto y su desempeño de ejecución</div></div></div>
+  <div class="g2">
+    <div><p style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--navy)">Top entidades por presupuesto modificado</p><div class="rank-strip">${entRankHtml}</div></div>
+    <div class="chart-box"><div class="ch-tit">Tasa de ejecución — Top entidades</div><div class="ch-sub">% Ejecutado / Modificado</div><div style="height:${Math.max(200,Math.min(topEnts.length,12)*24)}px;position:relative"><canvas id="entTasa"></canvas></div></div>
+  </div>
+  <div class="twrap" style="margin-top:18px"><table><thead><tr><th>Entidad</th><th>Área de Desarrollo</th><th>Sector</th><th class="num">Modificado</th><th class="num">Ejecutado</th><th class="cen">% Ejec.</th></tr></thead><tbody>${entTableRows}</tbody></table></div>
+</div>`:""}
+<div class="sec">
+  <div class="sec-hdr"><span class="sec-num">${sFvi}</span><div><div class="sec-tit">Funcionamiento vs. Inversión por Área</div><div class="sec-desc">Naturaleza del gasto según tipo de presupuesto</div></div></div>
+  <div class="g2">
+    <div class="chart-box"><div class="ch-tit">Composición Funcionamiento vs Inversión</div><div class="ch-sub">Presupuesto Modificado en millones B/.</div><div style="height:280px;position:relative"><canvas id="fVsI"></canvas></div></div>
+    <div class="chart-box"><div class="ch-tit">Tasa de ejecución por Área</div><div class="ch-sub">Verde ≥76% · Amarillo ≥60% · Rojo &lt;60%</div><div style="height:280px;position:relative"><canvas id="areaTasa"></canvas></div></div>
+  </div>
+</div>
+<div class="sec">
+  <div class="sec-hdr"><span class="sec-num">${sCon}</span><div><div class="sec-tit">Conclusiones</div><div class="sec-desc">Hallazgos estructurales del análisis sectorial · ${periodoLabel}</div></div></div>
+  <div style="display:flex;flex-direction:column">${concsHtml}</div>
+</div>
+</div>
+<div class="pie-foot">
+  <p><strong>PANANOMICS.IA</strong> · Sistema de Análisis Presupuestario · MEF · DIPRENA</p>
+  <p>Informe generado con <strong>Panamita IA</strong> · ${fechaHoy} · Fuente: Base presupuestaria consolidada · ${rows.length.toLocaleString()} registros</p>
+  <p>Uso institucional. Validar con analistas responsables antes de uso oficial.</p>
+</div>
+<script>
+const CC={teal:'#0F7173',teal2:'#15A1A3',gold:'#D4A017',coral:'#C94040',slate:'#3D5A80',mint:'#2E7D52',blue:'#1B6CA8',gris:'#64748B',navy:'#0D1B2A'};
+const ACLR=${jAreaColors};
+new Chart('areaBar',{type:'bar',data:{labels:${jAreaLabels},datasets:[{label:'Modificado (B/.M)',data:${jAreaMod},backgroundColor:ACLR,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{grid:{color:'#EEE'},ticks:{font:{family:'DM Mono',size:10},callback:v=>v>=1000?'B/.'+(v/1000).toFixed(1)+'B':'B/.'+v+'M'}},y:{grid:{display:false},ticks:{font:{family:'DM Sans',size:11}}}},plugins:{legend:{display:false}}}});
+new Chart('areaDon',{type:'doughnut',data:{labels:${jAreaLabels},datasets:[{data:${jAreaMod},backgroundColor:ACLR,borderWidth:2,borderColor:'#FAFBFC',hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:10},padding:8,boxWidth:10}},tooltip:{callbacks:{label:ctx=>' '+ctx.label+': B/.'+ctx.parsed+'M'}}}}});
+${hasMultiYear?`new Chart('areaLinea',{type:'line',data:{labels:${jYears},datasets:[${areaLineDsJS}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{display:false},ticks:{font:{family:'DM Sans',size:11}}},y:{grid:{color:'#EEE'},ticks:{font:{family:'DM Mono',size:10},callback:v=>'B/.'+v+'M'}}},plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:11},padding:10,boxWidth:14,usePointStyle:true}}}}});`:""}
+new Chart('sectorBar',{type:'bar',data:{labels:${jSecLabels},datasets:[{label:'Modificado (B/.M)',data:${jSecMod},backgroundColor:${jSecColors},borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{grid:{color:'#EEE'},ticks:{font:{family:'DM Mono',size:9},callback:v=>v>=1000?'B/.'+(v/1000).toFixed(1)+'B':'B/.'+v+'M'}},y:{grid:{display:false},ticks:{font:{family:'DM Sans',size:10}}}},plugins:{legend:{display:false}}}});
+const sTasa=${jSecTasa};new Chart('sectorTasa',{type:'bar',data:{labels:${jSecLabels},datasets:[{label:'% Ejecución',data:sTasa,backgroundColor:sTasa.map(v=>v>=76?CC.mint:v>=60?CC.gold:CC.coral),borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{min:0,max:100,grid:{color:'#EEE'},ticks:{font:{family:'DM Mono',size:9},callback:v=>v+'%'}},y:{grid:{display:false},ticks:{font:{family:'DM Sans',size:10}}}},plugins:{legend:{display:false}}}});
+${hasEntities?`const eTasa=${jEntTasa};new Chart('entTasa',{type:'bar',data:{labels:${jEntLabels},datasets:[{label:'% Ejecución',data:eTasa,backgroundColor:eTasa.map(v=>v>=76?CC.mint:v>=60?CC.gold:CC.coral),borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{min:0,max:100,grid:{color:'#EEE'},ticks:{font:{family:'DM Mono',size:9},callback:v=>v+'%'}},y:{grid:{display:false},ticks:{font:{family:'DM Sans',size:10}}}},plugins:{legend:{display:false}}}});`:""}
+new Chart('fVsI',{type:'bar',data:{labels:${jFviLabels},datasets:[{label:'Funcionamiento',data:${jFviFunc},backgroundColor:CC.teal+'CC',borderRadius:3},{label:'Inversión',data:${jFviInv},backgroundColor:CC.gold+'CC',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true,grid:{display:false},ticks:{font:{family:'DM Sans',size:10},maxRotation:30}},y:{stacked:true,grid:{color:'#EEE'},ticks:{font:{family:'DM Mono',size:9},callback:v=>'B/.'+v+'M'}}},plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:11},padding:8,boxWidth:10}}}}});
+const aTasa=${jAreaPct};new Chart('areaTasa',{type:'bar',data:{labels:${jAreaLabels},datasets:[{label:'% Ejecución',data:aTasa,backgroundColor:aTasa.map(v=>v>=76?CC.mint:v>=60?CC.gold:CC.coral),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{min:0,max:100,grid:{color:'#EEE'},ticks:{font:{family:'DM Mono',size:10},callback:v=>v+'%'}},y:{grid:{display:false},ticks:{font:{family:'DM Sans',size:11}}}},plugins:{legend:{display:false}}}});
+<\/script>
+</body></html>`;}
 
 // ── COLORS ────────────────────────────────────────────────────────────────────
 const C = {

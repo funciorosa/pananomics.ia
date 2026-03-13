@@ -733,19 +733,24 @@ function Informes() {
     setWizStatus("loading");
     try {
       const f = wizFilters;
+      // Resolve tipo_presupuesto: null means "Todos" (no filter)
+      const tipoVal = f.tipo ?? null;
+      // Resolve fuente_ingreso from different filter cases
+      const fuenteVal = f.fuente ?? null;
       const resp = await fetch("/api/export-word", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nombre_entidad:   wizEnt?.nombre   || null,
+          nombre_entidad:   wizEnt?.nombre || null,
           anio:             wizAnioInicio,
-          tipo_presupuesto: f.tipo           || null,
-          fuente_ingreso:   Array.isArray(f.fuentes) ? f.fuentes[0] : (f.fuente || null),
-          nombre_programa:  f.programa       || null,
+          tipo_presupuesto: tipoVal,
+          fuente_ingreso:   fuenteVal,
+          nombre_programa:  f.programa    || null,
         })
       });
       const json = await resp.json();
       if (!resp.ok) throw new Error(json.error || `Error ${resp.status}`);
+      if (!json.docxBase64) throw new Error(json.message || "El servidor no devolvió el documento.");
       setWizResult({ docxBase64: json.docxBase64, filename: json.filename });
       const entry = {
         id: Date.now(),
@@ -813,7 +818,7 @@ function Informes() {
     const BtnGroup = ({opts,val,onChange,multi}) => (
       <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
         {opts.map(o => {
-          const active = multi?(val||[]).includes(o.v):val===o.v;
+          const active = multi?(val||[]).includes(o.v):(val === o.v || (val == null && o.v == null));
           return <button key={o.v} onClick={()=>{ if(multi){ const cur=val||[]; onChange(active?cur.filter(x=>x!==o.v):[...cur,o.v]); } else onChange(o.v); }}
             style={{ padding:"7px 14px", border:`2px solid ${active?C.navInformes:C.border}`, borderRadius:8, background:active?C.navInformes+"10":C.white, color:active?C.navInformes:C.textMid, fontSize:12, fontWeight:active?700:500, cursor:"pointer", transition:"all 0.15s" }}>{o.l}</button>;
         })}
@@ -823,7 +828,15 @@ function Informes() {
     switch(activeCard) {
       case 1: return (
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          <div><Lbl c="TIPO DE PRESUPUESTO"/><BtnGroup val={f.tipo||"ambos"} onChange={v=>setF("tipo",v)} opts={[{v:"ambos",l:"Ambos"},{v:"Funcionamiento",l:"Funcionamiento"},{v:"Inversión",l:"Inversión"}]}/></div>
+          <div>
+            <Lbl c="TIPO DE PRESUPUESTO"/>
+            <BtnGroup val={f.tipo??null} onChange={v=>setF("tipo",v)} opts={[
+              {v:null,l:"Todos"},
+              {v:"FUNCIONAMIENTO",l:"Funcionamiento"},
+              {v:"INVERSION",l:"Inversión"},
+              {v:"SEGURO EDUCATIVO",l:"Seguro Educativo"}
+            ]}/>
+          </div>
           <div>
             <Lbl c={`UMBRAL DE ALERTA — crítico si ejecución < ${f.umbral||90}%`}/>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
@@ -836,12 +849,20 @@ function Informes() {
       );
       case 2: return (
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          <div><Lbl c="FUENTES DE INGRESO (selecciona una o más)"/>
-            <BtnGroup multi val={f.fuentes} onChange={v=>setF("fuentes",v)} opts={[
-              {v:"Ingresos Corrientes",l:"Ingresos Corrientes"},{v:"Peaje del Canal",l:"Peaje del Canal"},
-              {v:"Dividendos del Canal",l:"Dividendos del Canal"},{v:"Bonos Externos",l:"Bonos Externos"},
-              {v:"Fondo de Gestión",l:"Fondo de Gestión"},{v:"Seguro Educativo",l:"Seguro Educativo"},
-              {v:"Préstamos BID/AID",l:"Préstamos BID/AID"}
+          <div>
+            <Lbl c="FUENTE DE INGRESO"/>
+            <BtnGroup val={f.fuente??null} onChange={v=>setF("fuente",v)} opts={[
+              {v:null,l:"Todas"},
+              {v:"Ingresos Corrientes",l:"Ingresos Corrientes"},
+              {v:"Gobierno Central",l:"Gobierno Central"},
+              {v:"Fondo de Gestion",l:"Fondo de Gestión"},
+              {v:"Seguro Educativo",l:"Seguro Educativo"},
+              {v:"Dividendos del Canal",l:"Dividendos del Canal"},
+              {v:"Peaje del Canal",l:"Peaje del Canal"},
+              {v:"Saldo en Caja y Banco Disponible",l:"Saldo Caja/Banco"},
+              {v:"Recuperación de  Otros  Prestamos",l:"Recuperación Préstamos"},
+              {v:"Donaciones Varias",l:"Donaciones"},
+              {v:"Impuestos / Leyes Especiales",l:"Impuestos/Leyes Esp."}
             ]}/>
           </div>
           <Toggle label="Mostrar distribución porcentual" val={f.mostrarDist!==false} onChange={v=>setF("mostrarDist",v)}/>
@@ -850,17 +871,32 @@ function Informes() {
       case 3: return (
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <div style={{ padding:"10px 14px", background:C.navInformes+"10", borderRadius:8, border:`1px solid ${C.navInformes}30`, fontSize:12, color:C.navInformes, fontWeight:600 }}>📌 Este informe analiza únicamente presupuesto de Inversión</div>
-          <div><Lbl c="ÁREA DE DESARROLLO"/><BtnGroup val={f.areaDesarrollo||"todas"} onChange={v=>setF("areaDesarrollo",v)} opts={[{v:"todas",l:"Todas"},{v:"social",l:"Servicios Sociales"},{v:"productivo",l:"Fomento Productivo"}]}/></div>
           <div>
-            <Lbl c="MONTO MÍNIMO DE PROYECTO (B/.)"/>
-            <input type="number" min={0} value={f.montoMin||0} onChange={e=>setF("montoMin",+e.target.value)} style={{ width:"100%", padding:"9px 12px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, color:C.text, outline:"none", boxSizing:"border-box" }}/>
+            <Lbl c="ÁREA DE DESARROLLO"/>
+            <BtnGroup val={f.areaDesarrollo??null} onChange={v=>setF("areaDesarrollo",v)} opts={[
+              {v:null,l:"Todas"},
+              {v:"DESARROLLO DE LOS SERVICIOS SOCIALES",l:"Servicios Sociales"},
+              {v:"DESARROLLO DE LA INFRAESTRUCTURA",l:"Infraestructura"},
+              {v:"DESARROLLO Y FOMENTO DE LA PRODUCCIÓN",l:"Fomento Productivo"},
+              {v:"DESARROLLO AMBIENTAL Y TECNOLÓGICO",l:"Ambiental/Tecnológico"},
+              {v:"SERVICIOS GENERALES",l:"Servicios Generales"},
+              {v:"SERVICIOS FINANCIEROS",l:"Servicios Financieros"}
+            ]}/>
           </div>
           <Toggle label="Mostrar solo proyectos con ejecución < 80%" val={!!f.soloRezagados} onChange={v=>setF("soloRezagados",v)}/>
         </div>
       );
       case 4: return (
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          <div><Lbl c="TIPO DE COMPARACIÓN"/><BtnGroup val={f.tipoComp||"evolucion"} onChange={v=>setF("tipoComp",v)} opts={[{v:"evolucion",l:"Evolución de la entidad"},{v:"comparar",l:"Comparar múltiples"},{v:"sector",l:"vs Promedio del sector"}]}/></div>
+          <div>
+            <Lbl c="TIPO DE PRESUPUESTO"/>
+            <BtnGroup val={f.tipo??null} onChange={v=>setF("tipo",v)} opts={[
+              {v:null,l:"Todos"},
+              {v:"FUNCIONAMIENTO",l:"Funcionamiento"},
+              {v:"INVERSION",l:"Inversión"},
+              {v:"SEGURO EDUCATIVO",l:"Seguro Educativo"}
+            ]}/>
+          </div>
           <div><Lbl c="MÉTRICAS A INCLUIR"/>
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
               {[{k:"ley_mod",l:"Presupuesto Ley vs Modificado",def:true},{k:"ejecutado",l:"Ejecutado y Devengado",def:true},{k:"tasa",l:"Tasa de ejecución",def:true},{k:"variacion",l:"Variación interanual",def:false},{k:"participacion",l:"Participación en presupuesto nacional",def:false}].map(({k,l,def})=>{
@@ -873,12 +909,20 @@ function Informes() {
       );
       case 5: return (
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          <div><Lbl c="GRUPOS DE GASTO (selecciona uno o más)"/>
-            <BtnGroup multi val={f.grupos} onChange={v=>setF("grupos",v)} opts={[
-              {v:"Servicios Personales",l:"Servicios Personales"},{v:"Servicios No Personales",l:"Serv. No Personales"},
-              {v:"Materiales y Suministros",l:"Materiales"},{v:"Maquinaria y Equipo",l:"Maquinaria"},
-              {v:"Transferencias Corrientes",l:"Transf. Corrientes"},{v:"Transferencias de Capital",l:"Transf. Capital"},
-              {v:"Construcciones",l:"Construcciones"},{v:"Inversión Financiera",l:"Inv. Financiera"}
+          <div>
+            <Lbl c="GRUPO DE GASTO"/>
+            <BtnGroup val={f.grupo_gasto??null} onChange={v=>setF("grupo_gasto",v)} opts={[
+              {v:null,l:"Todos"},
+              {v:"SERVICIOS PERSONALES",l:"Servicios Personales"},
+              {v:"SERVICIOS NO PERSONALES",l:"Serv. No Personales"},
+              {v:"MATERIALES Y SUMINISTROS",l:"Materiales"},
+              {v:"MAQUINARIA Y EQUIPO",l:"Maquinaria"},
+              {v:"TRANSFERENCIAS CORRIENTES",l:"Transf. Corrientes"},
+              {v:"TRANSFERENCIAS DE CAPITAL",l:"Transf. Capital"},
+              {v:"CONSTRUCCIONES POR CONTRATO",l:"Construcciones"},
+              {v:"INVERSIÓN FINANCIERA",l:"Inv. Financiera"},
+              {v:"SERVICIOS DE LA DEUDA",l:"Serv. Deuda"},
+              {v:"ASIGNACIONES GLOBALES",l:"Asig. Globales"}
             ]}/>
           </div>
           <Toggle label="Destacar Servicios Personales (planilla)" val={f.destacarPlanilla!==false} onChange={v=>setF("destacarPlanilla",v)}/>
@@ -886,10 +930,28 @@ function Informes() {
       );
       case 6: return (
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          <div><Lbl c="TIPO DE ANÁLISIS"/><BtnGroup val={f.tipoAnalisis||"sector"} onChange={v=>setF("tipoAnalisis",v)} opts={[{v:"sector",l:"Por sector"},{v:"area",l:"Por área de desarrollo"},{v:"ambos",l:"Ambos"}]}/></div>
-          <div><Lbl c="SECTORES A COMPARAR"/>
-            <BtnGroup multi val={f.sectores} onChange={v=>setF("sectores",v)} opts={[
-              {v:"Social",l:"Social"},{v:"Infraestructura",l:"Infraestructura"},{v:"Productivo",l:"Productivo"},{v:"Administrativo",l:"Administrativo"},{v:"Canal",l:"Canal"}
+          <div>
+            <Lbl c="TIPO DE PRESUPUESTO"/>
+            <BtnGroup val={f.tipo??null} onChange={v=>setF("tipo",v)} opts={[
+              {v:null,l:"Todos"},
+              {v:"FUNCIONAMIENTO",l:"Funcionamiento"},
+              {v:"INVERSION",l:"Inversión"}
+            ]}/>
+          </div>
+          <div>
+            <Lbl c="SECTOR"/>
+            <BtnGroup val={f.sector??null} onChange={v=>setF("sector",v)} opts={[
+              {v:null,l:"Todos"},
+              {v:"EDUCACION Y CULTURA",l:"Educación"},
+              {v:"SALUD",l:"Salud"},
+              {v:"TRANSPORTE Y COMUNICACIONES",l:"Transporte"},
+              {v:"ADMINISTRACIÓN PUBLICA GENERAL",l:"Adm. Pública"},
+              {v:"PROTECCION  Y SEGURIDAD SOCIAL",l:"Protección Social"},
+              {v:"ORDEN PÚBLICO Y SEGURIDAD",l:"Orden Público"},
+              {v:"VIVIENDA Y DESARROLLO COMUNAL",l:"Vivienda"},
+              {v:"AGROPECUARIO",l:"Agropecuario"},
+              {v:"ENERGIA",l:"Energía"},
+              {v:"INDUSTRIA, COMERCIO Y TURISMO",l:"Industria/Comercio"}
             ]}/>
           </div>
         </div>
@@ -1204,8 +1266,8 @@ function Informes() {
                       <button onClick={downloadWord} style={{ padding:"12px 24px", background:C.navInformes, color:"white", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
                         📄 Descargar Word
                       </button>
-                      <button onClick={()=>window.print()} style={{ padding:"12px 24px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, fontSize:13, fontWeight:600, color:C.textMid, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
-                        🖨️ Imprimir / PDF
+                      <button onClick={()=>window.print()} style={{ padding:"12px 24px", background:"#D32F2F", color:"white", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
+                        📥 Exportar PDF
                       </button>
                       <button onClick={resetWizard} style={{ padding:"12px 24px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, fontSize:13, fontWeight:600, color:C.textMid, cursor:"pointer" }}>
                         + Nuevo informe

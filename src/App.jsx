@@ -184,24 +184,25 @@ function PanamaMap({ provincias }) {
   const [hover, setHover] = useState(null);
   const [paths, setPaths] = useState([]);
 
-  const normalize = s => (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim();
+  // Normaliza: quita acentos, mayúsculas, colapsa guiones y espacios múltiples
+  const normalize = s => (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim().replace(/[-\s]+/g," ");
 
-  // Match GeoJSON feature id → province data from DB
+  // Match GeoJSON feature id → province data from DB (usa nombres normalizados)
   const PROV_MATCH = {
     'PA1':  n => n.includes('BOCAS'),
     'PANT': n => n.includes('NASO'),
     'PA4':  n => n.includes('CHIRIQUI'),
     'PA2':  n => n.includes('COCLE'),
-    'PA3':  n => n.includes('COLON'),
+    'PA3':  n => n === 'COLON' || n.startsWith('COLON '),
     'PA5':  n => n.includes('DARIEN'),
-    'PAEM': n => n.includes('EMBERA') || n.includes('WOUNAAN'),
-    'PAKY': n => n.includes('KUNA') || n.includes('GUNA'),
+    'PAEM': n => n.includes('EMBERA') || n.includes('EMEBRA') || n.includes('WOUNAAN'),
+    'PAKY': n => n.includes('KUNA') || n.includes('GUNA') || n.includes('MADUGANDI') || n.includes('WARGANDI'),
     'PA6':  n => n.includes('HERRERA'),
     'PA7':  n => n.includes('SANTOS'),
-    'PANB': n => n.includes('NGABE') || n.includes('NGOBE') || n.includes('BUGLE'),
+    'PANB': n => n.includes('NGABE') || n.includes('NGOBE') || n.includes('BUGLE') || n.includes('KUSAPIN'),
     'PA10': n => n.includes('OESTE'),
-    'PA8':  n => (n.includes('PANAMA') || n.includes('PANAM')) && !n.includes('OESTE'),
-    'PA9':  n => n.includes('VERAGUAS'),
+    'PA8':  n => (n === 'PANAMA' || n.startsWith('PANAMA ') || n === 'PANAM') && !n.includes('OESTE'),
+    'PA9':  n => n.includes('VERAGUAS') || n.includes('VERGAGUAS'),
   };
 
   const getProvData = id => {
@@ -396,9 +397,10 @@ function Dashboard() {
       // Programas funcionamiento
       const fpMap = {};
       func.forEach(r=>{ const p=(r.nombre_programa||"Sin Programa").slice(0,35); if(!fpMap[p])fpMap[p]={mod:0,eje:0}; fpMap[p].mod+=+r.total_mod||0; fpMap[p].eje+=+r.total_eje||0; });
-      // Provincias
+      // Provincias — normalizar clave para consolidar variantes (COLÓN/COLON, NGOBE-BUGLÉ/NGOBE BUGLÉ, etc.)
+      const normProv = s => (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim().replace(/[-\s]+/g," ");
       const provMap = {};
-      rows.forEach(r=>{ const p=r.provincia_comarca||"No especificada"; if(!provMap[p])provMap[p]={mod:0,eje:0}; provMap[p].mod+=+r.total_mod||0; provMap[p].eje+=+r.total_eje||0; });
+      rows.forEach(r=>{ const p=normProv(r.provincia_comarca||"No especificada"); if(!provMap[p])provMap[p]={mod:0,eje:0}; provMap[p].mod+=+r.total_mod||0; provMap[p].eje+=+r.total_eje||0; });
       setData({
         totalLey: sum(rows,"total_ley"), totalMod: sum(rows,"total_mod"), totalEje: sum(rows,"total_eje"),
         funcMod: sum(func,"total_mod"), funcEje: sum(func,"total_eje"),

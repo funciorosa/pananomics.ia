@@ -2142,26 +2142,26 @@ REGLAS:
 
       // Loop de tool use: Panamita puede llamar a la BD las veces que necesite
       while (d.stop_reason === "tool_use") {
-        const toolBlock = d.content.find(b=>b.type==="tool_use");
-        const inp = toolBlock.input;
-        // Indicador visual mientras consulta BD
+        const toolBlocks = d.content.filter(b=>b.type==="tool_use");
         setMessages(p=>[...p,{role:"assistant",text:`🔍 _Consultando base de datos..._`}]);
-        // Llamar RPC
-        const rows = await sbRpc("consultar_presupuesto_chat",{
-          p_fuente:   inp.fuente_ingreso || null,
-          p_entidad:  inp.nombre_entidad || null,
-          p_anio:     inp.anio           || null,
-          p_tipo:     inp.tipo_presupuesto || null,
-          p_programa: inp.nombre_programa  || null,
-        });
-        const toolResult = rows.length
-          ? rows.map(r=>`${r.nombre_entidad} | ${r.fuente_ingreso||'-'} | ${r.anio} | ${r.tipo_presupuesto}: B/.${(+r.total_mod/1e6).toFixed(2)}M mod | B/.${(+r.total_eje/1e6).toFixed(2)}M eje | ${r.pct_ejecucion}%`).join("\n")
-          : "Sin resultados para los filtros indicados.";
-        // Eliminar el indicador temporal
+        // Ejecutar TODOS los tool_use en paralelo y devolver TODOS los resultados en un solo mensaje
+        const toolResults = await Promise.all(toolBlocks.map(async tb => {
+          const inp = tb.input;
+          const rows = await sbRpc("consultar_presupuesto_chat",{
+            p_fuente:   inp.fuente_ingreso  || null,
+            p_entidad:  inp.nombre_entidad  || null,
+            p_anio:     inp.anio            || null,
+            p_tipo:     inp.tipo_presupuesto || null,
+            p_programa: inp.nombre_programa  || null,
+          });
+          const content = rows.length
+            ? rows.map(r=>`${r.nombre_entidad} | ${r.fuente_ingreso||'-'} | ${r.anio} | ${r.tipo_presupuesto}: B/.${(+r.total_mod/1e6).toFixed(2)}M mod | B/.${(+r.total_eje/1e6).toFixed(2)}M eje | ${r.pct_ejecucion}%`).join("\n")
+            : "Sin resultados para los filtros indicados.";
+          return { type:"tool_result", tool_use_id:tb.id, content };
+        }));
         setMessages(p=>p.filter(m=>m.text!==`🔍 _Consultando base de datos..._`));
-        // Continuar con tool_result
         apiMsgs.push({ role:"assistant", content: d.content });
-        apiMsgs.push({ role:"user", content:[{ type:"tool_result", tool_use_id:toolBlock.id, content:toolResult }] });
+        apiMsgs.push({ role:"user", content: toolResults });
         d = await callAI(apiMsgs);
       }
 

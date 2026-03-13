@@ -294,7 +294,6 @@ module.exports = async function handler(req, res) {
   try { fs.unlinkSync(tmpPath); } catch (_) {}
 
   // Generar narrativas con Claude (silencia si falla — usa plantillas de fallback)
-  const apiKey = process.env.ANTHROPIC_KEY;
   let narr = null;
   if (apiKey) {
     try {

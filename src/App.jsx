@@ -702,7 +702,8 @@ function Informes() {
   // ── Wizard state ──────────────────────────────────────────────────────────
   const [activeCard, setActiveCard]       = useState(null);
   const [wizStep, setWizStep]             = useState(1);
-  const [wizEnt, setWizEnt]               = useState(null);
+  const [wizEnt, setWizEnt]               = useState(null);   // entidad individual
+  const [wizArea, setWizArea]             = useState(null);   // null = todas, "GOBIERNO CENTRAL", etc.
   const [wizSearch, setWizSearch]         = useState("");
   const [wizFilters, setWizFilters]       = useState({});
   const [wizAnioInicio, setWizAnioInicio] = useState(2025);
@@ -717,8 +718,21 @@ function Informes() {
     try { return JSON.parse(localStorage.getItem("pananomics_reports") || "[]"); } catch { return []; }
   });
 
+  const GRUPOS_AREA = [
+    { label:"Todas las Entidades",                area:null,                          icon:"🌐", color:C.headerBg },
+    { label:"Gobierno Central",                   area:"GOBIERNO CENTRAL",            icon:"🏛", color:C.navDash },
+    { label:"Inst. Descentralizadas",             area:"INSTITUCIONES DESCENTRALIZADAS", icon:"🏢", color:C.navHistorico },
+    { label:"Empresas Públicas",                  area:"EMPRESAS PUBLICAS",           icon:"🏭", color:C.navInformes },
+    { label:"Intermediarios Financieros",         area:"INTERMEDIARIOS FINANCIEROS",  icon:"🏦", color:C.navEntidades },
+  ];
+
+  // Label para mostrar en badge y resumen
+  const wizScopeLabel = wizEnt
+    ? `${wizEnt.siglas} — ${wizEnt.nombre}`
+    : (wizArea ? GRUPOS_AREA.find(g=>g.area===wizArea)?.label : "Todas las Entidades") || "Todas las Entidades";
+
   const resetWizard = () => {
-    setActiveCard(null); setWizStep(1); setWizEnt(null); setWizSearch("");
+    setActiveCard(null); setWizStep(1); setWizEnt(null); setWizArea(null); setWizSearch("");
     setWizFilters({}); setWizAnioInicio(2025); setWizAnioFin(2025);
     setWizStatus(null); setWizLoadPhase(0); setWizResult(null); setWizErrMsg("");
   };
@@ -733,29 +747,31 @@ function Informes() {
     setWizStatus("loading");
     try {
       const f = wizFilters;
-      // Resolve tipo_presupuesto: null means "Todos" (no filter)
-      const tipoVal = f.tipo ?? null;
-      // Resolve fuente_ingreso from different filter cases
-      const fuenteVal = f.fuente ?? null;
-      const resp = await fetch("/api/export-word", {
+      const rpt = reportes.find(r => r.id === activeCard);
+      const resp = await fetch("/api/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nombre_entidad:   wizEnt?.nombre || null,
-          anio:             wizAnioInicio,
-          tipo_presupuesto: tipoVal,
-          fuente_ingreso:   fuenteVal,
-          nombre_programa:  f.programa    || null,
+          nombre_entidad:   wizEnt?.nombre   || null,
+          area:             wizEnt ? null : (wizArea ?? null),
+          fuente_ingreso:   f.fuente         ?? null,
+          tipo_presupuesto: f.tipo           ?? null,
+          anio_inicio:      wizAnioInicio,
+          anio_fin:         wizAnioFin,
+          grupo_gasto:      f.grupo_gasto    ?? null,
+          report_type:      activeCard,
+          report_title:     rpt?.title       || "Informe Presupuestario",
+          report_icon:      rpt?.icon        || "📊",
         })
       });
       const json = await resp.json();
       if (!resp.ok) throw new Error(json.error || `Error ${resp.status}`);
-      if (!json.docxBase64) throw new Error(json.message || "El servidor no devolvió el documento.");
-      setWizResult({ docxBase64: json.docxBase64, filename: json.filename });
+      if (!json.htmlBase64) throw new Error(json.message || "El servidor no devolvió el documento.");
+      setWizResult({ htmlBase64: json.htmlBase64, filename: json.filename, filas: json.filas });
       const entry = {
         id: Date.now(),
-        reportType: reportes.find(r => r.id === activeCard)?.title || "",
-        entity: wizEnt?.siglas || "Todas",
+        reportType: rpt?.title || "",
+        entity: wizScopeLabel,
         periodo: wizAnioInicio === wizAnioFin ? `${wizAnioInicio}` : `${wizAnioInicio}–${wizAnioFin}`,
         filename: json.filename,
         generatedAt: new Date().toISOString()
@@ -767,11 +783,24 @@ function Informes() {
     } catch(e) { setWizErrMsg(e.message); setWizStatus("error"); }
   };
 
-  const downloadWord = () => {
-    if (!wizResult) return;
+  const downloadHTML = () => {
+    if (!wizResult?.htmlBase64) return;
+    const bytes = atob(wizResult.htmlBase64);
+    const arr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    const blob = new Blob([arr], { type: "text/html;charset=utf-8" });
     const a = document.createElement("a");
-    a.href = "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64," + wizResult.docxBase64;
-    a.download = wizResult.filename; a.click();
+    a.href = URL.createObjectURL(blob);
+    a.download = wizResult.filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const previewHTML = () => {
+    if (!wizResult?.htmlBase64) return;
+    const html = atob(wizResult.htmlBase64);
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    window.open(URL.createObjectURL(blob), "_blank");
   };
 
   const rpt = reportes.find(r => r.id === activeCard);
@@ -796,13 +825,14 @@ function Informes() {
     </div>
   );
 
-  const EntBadge = () => wizEnt ? (
+  const EntBadge = () => (
     <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16, padding:"8px 14px", background:C.navInformes+"10", borderRadius:8, border:`1px solid ${C.navInformes}30` }}>
-      <div style={{ padding:"2px 8px", background:C.navInformes+"20", borderRadius:5, fontSize:11, fontWeight:800, color:C.navInformes }}>{wizEnt.siglas}</div>
-      <div style={{ fontSize:13, color:C.text, fontWeight:600, flex:1 }}>{wizEnt.nombre}</div>
-      <button onClick={()=>{ setWizEnt(null); setWizStep(1); }} style={{ fontSize:11, color:C.textLight, background:"none", border:"none", cursor:"pointer" }}>Cambiar</button>
+      {wizEnt && <div style={{ padding:"2px 8px", background:C.navInformes+"20", borderRadius:5, fontSize:11, fontWeight:800, color:C.navInformes }}>{wizEnt.siglas}</div>}
+      {!wizEnt && <span style={{ fontSize:16 }}>{GRUPOS_AREA.find(g=>g.area===wizArea)?.icon || "🌐"}</span>}
+      <div style={{ fontSize:13, color:C.text, fontWeight:600, flex:1 }}>{wizScopeLabel}</div>
+      <button onClick={()=>{ setWizEnt(null); setWizArea(null); setWizStep(1); }} style={{ fontSize:11, color:C.textLight, background:"none", border:"none", cursor:"pointer" }}>Cambiar</button>
     </div>
-  ) : null;
+  );
 
   const renderFilters = () => {
     const setF = (k,v) => setWizFilters(p=>({...p,[k]:v}));
@@ -1059,10 +1089,29 @@ function Informes() {
               <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
                 <Steps/>
                 <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>¿Para qué entidad es el informe?</div>
-                <div style={{ fontSize:12, color:C.textMid, marginBottom:16 }}>Selecciona una entidad. Puedes buscar por nombre o siglas.</div>
+                <div style={{ fontSize:12, color:C.textMid, marginBottom:16 }}>Selecciona una entidad específica, un grupo o genera para todas.</div>
+
+                {/* Opciones de grupo */}
+                <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:16 }}>
+                  {GRUPOS_AREA.map(g=>(
+                    <button key={g.label} onClick={()=>{ setWizEnt(null); setWizArea(g.area); setWizSearch(""); setWizStep(2); }}
+                      style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 14px", background:g.color+"15", border:`1.5px solid ${g.color}40`, borderRadius:8, cursor:"pointer", fontSize:12, fontWeight:700, color:g.color, transition:"all 0.15s" }}
+                      onMouseEnter={ev=>{ev.currentTarget.style.background=g.color+"25"; ev.currentTarget.style.borderColor=g.color;}}
+                      onMouseLeave={ev=>{ev.currentTarget.style.background=g.color+"15"; ev.currentTarget.style.borderColor=g.color+"40";}}>
+                      <span>{g.icon}</span>{g.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                  <div style={{ flex:1, height:1, background:C.border }}/>
+                  <span style={{ fontSize:11, color:C.textLight, fontWeight:600 }}>O BUSCA UNA ENTIDAD ESPECÍFICA</span>
+                  <div style={{ flex:1, height:1, background:C.border }}/>
+                </div>
+
                 <input value={wizSearch} onChange={e=>setWizSearch(e.target.value)} placeholder="Buscar entidad — ej: MIVIOT, Ministerio de Salud..."
-                  style={{ width:"100%", padding:"10px 14px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, color:C.text, outline:"none", marginBottom:16, boxSizing:"border-box" }}/>
-                <div style={{ maxHeight:340, overflowY:"auto", border:`1px solid ${C.border}`, borderRadius:10 }}>
+                  style={{ width:"100%", padding:"10px 14px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, color:C.text, outline:"none", marginBottom:12, boxSizing:"border-box" }}/>
+                <div style={{ maxHeight:300, overflowY:"auto", border:`1px solid ${C.border}`, borderRadius:10 }}>
                   {(wizSearch.trim()
                     ? [{idx:-1, list:filtradas}]
                     : [0,1,2,3].map(i=>({idx:i, list:ENTIDADES.filter(e=>e.codigo_area===i)}))
@@ -1070,7 +1119,7 @@ function Informes() {
                     <div key={idx}>
                       {idx>=0 && list.length>0 && <div style={{ padding:"6px 14px", background:GRUPO_COLORS_W[idx]+"12", borderBottom:`1px solid ${C.border}`, fontSize:10, fontWeight:800, color:GRUPO_COLORS_W[idx], letterSpacing:"0.05em" }}>{GRUPO_NAMES_W[idx].toUpperCase()}</div>}
                       {list.map(e=>(
-                        <div key={e.nombre} onClick={()=>{ setWizEnt(e); setWizSearch(""); setWizStep(2); }}
+                        <div key={e.nombre} onClick={()=>{ setWizEnt(e); setWizArea(null); setWizSearch(""); setWizStep(2); }}
                           style={{ padding:"10px 14px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:12, cursor:"pointer", transition:"background 0.15s" }}
                           onMouseEnter={ev=>ev.currentTarget.style.background=C.bg} onMouseLeave={ev=>ev.currentTarget.style.background="white"}>
                           <div style={{ padding:"2px 7px", background:(idx>=0?GRUPO_COLORS_W[idx]:C.navInformes)+"18", borderRadius:5, fontSize:10, fontWeight:800, color:idx>=0?GRUPO_COLORS_W[idx]:C.navInformes, whiteSpace:"nowrap" }}>{e.siglas}</div>
@@ -1086,7 +1135,7 @@ function Informes() {
             )}
 
             {/* ── PASO 2: Filtros específicos ── */}
-            {wizStep===2 && wizEnt && (
+            {wizStep===2 && (wizEnt || wizArea !== undefined) && (
               <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
                 <Steps/>
                 <EntBadge/>
@@ -1101,7 +1150,7 @@ function Informes() {
             )}
 
             {/* ── PASO 3: Período ── */}
-            {wizStep===3 && wizEnt && (() => {
+            {wizStep===3 && (wizEnt || wizArea !== undefined) && (() => {
               const pills = [
                 { label:"Último año",         inicio:2025, fin:2025 },
                 { label:"Últimos 3 años",      inicio:2023, fin:2025 },
@@ -1153,7 +1202,7 @@ function Informes() {
             })()}
 
             {/* ── PASO 4: Confirmar + Generar ── */}
-            {wizStep===4 && wizEnt && (
+            {wizStep===4 && (wizEnt || wizArea !== undefined) && (
               <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
                 <Steps/>
 
@@ -1164,7 +1213,7 @@ function Informes() {
                     <div style={{ background:C.bg, borderRadius:10, padding:"16px 18px", marginBottom:20, display:"flex", flexDirection:"column", gap:12 }}>
                       {[
                         { icon:"📋", label:"TIPO DE INFORME", value:`#${rpt?.id} — ${rpt?.title}` },
-                        { icon:"🏛", label:"ENTIDAD",         value:`${wizEnt?.siglas} — ${wizEnt?.nombre}` },
+                        { icon:"🏛", label:"ENTIDAD / ALCANCE", value:wizScopeLabel },
                         { icon:"📅", label:"PERÍODO",         value:wizAnioInicio===wizAnioFin?`${wizAnioInicio}`:`${wizAnioInicio} – ${wizAnioFin}` },
                       ].map(({icon,label,value})=>(
                         <div key={label} style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -1259,15 +1308,19 @@ function Informes() {
                     <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
                     <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:8 }}>¡Informe generado con éxito!</div>
                     <div style={{ fontSize:12, color:C.textMid, marginBottom:4 }}>{wizResult.filename}</div>
-                    <div style={{ fontSize:11, color:C.textLight, marginBottom:24 }}>
-                      {rpt?.title} · {wizEnt?.siglas} · {wizAnioInicio===wizAnioFin?wizAnioInicio:`${wizAnioInicio}–${wizAnioFin}`}
+                    <div style={{ fontSize:11, color:C.textLight, marginBottom:6 }}>
+                      {rpt?.title} · {wizScopeLabel} · {wizAnioInicio===wizAnioFin?wizAnioInicio:`${wizAnioInicio}–${wizAnioFin}`}
                     </div>
+                    {wizResult.filas && <div style={{ fontSize:11, color:C.navInformes, fontWeight:700, marginBottom:20 }}>{wizResult.filas.toLocaleString()} registros analizados</div>}
                     <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
-                      <button onClick={downloadWord} style={{ padding:"12px 24px", background:C.navInformes, color:"white", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
-                        📄 Descargar Word
+                      <button onClick={previewHTML} style={{ padding:"12px 24px", background:C.navInformes, color:"white", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
+                        👁 Ver Informe
                       </button>
-                      <button onClick={()=>window.print()} style={{ padding:"12px 24px", background:"#D32F2F", color:"white", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
-                        📥 Exportar PDF
+                      <button onClick={downloadHTML} style={{ padding:"12px 24px", background:C.headerBg, color:"white", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
+                        📥 Descargar HTML
+                      </button>
+                      <button onClick={()=>{ previewHTML(); setTimeout(()=>window.print(),800); }} style={{ padding:"12px 24px", background:"#D32F2F", color:"white", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
+                        📄 Exportar PDF
                       </button>
                       <button onClick={resetWizard} style={{ padding:"12px 24px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, fontSize:13, fontWeight:600, color:C.textMid, cursor:"pointer" }}>
                         + Nuevo informe

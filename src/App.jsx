@@ -78,6 +78,37 @@ const SIGLAS = {
 
 const EntidadesCtx = createContext(ENTIDADES_FALLBACK);
 
+const PEI_DOCS = [
+  { id:"pei-cgr",      titulo:"PEI — Contraloría General de la República", titulo_corto:"PEI CGR", categoria:"PEI", anio:2023, icono:"🏛", color:"#1565C0", resumen_contexto:"Plan Estratégico Institucional de la Contraloría General de la República.", pdf:"/docs/pei/002CGRPEI.pdf" },
+  { id:"pei-aac",      titulo:"PEI — Autoridad de Aeronáutica Civil", titulo_corto:"PEI AAC", categoria:"PEI", anio:2023, icono:"✈️", color:"#0277BD", resumen_contexto:"Plan Estratégico Institucional de la Autoridad de Aeronáutica Civil de Panamá.", pdf:"/docs/pei/AACPEI.pdf" },
+  { id:"pei-acodeco",  titulo:"PEI — Autoridad de Protección al Consumidor", titulo_corto:"PEI ACODECO", categoria:"PEI", anio:2023, icono:"⚖️", color:"#6A1B9A", resumen_contexto:"Plan Estratégico Institucional de ACODECO — Protección al Consumidor y Defensa de la Competencia.", pdf:"/docs/pei/ACODECOPEI.pdf" },
+  { id:"pei-attt",     titulo:"PEI — Autoridad de Tránsito y Transporte Terrestre", titulo_corto:"PEI ATTT", categoria:"PEI", anio:2023, icono:"🚗", color:"#E65100", resumen_contexto:"Plan Estratégico Institucional de la ATTT.", pdf:"/docs/pei/ATTTPEI.pdf" },
+  { id:"pei-ca",       titulo:"PEI — Caja de Ahorros", titulo_corto:"PEI Caja de Ahorros", categoria:"PEI", anio:2023, icono:"🏦", color:"#2E7D32", resumen_contexto:"Plan Estratégico Institucional de la Caja de Ahorros de Panamá.", pdf:"/docs/pei/CAPEI.pdf" },
+  { id:"poa-gorgas",   titulo:"POA — Instituto Conmemorativo Gorgas", titulo_corto:"POA Gorgas", categoria:"POA", anio:2023, icono:"🔬", color:"#00838F", resumen_contexto:"Plan Operativo Anual del Instituto Conmemorativo Gorgas de Estudios de la Salud.", pdf:"/docs/pei/GORGASPOA.pdf" },
+  { id:"pei-idaan",    titulo:"PEI — Instituto de Acueductos y Alcantarillados Nacionales", titulo_corto:"PEI IDAAN", categoria:"PEI", anio:2023, icono:"💧", color:"#0277BD", resumen_contexto:"Plan Estratégico Institucional del IDAAN.", pdf:"/docs/pei/IDAANPEI.pdf" },
+  { id:"pei-idiap",    titulo:"PEI — Instituto de Investigación Agropecuaria", titulo_corto:"PEI IDIAP", categoria:"PEI", anio:2023, icono:"🌾", color:"#558B2F", resumen_contexto:"Plan Estratégico Institucional del Instituto de Investigación Agropecuaria de Panamá.", pdf:"/docs/pei/IDIAPPEI.pdf" },
+  { id:"pei-ima",      titulo:"PEI — Instituto de Mercadeo Agropecuario", titulo_corto:"PEI IMA", categoria:"PEI", anio:2023, icono:"🥦", color:"#33691E", resumen_contexto:"Plan Estratégico Institucional del Instituto de Mercadeo Agropecuario.", pdf:"/docs/pei/IMAPEI.pdf" },
+  { id:"pei-ina",      titulo:"PEI — Instituto Nacional de Agricultura", titulo_corto:"PEI INA", categoria:"PEI", anio:2023, icono:"🌿", color:"#388E3C", resumen_contexto:"Plan Estratégico Institucional del INA.", pdf:"/docs/pei/INAPEI.pdf" },
+  { id:"pei-isa",      titulo:"PEI — Instituto de Seguro Agropecuario", titulo_corto:"PEI ISA", categoria:"PEI", anio:2023, icono:"🌻", color:"#F9A825", resumen_contexto:"Plan Estratégico Institucional del Instituto de Seguro Agropecuario.", pdf:"/docs/pei/ISAPEI.pdf" },
+  { id:"pei-meduca",   titulo:"PEI — Ministerio de Educación", titulo_corto:"PEI MEDUCA", categoria:"PEI", anio:2023, icono:"🎓", color:"#1565C0", resumen_contexto:"Plan Estratégico Institucional del Ministerio de Educación.", pdf:"/docs/pei/MEDUCAPEI.pdf" },
+  { id:"plan-mici",    titulo:"Plan Estratégico — Ministerio de Comercio e Industrias", titulo_corto:"Plan MICI", categoria:"Plan Estratégico", anio:2023, icono:"🏭", color:"#4527A0", resumen_contexto:"Plan Estratégico Institucional del Ministerio de Comercio e Industrias.", pdf:"/docs/pei/MICIPLAN.pdf" },
+  { id:"pei-minsa",    titulo:"PEI — Ministerio de Salud", titulo_corto:"PEI MINSA", categoria:"PEI", anio:2020, icono:"🏥", color:"#C62828", resumen_contexto:"Plan Estratégico Institucional del Ministerio de Salud.", pdf:"/docs/pei/MINSAP1.pdf" },
+  { id:"pei-minseg",   titulo:"PEI — Ministerio de Seguridad Pública", titulo_corto:"PEI MINSEG", categoria:"PEI", anio:2023, icono:"🛡️", color:"#1A237E", resumen_contexto:"Plan Estratégico Institucional del Ministerio de Seguridad Pública.", pdf:"/docs/pei/MINSEGPEI.pdf" },
+  { id:"pei-miviot",   titulo:"PEI — Ministerio de Vivienda y Ordenamiento Territorial", titulo_corto:"PEI MIVIOT", categoria:"PEI", anio:2023, icono:"🏘️", color:"#5D4037", resumen_contexto:"Plan Estratégico Institucional del MIVIOT.", pdf:"/docs/pei/MIVIOTPEI.pdf" },
+  { id:"plan-ods",     titulo:"Plan ODS — Panamá Sostenible", titulo_corto:"Plan ODS Panamá", categoria:"Plan Estratégico", anio:2023, icono:"🌍", color:"#2E7D32", resumen_contexto:"Plan Nacional de Objetivos de Desarrollo Sostenible de Panamá.", pdf:"/docs/pei/ODSPLANPANAMA.pdf" },
+  { id:"pei-oj",       titulo:"PEI — Órgano Judicial", titulo_corto:"PEI Órgano Judicial", categoria:"PEI", anio:2023, icono:"⚖️", color:"#4A148C", resumen_contexto:"Plan Estratégico Institucional del Órgano Judicial de Panamá.", pdf:"/docs/pei/OJPEI.pdf" },
+  { id:"pei-padm",     titulo:"PEI — Patronato de Nutrición", titulo_corto:"PEI PADM", categoria:"PEI", anio:2023, icono:"🍎", color:"#BF360C", resumen_contexto:"Plan Estratégico Institucional.", pdf:"/docs/pei/PADMPEI.pdf" },
+  { id:"plan-pencyt",  titulo:"PENCYT — Plan Estratégico Nacional de Ciencia y Tecnología", titulo_corto:"PENCYT", categoria:"Plan Estratégico", anio:2023, icono:"🔭", color:"#006064", resumen_contexto:"Plan Estratégico Nacional de Ciencia, Tecnología e Innovación de Panamá.", pdf:"/docs/pei/PENCYT.pdf" },
+  { id:"pei-smv",      titulo:"PEI — Superintendencia del Mercado de Valores", titulo_corto:"PEI SMV", categoria:"PEI", anio:2023, icono:"📈", color:"#1B5E20", resumen_contexto:"Plan Estratégico Institucional de la Superintendencia del Mercado de Valores.", pdf:"/docs/pei/SMVPEI.pdf" },
+  { id:"pei-tat",      titulo:"PEI — Tribunal Administrativo Tributario", titulo_corto:"PEI TAT", categoria:"PEI", anio:2023, icono:"🏛", color:"#3E2723", resumen_contexto:"Plan Estratégico Institucional del Tribunal Administrativo Tributario.", pdf:"/docs/pei/TATPEI.pdf" },
+  { id:"pei-te",       titulo:"PEI — Tribunal Electoral", titulo_corto:"PEI Tribunal Electoral", categoria:"PEI", anio:2023, icono:"🗳️", color:"#880E4F", resumen_contexto:"Plan Estratégico Institucional del Tribunal Electoral de Panamá.", pdf:"/docs/pei/TEPEI.pdf" },
+  { id:"poa-umip",     titulo:"POA — Universidad Marítima Internacional de Panamá", titulo_corto:"POA UMIP", categoria:"POA", anio:2023, icono:"⚓", color:"#01579B", resumen_contexto:"Plan Operativo Anual de la Universidad Marítima Internacional de Panamá.", pdf:"/docs/pei/UMIPPOA.pdf" },
+  { id:"pei-unachi",   titulo:"PEI — Universidad Autónoma de Chiriquí", titulo_corto:"PEI UNACHI", categoria:"PEI", anio:2023, icono:"🎓", color:"#4527A0", resumen_contexto:"Plan Estratégico Institucional de la Universidad Autónoma de Chiriquí.", pdf:"/docs/pei/UNACHIPEI.pdf" },
+  { id:"plan-utp",     titulo:"Plan Estratégico — Universidad Tecnológica de Panamá", titulo_corto:"Plan UTP", categoria:"Plan Estratégico", anio:2023, icono:"⚙️", color:"#006064", resumen_contexto:"Plan Estratégico de la Universidad Tecnológica de Panamá.", pdf:"/docs/pei/UTPPLANG.pdf" },
+  { id:"poa-utp",      titulo:"POA 2024 — Universidad Tecnológica de Panamá", titulo_corto:"POA UTP 2024", categoria:"POA", anio:2024, icono:"⚙️", color:"#00838F", resumen_contexto:"Plan Operativo Anual 2024 de la Universidad Tecnológica de Panamá.", pdf:"/docs/pei/UTPPOA2024.pdf" },
+  { id:"plan-ambiente", titulo:"Plan Estratégico — Ministerio de Ambiente", titulo_corto:"Plan MiAmbiente", categoria:"Plan Estratégico", anio:2023, icono:"🌿", color:"#1B5E20", resumen_contexto:"Plan Estratégico del Ministerio de Ambiente de Panamá.", pdf:"/docs/pei/miambienteplan.pdf" },
+];
+
 function Panamita({ mood = "idle", size = 64 }) {
   const anim = mood === "thinking" ? "bob 0.9s ease-in-out infinite" : "float 3s ease-in-out infinite";
   const filter = mood === "happy" ? "drop-shadow(0 0 8px rgba(255,184,0,0.7))" : "none";
@@ -800,37 +831,6 @@ function Biblioteca() {
     { id:6, titulo:"Presupuesto Ciudadano 2026", titulo_corto:"Presupuesto Ciudadano 2026", categoria:"Transparencia Fiscal", anio:2026, paginas:13, icono:"👥", color:"#FB8C00", resumen_contexto:"Documento de transparencia fiscal del MEF. Explica el PGE 2026 (B/. 34,900M) en lenguaje accesible: ciclo presupuestario, fuentes y distribución del gasto.", tabla_contenidos:JSON.stringify(["1. Introducción","2. Presupuesto 2026","3. Ingresos","4. Gastos","5. Proyectos por provincia"]) },
   ];
 
-  const PEI_DOCS = [
-    { id:"pei-cgr",      titulo:"PEI — Contraloría General de la República", titulo_corto:"PEI CGR", categoria:"PEI", anio:2023, icono:"🏛", color:"#1565C0", resumen_contexto:"Plan Estratégico Institucional de la Contraloría General de la República.", pdf:"/docs/pei/002CGRPEI.pdf" },
-    { id:"pei-aac",      titulo:"PEI — Autoridad de Aeronáutica Civil", titulo_corto:"PEI AAC", categoria:"PEI", anio:2023, icono:"✈️", color:"#0277BD", resumen_contexto:"Plan Estratégico Institucional de la Autoridad de Aeronáutica Civil de Panamá.", pdf:"/docs/pei/AACPEI.pdf" },
-    { id:"pei-acodeco",  titulo:"PEI — Autoridad de Protección al Consumidor", titulo_corto:"PEI ACODECO", categoria:"PEI", anio:2023, icono:"⚖️", color:"#6A1B9A", resumen_contexto:"Plan Estratégico Institucional de ACODECO — Protección al Consumidor y Defensa de la Competencia.", pdf:"/docs/pei/ACODECOPEI.pdf" },
-    { id:"pei-attt",     titulo:"PEI — Autoridad de Tránsito y Transporte Terrestre", titulo_corto:"PEI ATTT", categoria:"PEI", anio:2023, icono:"🚗", color:"#E65100", resumen_contexto:"Plan Estratégico Institucional de la ATTT.", pdf:"/docs/pei/ATTTPEI.pdf" },
-    { id:"pei-ca",       titulo:"PEI — Caja de Ahorros", titulo_corto:"PEI Caja de Ahorros", categoria:"PEI", anio:2023, icono:"🏦", color:"#2E7D32", resumen_contexto:"Plan Estratégico Institucional de la Caja de Ahorros de Panamá.", pdf:"/docs/pei/CAPEI.pdf" },
-    { id:"poa-gorgas",   titulo:"POA — Instituto Conmemorativo Gorgas", titulo_corto:"POA Gorgas", categoria:"POA", anio:2023, icono:"🔬", color:"#00838F", resumen_contexto:"Plan Operativo Anual del Instituto Conmemorativo Gorgas de Estudios de la Salud.", pdf:"/docs/pei/GORGASPOA.pdf" },
-    { id:"pei-idaan",    titulo:"PEI — Instituto de Acueductos y Alcantarillados Nacionales", titulo_corto:"PEI IDAAN", categoria:"PEI", anio:2023, icono:"💧", color:"#0277BD", resumen_contexto:"Plan Estratégico Institucional del IDAAN.", pdf:"/docs/pei/IDAANPEI.pdf" },
-    { id:"pei-idiap",    titulo:"PEI — Instituto de Investigación Agropecuaria", titulo_corto:"PEI IDIAP", categoria:"PEI", anio:2023, icono:"🌾", color:"#558B2F", resumen_contexto:"Plan Estratégico Institucional del Instituto de Investigación Agropecuaria de Panamá.", pdf:"/docs/pei/IDIAPPEI.pdf" },
-    { id:"pei-ima",      titulo:"PEI — Instituto de Mercadeo Agropecuario", titulo_corto:"PEI IMA", categoria:"PEI", anio:2023, icono:"🥦", color:"#33691E", resumen_contexto:"Plan Estratégico Institucional del Instituto de Mercadeo Agropecuario.", pdf:"/docs/pei/IMAPEI.pdf" },
-    { id:"pei-ina",      titulo:"PEI — Instituto Nacional de Agricultura", titulo_corto:"PEI INA", categoria:"PEI", anio:2023, icono:"🌿", color:"#388E3C", resumen_contexto:"Plan Estratégico Institucional del INA.", pdf:"/docs/pei/INAPEI.pdf" },
-    { id:"pei-isa",      titulo:"PEI — Instituto de Seguro Agropecuario", titulo_corto:"PEI ISA", categoria:"PEI", anio:2023, icono:"🌻", color:"#F9A825", resumen_contexto:"Plan Estratégico Institucional del Instituto de Seguro Agropecuario.", pdf:"/docs/pei/ISAPEI.pdf" },
-    { id:"pei-meduca",   titulo:"PEI — Ministerio de Educación", titulo_corto:"PEI MEDUCA", categoria:"PEI", anio:2023, icono:"🎓", color:"#1565C0", resumen_contexto:"Plan Estratégico Institucional del Ministerio de Educación.", pdf:"/docs/pei/MEDUCAPEI.pdf" },
-    { id:"plan-mici",    titulo:"Plan Estratégico — Ministerio de Comercio e Industrias", titulo_corto:"Plan MICI", categoria:"Plan Estratégico", anio:2023, icono:"🏭", color:"#4527A0", resumen_contexto:"Plan Estratégico Institucional del Ministerio de Comercio e Industrias.", pdf:"/docs/pei/MICIPLAN.pdf" },
-    { id:"pei-minsa",    titulo:"PEI — Ministerio de Salud", titulo_corto:"PEI MINSA", categoria:"PEI", anio:2020, icono:"🏥", color:"#C62828", resumen_contexto:"Plan Estratégico Institucional del Ministerio de Salud.", pdf:"/docs/pei/MINSAP1.pdf" },
-    { id:"pei-minseg",   titulo:"PEI — Ministerio de Seguridad Pública", titulo_corto:"PEI MINSEG", categoria:"PEI", anio:2023, icono:"🛡️", color:"#1A237E", resumen_contexto:"Plan Estratégico Institucional del Ministerio de Seguridad Pública.", pdf:"/docs/pei/MINSEGPEI.pdf" },
-    { id:"pei-miviot",   titulo:"PEI — Ministerio de Vivienda y Ordenamiento Territorial", titulo_corto:"PEI MIVIOT", categoria:"PEI", anio:2023, icono:"🏘️", color:"#5D4037", resumen_contexto:"Plan Estratégico Institucional del MIVIOT.", pdf:"/docs/pei/MIVIOTPEI.pdf" },
-    { id:"plan-ods",     titulo:"Plan ODS — Panamá Sostenible", titulo_corto:"Plan ODS Panamá", categoria:"Plan Estratégico", anio:2023, icono:"🌍", color:"#2E7D32", resumen_contexto:"Plan Nacional de Objetivos de Desarrollo Sostenible de Panamá.", pdf:"/docs/pei/ODSPLANPANAMA.pdf" },
-    { id:"pei-oj",       titulo:"PEI — Órgano Judicial", titulo_corto:"PEI Órgano Judicial", categoria:"PEI", anio:2023, icono:"⚖️", color:"#4A148C", resumen_contexto:"Plan Estratégico Institucional del Órgano Judicial de Panamá.", pdf:"/docs/pei/OJPEI.pdf" },
-    { id:"pei-padm",     titulo:"PEI — Patronato de Nutrición", titulo_corto:"PEI PADM", categoria:"PEI", anio:2023, icono:"🍎", color:"#BF360C", resumen_contexto:"Plan Estratégico Institucional.", pdf:"/docs/pei/PADMPEI.pdf" },
-    { id:"plan-pencyt",  titulo:"PENCYT — Plan Estratégico Nacional de Ciencia y Tecnología", titulo_corto:"PENCYT", categoria:"Plan Estratégico", anio:2023, icono:"🔭", color:"#006064", resumen_contexto:"Plan Estratégico Nacional de Ciencia, Tecnología e Innovación de Panamá.", pdf:"/docs/pei/PENCYT.pdf" },
-    { id:"pei-smv",      titulo:"PEI — Superintendencia del Mercado de Valores", titulo_corto:"PEI SMV", categoria:"PEI", anio:2023, icono:"📈", color:"#1B5E20", resumen_contexto:"Plan Estratégico Institucional de la Superintendencia del Mercado de Valores.", pdf:"/docs/pei/SMVPEI.pdf" },
-    { id:"pei-tat",      titulo:"PEI — Tribunal Administrativo Tributario", titulo_corto:"PEI TAT", categoria:"PEI", anio:2023, icono:"🏛", color:"#3E2723", resumen_contexto:"Plan Estratégico Institucional del Tribunal Administrativo Tributario.", pdf:"/docs/pei/TATPEI.pdf" },
-    { id:"pei-te",       titulo:"PEI — Tribunal Electoral", titulo_corto:"PEI Tribunal Electoral", categoria:"PEI", anio:2023, icono:"🗳️", color:"#880E4F", resumen_contexto:"Plan Estratégico Institucional del Tribunal Electoral de Panamá.", pdf:"/docs/pei/TEPEI.pdf" },
-    { id:"poa-umip",     titulo:"POA — Universidad Marítima Internacional de Panamá", titulo_corto:"POA UMIP", categoria:"POA", anio:2023, icono:"⚓", color:"#01579B", resumen_contexto:"Plan Operativo Anual de la Universidad Marítima Internacional de Panamá.", pdf:"/docs/pei/UMIPPOA.pdf" },
-    { id:"pei-unachi",   titulo:"PEI — Universidad Autónoma de Chiriquí", titulo_corto:"PEI UNACHI", categoria:"PEI", anio:2023, icono:"🎓", color:"#4527A0", resumen_contexto:"Plan Estratégico Institucional de la Universidad Autónoma de Chiriquí.", pdf:"/docs/pei/UNACHIPEI.pdf" },
-    { id:"plan-utp",     titulo:"Plan Estratégico — Universidad Tecnológica de Panamá", titulo_corto:"Plan UTP", categoria:"Plan Estratégico", anio:2023, icono:"⚙️", color:"#006064", resumen_contexto:"Plan Estratégico de la Universidad Tecnológica de Panamá.", pdf:"/docs/pei/UTPPLANG.pdf" },
-    { id:"poa-utp",      titulo:"POA 2024 — Universidad Tecnológica de Panamá", titulo_corto:"POA UTP 2024", categoria:"POA", anio:2024, icono:"⚙️", color:"#00838F", resumen_contexto:"Plan Operativo Anual 2024 de la Universidad Tecnológica de Panamá.", pdf:"/docs/pei/UTPPOA2024.pdf" },
-    { id:"plan-ambiente", titulo:"Plan Estratégico — Ministerio de Ambiente", titulo_corto:"Plan MiAmbiente", categoria:"Plan Estratégico", anio:2023, icono:"🌿", color:"#1B5E20", resumen_contexto:"Plan Estratégico del Ministerio de Ambiente de Panamá.", pdf:"/docs/pei/miambienteplan.pdf" },
-  ];
-
   useEffect(() => { loadDocs(); }, []);
 
   const loadDocs = async () => {
@@ -987,7 +987,7 @@ function Biblioteca() {
 // ── CHAT ──────────────────────────────────────────────────────────────────────
 function ChatView({ user }) {
   const ENTIDADES = useContext(EntidadesCtx);
-  const [messages, setMessages] = useState([{ role:"assistant", text:`¡Hola ${user.name}! Soy **Panamita** 👋 Estoy conectada a la base de datos en tiempo real.\n\nTengo acceso a **${ENTIDADES.length} entidades** (2016–2026) y **6 documentos normativos**. Puedes preguntarme:\n\n• _¿Cómo ejecutó MEDUCA en 2024?_\n• _Compara MINSA vs MIDA en inversión 2023_\n• _¿Cuáles entidades están por debajo de la meta?_\n• _Analiza la tendencia de MOP últimos 5 años_\n\n¿Qué quieres analizar?` }]);
+  const [messages, setMessages] = useState([{ role:"assistant", text:`¡Hola ${user.name}! Soy **Panamita** 👋 Estoy conectada a la base de datos en tiempo real.\n\nTengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos** (normativa + PEI/POA de 28 instituciones). Puedes preguntarme:\n\n• _¿Cómo ejecutó MEDUCA en 2024?_\n• _Compara MINSA vs MIDA en inversión 2023_\n• _¿Cuáles entidades están por debajo de la meta?_\n• _Analiza la tendencia de MOP últimos 5 años_\n\n¿Qué quieres analizar?` }]);
   const [input, setInput] = useState(""); const [loading, setLoading] = useState(false);
   const [mood, setMood] = useState("idle"); const [dbCtx, setDbCtx] = useState(""); const [libCtx, setLibCtx] = useState("");
   const bottomRef = useRef(null);
@@ -998,7 +998,7 @@ function ChatView({ user }) {
       if (prev.length === 1 && prev[0].role === "assistant") {
         return [{ role:"assistant", text:`¡Hola ${user.name}! Soy **Panamita** 👋 Estoy conectada a la base de datos en tiempo real.
 
-Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026) y **6 documentos normativos**. Puedes preguntarme:
+Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos** (normativa + PEI/POA de 28 instituciones). Puedes preguntarme:
 
 • _¿Cómo ejecutó MEDUCA en 2024?_
 • _Compara MINSA vs MIDA en inversión 2023_
@@ -1012,18 +1012,19 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026) y **6 documentos 
   }, [ENTIDADES.length]);
 
   const loadContexts = async () => {
+    // Presupuesto: RPC retorna resumen completo (872 entidad/año) sin límite de filas
     try {
-      const data = await sbQuery("presupuesto","select=anio,nombre_entidad,tipo_presupuesto,presupuesto_modificado,ejecutado");
-      if (data?.length) {
-        const byEntYr = {};
-        data.forEach(r=>{ const k=`${r.nombre_entidad}|${r.anio}`; if(!byEntYr[k])byEntYr[k]={mod:0,eje:0,ent:r.nombre_entidad,yr:r.anio}; byEntYr[k].mod+=+r.presupuesto_modificado||0; byEntYr[k].eje+=+r.ejecutado||0; });
-        setDbCtx(Object.values(byEntYr).sort((a,b)=>a.ent.localeCompare(b.ent)||a.yr-b.yr).map(v=>`${v.ent} ${v.yr}: B/.${(v.mod/1e6).toFixed(1)}M mod | B/.${(v.eje/1e6).toFixed(1)}M eje | ${(v.eje/v.mod*100).toFixed(1)}%`).join("\n"));
-      }
+      const raw = await sbRpc("get_resumen_para_chat", {});
+      const ctx = typeof raw === "string" ? raw : (Array.isArray(raw) ? raw[0] : null);
+      if (ctx) setDbCtx(ctx);
     } catch {}
+    // Documentos: tabla normativa + PEI_DOCS
+    const peiCtx = PEI_DOCS.map(d=>`[${d.titulo_corto} (${d.anio})]: ${d.resumen_contexto}`).join("\n");
     try {
       const docs = await sbQuery("documentos","select=titulo_corto,resumen_contexto");
-      if (docs?.length) setLibCtx(docs.map(d=>`[${d.titulo_corto}]: ${d.resumen_contexto?.slice(0,300)}`).join("\n\n"));
-    } catch {}
+      const dbCtxDocs = docs?.length ? docs.map(d=>`[${d.titulo_corto}]: ${d.resumen_contexto?.slice(0,300)}`).join("\n") : "";
+      setLibCtx([dbCtxDocs, peiCtx].filter(Boolean).join("\n\n"));
+    } catch { setLibCtx(peiCtx); }
   };
 
   const send = async () => {
@@ -1035,7 +1036,7 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026) y **6 documentos 
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1200,
-          system:`Eres Panamita, asistente de análisis presupuestario de PANANOMICS.IA del MEF de Panamá (DIPRENA).\n\nDATOS REALES:\n${dbCtx}\n\nCONTEXTO NORMATIVO:\n${libCtx}\n\nREGLAS: Meta ≥76%=✓ | 60-75%=⚠ | <60%=✗. Responde en español con markdown.`,
+          system:`Eres Panamita, asistente de análisis presupuestario de PANANOMICS.IA (DIPRENA — MEF de Panamá).\n\nDATOS PRESUPUESTARIOS REALES (872 combinaciones entidad/año, 2016–2025):\n${dbCtx}\n\nBIBLIOTECA DOCUMENTAL (normativa + PEI/POA/planes de 28 instituciones):\n${libCtx}\n\nREGLAS: Meta ≥76%=✓ | 60-75%=⚠ | <60%=✗. Responde en español con markdown. Sé preciso con cifras y cita la fuente.`,
           messages:messages.slice(1).concat([{role:"user",text:txt}]).map(m=>({role:m.role,content:m.text})) })
       });
       const d = await res.json();
@@ -1054,7 +1055,7 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026) y **6 documentos 
         <Panamita mood={mood} size={44}/>
         <div>
           <div style={{ fontSize:16, fontWeight:700, color:C.text }}>Panamita</div>
-          <div style={{ fontSize:12, color:loading?C.orange:C.green, fontWeight:600 }}>{loading?"● Analizando...":`● Conectada · ${ENTIDADES.length} entidades · 6 documentos`}</div>
+          <div style={{ fontSize:12, color:loading?C.orange:C.green, fontWeight:600 }}>{loading?"● Analizando...":`● Conectada · ${ENTIDADES.length} entidades · 34 documentos`}</div>
         </div>
         <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
           <span style={{ padding:"4px 12px", background:C.headerBg+"15", color:C.headerBg, borderRadius:20, fontSize:11, fontWeight:700 }}>202,526 registros</span>

@@ -13,10 +13,11 @@ async function sbQuery(tabla, params = "") {
   return res.json();
 }
 async function sbRpc(fn, body = {}) {
+  const hasParams = Object.keys(body).length > 0;
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
-    method: "POST",
-    headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    method: hasParams ? "POST" : "GET",
+    headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, ...(hasParams ? {"Content-Type":"application/json"} : {}) },
+    ...(hasParams ? {body: JSON.stringify(body)} : {})
   });
   if (!res.ok) return [];
   return res.json();

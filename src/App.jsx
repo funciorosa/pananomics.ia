@@ -3303,15 +3303,16 @@ REGLAS:
             }
             return { type:"tool_result", tool_use_id:tb.id, content: json.message || "Sin datos para los filtros indicados." };
           }
-          const rows = await sbRpc("consultar_presupuesto_chat",{
-            p_fuente:   inp.fuente_ingreso  || null,
-            p_entidad:  inp.nombre_entidad  || null,
-            p_anio:     inp.anio            || null,
-            p_tipo:     inp.tipo_presupuesto || null,
-            p_programa: inp.nombre_programa  || null,
+          const rows = await sbRpc("consultar_informe",{
+            p_fuente:      inp.fuente_ingreso  || null,
+            p_entidad:     inp.nombre_entidad  || null,
+            p_anio_inicio: inp.anio            || null,
+            p_anio_fin:    inp.anio            || null,
+            p_tipo:        inp.tipo_presupuesto || null,
+            p_programa:    inp.nombre_programa  || null,
           });
           const content = rows.length
-            ? rows.map(r=>`${r.nombre_entidad} | ${r.fuente_ingreso||'-'} | ${r.anio} | ${r.tipo_presupuesto}: B/.${(+r.total_mod/1e6).toFixed(2)}M mod | B/.${(+r.total_eje/1e6).toFixed(2)}M eje | ${r.pct_ejecucion}%`).join("\n")
+            ? rows.map(r=>`${r.nombre_entidad} | ${r.fuente_ingreso||'-'} | ${r.anio} | ${r.tipo_presupuesto}: Ley B/.${(+r.total_ley/1e6).toFixed(2)}M | Mod B/.${(+r.total_mod/1e6).toFixed(2)}M | Eje B/.${(+r.total_eje/1e6).toFixed(2)}M | ${r.pct_ejecucion}%`).join("\n")
             : "Sin resultados para los filtros indicados.";
           return { type:"tool_result", tool_use_id:tb.id, content };
         }));

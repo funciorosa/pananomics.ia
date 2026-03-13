@@ -685,50 +685,538 @@ function Dashboard() {
 
 // ── INFORMES ──────────────────────────────────────────────────────────────────
 function Informes() {
+  const ENTIDADES = useContext(EntidadesCtx);
   const reportes = [
     { id:1, icon:"📊", title:"Ejecución Presupuestaria", desc:"Análisis detallado del gasto ejecutado vs modificado y Ley. Semáforo de cumplimiento.", color:C.navDash },
-    { id:2, icon:"💰", title:"Fuentes de Ingresos", desc:"Distribución del presupuesto por fuente de financiamiento y tendencias.", color:C.navHistorico },
-    { id:3, icon:"🏗", title:"Programas de Inversión", desc:"Estado de ejecución de proyectos y programas de inversión pública.", color:C.navInformes },
-    { id:4, icon:"📈", title:"Análisis Histórico", desc:"Tendencias y comparativos multianual 2016–2025 por entidad.", color:C.headerBg },
-    { id:5, icon:"🗂", title:"Grupos de Gasto", desc:"Distribución del gasto por objeto y grupo: Servicios Personales, Materiales, etc.", color:C.navEntidades },
-    { id:6, icon:"🌐", title:"Análisis Sectorial", desc:"Comparativos entre sectores: Social, Infraestructura, Productivo, Administrativo.", color:C.navBiblioteca },
-    { id:7, icon:"🏆", title:"Rankings e Indicadores", desc:"Ranking de entidades por ejecución, variaciones y alertas de desviación.", color:C.gold },
+    { id:2, icon:"💰", title:"Fuentes de Ingresos",      desc:"Distribución del presupuesto por fuente de financiamiento y tendencias.",            color:C.navHistorico },
+    { id:3, icon:"🏗",  title:"Programas de Inversión",   desc:"Estado de ejecución de proyectos y programas de inversión pública.",                color:C.navInformes },
+    { id:4, icon:"📈", title:"Análisis Histórico",        desc:"Tendencias y comparativos multianual 2016–2025 por entidad.",                       color:C.headerBg },
+    { id:5, icon:"🗂",  title:"Grupos de Gasto",           desc:"Distribución del gasto por objeto y grupo: Servicios Personales, Materiales, etc.", color:C.navEntidades },
+    { id:6, icon:"🌐", title:"Análisis Sectorial",         desc:"Comparativos entre sectores: Social, Infraestructura, Productivo, Administrativo.", color:C.navBiblioteca },
+    { id:7, icon:"🏆", title:"Rankings e Indicadores",     desc:"Ranking de entidades por ejecución, variaciones y alertas de desviación.",         color:C.gold },
   ];
+  const GRUPO_NAMES_W  = ["Gobierno Central","Inst. Descentralizadas","Empresas Públicas","Intermediarios Financieros"];
+  const GRUPO_COLORS_W = [C.navDash, C.navHistorico, C.navInformes, C.navEntidades];
+  const ANOS = [2016,2017,2018,2019,2020,2021,2022,2023,2024,2025,2026];
+
+  // ── Wizard state ──────────────────────────────────────────────────────────
+  const [activeCard, setActiveCard]       = useState(null);
+  const [wizStep, setWizStep]             = useState(1);
+  const [wizEnt, setWizEnt]               = useState(null);
+  const [wizSearch, setWizSearch]         = useState("");
+  const [wizFilters, setWizFilters]       = useState({});
+  const [wizAnioInicio, setWizAnioInicio] = useState(2025);
+  const [wizAnioFin, setWizAnioFin]       = useState(2025);
+  const [wizIdioma, setWizIdioma]         = useState("es");
+  const [wizDetalle, setWizDetalle]       = useState("estandar");
+  const [wizStatus, setWizStatus]         = useState(null); // null|loading|ok|error
+  const [wizLoadPhase, setWizLoadPhase]   = useState(0);
+  const [wizResult, setWizResult]         = useState(null);
+  const [wizErrMsg, setWizErrMsg]         = useState("");
+  const [reportHistory, setReportHistory] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("pananomics_reports") || "[]"); } catch { return []; }
+  });
+
+  const resetWizard = () => {
+    setActiveCard(null); setWizStep(1); setWizEnt(null); setWizSearch("");
+    setWizFilters({}); setWizAnioInicio(2025); setWizAnioFin(2025);
+    setWizStatus(null); setWizLoadPhase(0); setWizResult(null); setWizErrMsg("");
+  };
+
+  React.useEffect(() => {
+    if (wizStatus !== "loading") { setWizLoadPhase(0); return; }
+    const t = setInterval(() => setWizLoadPhase(p => Math.min(p + 1, 4)), 8000);
+    return () => clearInterval(t);
+  }, [wizStatus]);
+
+  const handleGenerate = async () => {
+    setWizStatus("loading");
+    try {
+      const f = wizFilters;
+      const resp = await fetch("/api/export-word", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre_entidad:   wizEnt?.nombre   || null,
+          anio:             wizAnioInicio,
+          tipo_presupuesto: f.tipo           || null,
+          fuente_ingreso:   Array.isArray(f.fuentes) ? f.fuentes[0] : (f.fuente || null),
+          nombre_programa:  f.programa       || null,
+        })
+      });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || `Error ${resp.status}`);
+      setWizResult({ docxBase64: json.docxBase64, filename: json.filename });
+      const entry = {
+        id: Date.now(),
+        reportType: reportes.find(r => r.id === activeCard)?.title || "",
+        entity: wizEnt?.siglas || "Todas",
+        periodo: wizAnioInicio === wizAnioFin ? `${wizAnioInicio}` : `${wizAnioInicio}–${wizAnioFin}`,
+        filename: json.filename,
+        generatedAt: new Date().toISOString()
+      };
+      const updated = [entry, ...reportHistory].slice(0, 10);
+      setReportHistory(updated);
+      localStorage.setItem("pananomics_reports", JSON.stringify(updated));
+      setWizStatus("ok");
+    } catch(e) { setWizErrMsg(e.message); setWizStatus("error"); }
+  };
+
+  const downloadWord = () => {
+    if (!wizResult) return;
+    const a = document.createElement("a");
+    a.href = "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64," + wizResult.docxBase64;
+    a.download = wizResult.filename; a.click();
+  };
+
+  const rpt = reportes.find(r => r.id === activeCard);
+  const filtradas = wizSearch.trim()
+    ? ENTIDADES.filter(e => e.nombre.toLowerCase().includes(wizSearch.toLowerCase()) || e.siglas.toLowerCase().includes(wizSearch.toLowerCase()))
+    : ENTIDADES;
+
+  const Steps = () => (
+    <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:24 }}>
+      {["Entidad","Filtros","Período","Generar"].map((lbl,i) => {
+        const n=i+1, done=wizStep>n, active=wizStep===n;
+        return (
+          <React.Fragment key={n}>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+              <div style={{ width:30, height:30, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, background:done?"#43A047":active?C.navInformes:C.border, color:(done||active)?"white":C.textLight, transition:"all 0.2s" }}>{done?"✓":n}</div>
+              <div style={{ fontSize:10, fontWeight:600, color:active?C.navInformes:done?"#43A047":C.textLight }}>{lbl}</div>
+            </div>
+            {i<3 && <div style={{ flex:1, height:2, background:wizStep>n?"#43A047":C.border, margin:"0 8px", marginBottom:18, transition:"all 0.3s" }}/>}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+
+  const EntBadge = () => wizEnt ? (
+    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16, padding:"8px 14px", background:C.navInformes+"10", borderRadius:8, border:`1px solid ${C.navInformes}30` }}>
+      <div style={{ padding:"2px 8px", background:C.navInformes+"20", borderRadius:5, fontSize:11, fontWeight:800, color:C.navInformes }}>{wizEnt.siglas}</div>
+      <div style={{ fontSize:13, color:C.text, fontWeight:600, flex:1 }}>{wizEnt.nombre}</div>
+      <button onClick={()=>{ setWizEnt(null); setWizStep(1); }} style={{ fontSize:11, color:C.textLight, background:"none", border:"none", cursor:"pointer" }}>Cambiar</button>
+    </div>
+  ) : null;
+
+  const renderFilters = () => {
+    const setF = (k,v) => setWizFilters(p=>({...p,[k]:v}));
+    const f = wizFilters;
+    const Toggle = ({label,val,onChange}) => (
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", background:C.bg, borderRadius:8, border:`1px solid ${C.border}` }}>
+        <span style={{ fontSize:12, color:C.text }}>{label}</span>
+        <div onClick={()=>onChange(!val)} style={{ width:38, height:20, borderRadius:10, background:val?C.navInformes:C.border, cursor:"pointer", position:"relative", transition:"all 0.2s" }}>
+          <div style={{ position:"absolute", top:2, left:val?18:2, width:16, height:16, borderRadius:"50%", background:"white", transition:"left 0.2s", boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }}/>
+        </div>
+      </div>
+    );
+    const BtnGroup = ({opts,val,onChange,multi}) => (
+      <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+        {opts.map(o => {
+          const active = multi?(val||[]).includes(o.v):val===o.v;
+          return <button key={o.v} onClick={()=>{ if(multi){ const cur=val||[]; onChange(active?cur.filter(x=>x!==o.v):[...cur,o.v]); } else onChange(o.v); }}
+            style={{ padding:"7px 14px", border:`2px solid ${active?C.navInformes:C.border}`, borderRadius:8, background:active?C.navInformes+"10":C.white, color:active?C.navInformes:C.textMid, fontSize:12, fontWeight:active?700:500, cursor:"pointer", transition:"all 0.15s" }}>{o.l}</button>;
+        })}
+      </div>
+    );
+    const Lbl = ({c}) => <div style={{ fontSize:11, fontWeight:700, color:C.textMid, letterSpacing:"0.04em", marginBottom:8 }}>{c}</div>;
+    switch(activeCard) {
+      case 1: return (
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div><Lbl c="TIPO DE PRESUPUESTO"/><BtnGroup val={f.tipo||"ambos"} onChange={v=>setF("tipo",v)} opts={[{v:"ambos",l:"Ambos"},{v:"Funcionamiento",l:"Funcionamiento"},{v:"Inversión",l:"Inversión"}]}/></div>
+          <div>
+            <Lbl c={`UMBRAL DE ALERTA — crítico si ejecución < ${f.umbral||90}%`}/>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <input type="range" min={0} max={100} value={f.umbral||90} onChange={e=>setF("umbral",+e.target.value)} style={{ flex:1 }}/>
+              <div style={{ fontSize:15, fontWeight:700, color:C.navInformes, minWidth:44, textAlign:"right" }}>{f.umbral||90}%</div>
+            </div>
+          </div>
+          <Toggle label="Incluir comparativo con año anterior" val={!!f.comparativo} onChange={v=>setF("comparativo",v)}/>
+        </div>
+      );
+      case 2: return (
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div><Lbl c="FUENTES DE INGRESO (selecciona una o más)"/>
+            <BtnGroup multi val={f.fuentes} onChange={v=>setF("fuentes",v)} opts={[
+              {v:"Ingresos Corrientes",l:"Ingresos Corrientes"},{v:"Peaje del Canal",l:"Peaje del Canal"},
+              {v:"Dividendos del Canal",l:"Dividendos del Canal"},{v:"Bonos Externos",l:"Bonos Externos"},
+              {v:"Fondo de Gestión",l:"Fondo de Gestión"},{v:"Seguro Educativo",l:"Seguro Educativo"},
+              {v:"Préstamos BID/AID",l:"Préstamos BID/AID"}
+            ]}/>
+          </div>
+          <Toggle label="Mostrar distribución porcentual" val={f.mostrarDist!==false} onChange={v=>setF("mostrarDist",v)}/>
+        </div>
+      );
+      case 3: return (
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div style={{ padding:"10px 14px", background:C.navInformes+"10", borderRadius:8, border:`1px solid ${C.navInformes}30`, fontSize:12, color:C.navInformes, fontWeight:600 }}>📌 Este informe analiza únicamente presupuesto de Inversión</div>
+          <div><Lbl c="ÁREA DE DESARROLLO"/><BtnGroup val={f.areaDesarrollo||"todas"} onChange={v=>setF("areaDesarrollo",v)} opts={[{v:"todas",l:"Todas"},{v:"social",l:"Servicios Sociales"},{v:"productivo",l:"Fomento Productivo"}]}/></div>
+          <div>
+            <Lbl c="MONTO MÍNIMO DE PROYECTO (B/.)"/>
+            <input type="number" min={0} value={f.montoMin||0} onChange={e=>setF("montoMin",+e.target.value)} style={{ width:"100%", padding:"9px 12px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, color:C.text, outline:"none", boxSizing:"border-box" }}/>
+          </div>
+          <Toggle label="Mostrar solo proyectos con ejecución < 80%" val={!!f.soloRezagados} onChange={v=>setF("soloRezagados",v)}/>
+        </div>
+      );
+      case 4: return (
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div><Lbl c="TIPO DE COMPARACIÓN"/><BtnGroup val={f.tipoComp||"evolucion"} onChange={v=>setF("tipoComp",v)} opts={[{v:"evolucion",l:"Evolución de la entidad"},{v:"comparar",l:"Comparar múltiples"},{v:"sector",l:"vs Promedio del sector"}]}/></div>
+          <div><Lbl c="MÉTRICAS A INCLUIR"/>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {[{k:"ley_mod",l:"Presupuesto Ley vs Modificado",def:true},{k:"ejecutado",l:"Ejecutado y Devengado",def:true},{k:"tasa",l:"Tasa de ejecución",def:true},{k:"variacion",l:"Variación interanual",def:false},{k:"participacion",l:"Participación en presupuesto nacional",def:false}].map(({k,l,def})=>{
+                const checked=f.metricas?.[k]??def;
+                return <label key={k} style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer", fontSize:12, color:C.text }}><input type="checkbox" checked={checked} onChange={e=>setF("metricas",{...(f.metricas||{}),[k]:e.target.checked})} style={{ width:16, height:16 }}/>{l}</label>;
+              })}
+            </div>
+          </div>
+        </div>
+      );
+      case 5: return (
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div><Lbl c="GRUPOS DE GASTO (selecciona uno o más)"/>
+            <BtnGroup multi val={f.grupos} onChange={v=>setF("grupos",v)} opts={[
+              {v:"Servicios Personales",l:"Servicios Personales"},{v:"Servicios No Personales",l:"Serv. No Personales"},
+              {v:"Materiales y Suministros",l:"Materiales"},{v:"Maquinaria y Equipo",l:"Maquinaria"},
+              {v:"Transferencias Corrientes",l:"Transf. Corrientes"},{v:"Transferencias de Capital",l:"Transf. Capital"},
+              {v:"Construcciones",l:"Construcciones"},{v:"Inversión Financiera",l:"Inv. Financiera"}
+            ]}/>
+          </div>
+          <Toggle label="Destacar Servicios Personales (planilla)" val={f.destacarPlanilla!==false} onChange={v=>setF("destacarPlanilla",v)}/>
+        </div>
+      );
+      case 6: return (
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div><Lbl c="TIPO DE ANÁLISIS"/><BtnGroup val={f.tipoAnalisis||"sector"} onChange={v=>setF("tipoAnalisis",v)} opts={[{v:"sector",l:"Por sector"},{v:"area",l:"Por área de desarrollo"},{v:"ambos",l:"Ambos"}]}/></div>
+          <div><Lbl c="SECTORES A COMPARAR"/>
+            <BtnGroup multi val={f.sectores} onChange={v=>setF("sectores",v)} opts={[
+              {v:"Social",l:"Social"},{v:"Infraestructura",l:"Infraestructura"},{v:"Productivo",l:"Productivo"},{v:"Administrativo",l:"Administrativo"},{v:"Canal",l:"Canal"}
+            ]}/>
+          </div>
+        </div>
+      );
+      case 7: return (
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div>
+            <Lbl c="CRITERIO DE RANKING"/>
+            <select value={f.criterio||"mayor_ejecutado"} onChange={e=>setF("criterio",e.target.value)} style={{ width:"100%", padding:"9px 12px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, color:C.text, outline:"none", boxSizing:"border-box", background:C.white }}>
+              <option value="mayor_modificado">Mayor presupuesto modificado</option>
+              <option value="mayor_ejecutado">Mayor ejecutado</option>
+              <option value="mayor_tasa">Mayor tasa de ejecución</option>
+              <option value="menor_tasa">Menor tasa de ejecución</option>
+              <option value="mayor_crecimiento">Mayor crecimiento presupuestario</option>
+              <option value="mayor_diferencia">Mayor diferencia Ley vs Modificado</option>
+            </select>
+          </div>
+          <div><Lbl c={`TOP N ENTIDADES — ${f.topN||10} entidades`}/><input type="range" min={5} max={50} value={f.topN||10} onChange={e=>setF("topN",+e.target.value)} style={{ width:"100%" }}/></div>
+          <Toggle label="Incluir alertas de desviación (ejecución < 70%)" val={f.alertas!==false} onChange={v=>setF("alertas",v)}/>
+        </div>
+      );
+      default: return null;
+    }
+  };
+
   return (
     <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"'Segoe UI',system-ui,sans-serif" }}>
+      {/* Header */}
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, padding:"14px 28px", display:"flex", alignItems:"center", gap:12 }}>
         <span style={{ fontSize:22 }}>📋</span>
         <div>
           <div style={{ fontSize:17, fontWeight:700, color:C.text }}>Generador de Informes</div>
           <div style={{ fontSize:12, color:C.textMid }}>7 tipos de informes · Generación automática con Panamita IA</div>
         </div>
-        <div style={{ marginLeft:"auto" }}><span style={{ padding:"4px 14px", background:C.navInformes+"20", color:C.navInformes, borderRadius:20, fontSize:12, fontWeight:700 }}>PRÓXIMAMENTE</span></div>
+        {activeCard && (
+          <button onClick={resetWizard} style={{ marginLeft:"auto", padding:"8px 18px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>← Volver a Informes</button>
+        )}
       </div>
+
       <div style={{ padding:"28px" }}>
-        <div style={{ background:C.headerBg+"10", border:`1px solid ${C.headerBg}30`, borderRadius:12, padding:"16px 20px", marginBottom:24, display:"flex", gap:12, alignItems:"center" }}>
-          <Panamita size={44}/>
-          <div>
-            <div style={{ fontSize:13, fontWeight:700, color:C.headerBg, marginBottom:4 }}>Módulo en desarrollo</div>
-            <div style={{ fontSize:12, color:C.textMid, lineHeight:1.6 }}>Cuando cargues el resto de la data, activaremos la generación automática de informes en Word y PowerPoint con un clic. Panamita analizará los datos reales de Supabase y redactará el informe.</div>
-          </div>
-        </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:14 }}>
-          {reportes.map(r=>(
-            <div key={r.id} style={{ background:C.white, borderRadius:12, padding:"20px 22px", border:`1px solid ${C.border}`, borderLeft:`4px solid ${r.color}`, opacity:0.85 }}>
-              <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
-                <div style={{ width:44, height:44, borderRadius:10, background:r.color+"15", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>{r.icon}</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:4 }}>Informe #{r.id}: {r.title}</div>
-                  <div style={{ fontSize:12, color:C.textMid, lineHeight:1.5 }}>{r.desc}</div>
+        {/* ── VISTA PRINCIPAL: grilla de tarjetas ── */}
+        {!activeCard ? (
+          <>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:14, marginBottom:32 }}>
+              {reportes.map(r=>(
+                <div key={r.id} style={{ background:C.white, borderRadius:12, padding:"20px 22px", border:`1px solid ${C.border}`, borderLeft:`4px solid ${r.color}`, transition:"box-shadow 0.2s" }}
+                  onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 20px rgba(0,0,0,0.08)"}
+                  onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
+                  <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                    <div style={{ width:44, height:44, borderRadius:10, background:r.color+"15", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>{r.icon}</div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:4 }}>Informe #{r.id}: {r.title}</div>
+                      <div style={{ fontSize:12, color:C.textMid, lineHeight:1.5 }}>{r.desc}</div>
+                    </div>
+                  </div>
+                  <button onClick={()=>{ setActiveCard(r.id); setWizStep(1); setWizFilters({}); }}
+                    style={{ marginTop:14, width:"100%", padding:"9px", background:r.color, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6, transition:"opacity 0.15s" }}
+                    onMouseEnter={e=>e.currentTarget.style.opacity="0.88"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                    ✨ Crear informe
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Historial reciente */}
+            {reportHistory.length > 0 && (
+              <div>
+                <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:12 }}>📄 Informes generados recientemente</div>
+                <div style={{ background:C.white, borderRadius:12, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+                  <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                    <thead><tr style={{ background:C.bg }}>
+                      {["Tipo de informe","Entidad","Período","Fecha"].map(h=>(
+                        <th key={h} style={{ padding:"10px 14px", textAlign:"left", fontSize:11, fontWeight:700, color:C.textMid, letterSpacing:"0.04em", borderBottom:`1px solid ${C.border}` }}>{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody>
+                      {reportHistory.map(h=>(
+                        <tr key={h.id} style={{ borderBottom:`1px solid ${C.border}` }}>
+                          <td style={{ padding:"10px 14px", fontSize:12, color:C.text, fontWeight:600 }}>{h.reportType}</td>
+                          <td style={{ padding:"10px 14px", fontSize:12, color:C.textMid }}>{h.entity}</td>
+                          <td style={{ padding:"10px 14px", fontSize:12, color:C.textMid }}>{h.periodo}</td>
+                          <td style={{ padding:"10px 14px", fontSize:11, color:C.textLight }}>{new Date(h.generatedAt).toLocaleDateString("es-PA")}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-              <div style={{ marginTop:14, display:"flex", gap:8 }}>
-                <button disabled style={{ flex:1, padding:"7px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:7, fontSize:11, color:C.textLight, cursor:"not-allowed" }}>📄 Word</button>
-                <button disabled style={{ flex:1, padding:"7px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:7, fontSize:11, color:C.textLight, cursor:"not-allowed" }}>📊 PowerPoint</button>
+            )}
+          </>
+        ) : (
+          /* ── WIZARD ── */
+          <div style={{ maxWidth:720, margin:"0 auto" }}>
+            {/* Header del wizard con tipo de informe */}
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20, padding:"10px 16px", background:rpt?.color+"10", borderRadius:10, border:`1px solid ${rpt?.color}30` }}>
+              <span style={{ fontSize:22 }}>{rpt?.icon}</span>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:rpt?.color }}>Informe #{rpt?.id}: {rpt?.title}</div>
+                <div style={{ fontSize:11, color:C.textMid }}>{rpt?.desc}</div>
               </div>
             </div>
-          ))}
-        </div>
+
+            {/* ── PASO 1: Entidad ── */}
+            {wizStep===1 && (
+              <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
+                <Steps/>
+                <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>¿Para qué entidad es el informe?</div>
+                <div style={{ fontSize:12, color:C.textMid, marginBottom:16 }}>Selecciona una entidad. Puedes buscar por nombre o siglas.</div>
+                <input value={wizSearch} onChange={e=>setWizSearch(e.target.value)} placeholder="Buscar entidad — ej: MIVIOT, Ministerio de Salud..."
+                  style={{ width:"100%", padding:"10px 14px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, color:C.text, outline:"none", marginBottom:16, boxSizing:"border-box" }}/>
+                <div style={{ maxHeight:340, overflowY:"auto", border:`1px solid ${C.border}`, borderRadius:10 }}>
+                  {(wizSearch.trim()
+                    ? [{idx:-1, list:filtradas}]
+                    : [0,1,2,3].map(i=>({idx:i, list:ENTIDADES.filter(e=>e.codigo_area===i)}))
+                  ).map(({idx,list})=>(
+                    <div key={idx}>
+                      {idx>=0 && list.length>0 && <div style={{ padding:"6px 14px", background:GRUPO_COLORS_W[idx]+"12", borderBottom:`1px solid ${C.border}`, fontSize:10, fontWeight:800, color:GRUPO_COLORS_W[idx], letterSpacing:"0.05em" }}>{GRUPO_NAMES_W[idx].toUpperCase()}</div>}
+                      {list.map(e=>(
+                        <div key={e.nombre} onClick={()=>{ setWizEnt(e); setWizSearch(""); setWizStep(2); }}
+                          style={{ padding:"10px 14px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:12, cursor:"pointer", transition:"background 0.15s" }}
+                          onMouseEnter={ev=>ev.currentTarget.style.background=C.bg} onMouseLeave={ev=>ev.currentTarget.style.background="white"}>
+                          <div style={{ padding:"2px 7px", background:(idx>=0?GRUPO_COLORS_W[idx]:C.navInformes)+"18", borderRadius:5, fontSize:10, fontWeight:800, color:idx>=0?GRUPO_COLORS_W[idx]:C.navInformes, whiteSpace:"nowrap" }}>{e.siglas}</div>
+                          <div style={{ fontSize:12, color:C.text, flex:1 }}>{e.nombre}</div>
+                          <div style={{ fontSize:16, color:C.textLight }}>›</div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                  {filtradas.length===0 && <div style={{ padding:"20px", textAlign:"center", fontSize:12, color:C.textMid }}>No se encontraron entidades.</div>}
+                </div>
+              </div>
+            )}
+
+            {/* ── PASO 2: Filtros específicos ── */}
+            {wizStep===2 && wizEnt && (
+              <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
+                <Steps/>
+                <EntBadge/>
+                <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>Configura los filtros del informe</div>
+                <div style={{ fontSize:12, color:C.textMid, marginBottom:20 }}>Personaliza qué datos incluir en el análisis.</div>
+                {renderFilters()}
+                <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop:24 }}>
+                  <button onClick={()=>setWizStep(1)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
+                  <button onClick={()=>setWizStep(3)} style={{ padding:"9px 22px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>Continuar →</button>
+                </div>
+              </div>
+            )}
+
+            {/* ── PASO 3: Período ── */}
+            {wizStep===3 && wizEnt && (() => {
+              const pills = [
+                { label:"Último año",         inicio:2025, fin:2025 },
+                { label:"Últimos 3 años",      inicio:2023, fin:2025 },
+                { label:"Últimos 5 años",      inicio:2021, fin:2025 },
+                { label:"Histórico completo",  inicio:2016, fin:2025 },
+              ];
+              return (
+                <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
+                  <Steps/>
+                  <EntBadge/>
+                  <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>¿Qué período quieres analizar?</div>
+                  <div style={{ fontSize:12, color:C.textMid, marginBottom:20 }}>Selecciona el rango de años para el análisis.</div>
+                  <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap" }}>
+                    {pills.map(p=>{
+                      const active = wizAnioInicio===p.inicio && wizAnioFin===p.fin;
+                      return (
+                        <button key={p.label} onClick={()=>{ setWizAnioInicio(p.inicio); setWizAnioFin(p.fin); }}
+                          style={{ padding:"7px 14px", border:`2px solid ${active?C.navInformes:C.border}`, borderRadius:20, background:active?C.navInformes+"10":C.white, color:active?C.navInformes:C.textMid, fontSize:12, fontWeight:active?700:500, cursor:"pointer", transition:"all 0.15s" }}>
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
+                    <div>
+                      <div style={{ fontSize:11, fontWeight:700, color:C.textMid, letterSpacing:"0.04em", marginBottom:8 }}>AÑO DE INICIO</div>
+                      <select value={wizAnioInicio} onChange={e=>setWizAnioInicio(+e.target.value)} style={{ width:"100%", padding:"10px 12px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, color:C.text, outline:"none", background:C.white }}>
+                        {ANOS.map(a=><option key={a} value={a}>{a}{a===2026?" (hasta feb.)":""}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <div style={{ fontSize:11, fontWeight:700, color:C.textMid, letterSpacing:"0.04em", marginBottom:8 }}>AÑO DE FIN</div>
+                      <select value={wizAnioFin} onChange={e=>setWizAnioFin(+e.target.value)} style={{ width:"100%", padding:"10px 12px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, color:C.text, outline:"none", background:C.white }}>
+                        {ANOS.filter(a=>a>=wizAnioInicio).map(a=><option key={a} value={a}>{a}{a===2026?" (hasta feb.)":""}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  {wizAnioFin===2026 && (
+                    <div style={{ padding:"8px 12px", background:"#FFF8E1", borderRadius:8, border:"1px solid #F9A825", fontSize:12, color:"#7A4800", marginBottom:12 }}>
+                      ⚠️ El año 2026 contiene datos hasta febrero únicamente.
+                    </div>
+                  )}
+                  <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+                    <button onClick={()=>setWizStep(2)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
+                    <button onClick={()=>setWizStep(4)} style={{ padding:"9px 22px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>Continuar →</button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── PASO 4: Confirmar + Generar ── */}
+            {wizStep===4 && wizEnt && (
+              <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
+                <Steps/>
+
+                {/* Estado: configuración inicial */}
+                {wizStatus===null && (
+                  <>
+                    <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:16 }}>Confirma y genera tu informe</div>
+                    <div style={{ background:C.bg, borderRadius:10, padding:"16px 18px", marginBottom:20, display:"flex", flexDirection:"column", gap:12 }}>
+                      {[
+                        { icon:"📋", label:"TIPO DE INFORME", value:`#${rpt?.id} — ${rpt?.title}` },
+                        { icon:"🏛", label:"ENTIDAD",         value:`${wizEnt?.siglas} — ${wizEnt?.nombre}` },
+                        { icon:"📅", label:"PERÍODO",         value:wizAnioInicio===wizAnioFin?`${wizAnioInicio}`:`${wizAnioInicio} – ${wizAnioFin}` },
+                      ].map(({icon,label,value})=>(
+                        <div key={label} style={{ display:"flex", alignItems:"center", gap:10 }}>
+                          <span style={{ fontSize:18 }}>{icon}</span>
+                          <div>
+                            <div style={{ fontSize:10, fontWeight:700, color:C.textMid, letterSpacing:"0.04em" }}>{label}</div>
+                            <div style={{ fontSize:13, color:C.text, fontWeight:600 }}>{value}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:20 }}>
+                      <div>
+                        <div style={{ fontSize:11, fontWeight:700, color:C.textMid, marginBottom:8 }}>IDIOMA</div>
+                        <div style={{ display:"flex", gap:8 }}>
+                          {[{v:"es",l:"Español"},{v:"en",l:"English"}].map(({v,l})=>(
+                            <button key={v} onClick={()=>setWizIdioma(v)} style={{ flex:1, padding:"8px", border:`2px solid ${wizIdioma===v?C.navInformes:C.border}`, borderRadius:8, background:wizIdioma===v?C.navInformes+"10":C.white, color:wizIdioma===v?C.navInformes:C.textMid, fontSize:12, fontWeight:wizIdioma===v?700:500, cursor:"pointer" }}>{l}</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize:11, fontWeight:700, color:C.textMid, marginBottom:8 }}>NIVEL DE DETALLE</div>
+                        <div style={{ display:"flex", gap:8 }}>
+                          {[{v:"estandar",l:"Estándar"},{v:"extendido",l:"Extendido"}].map(({v,l})=>(
+                            <button key={v} onClick={()=>setWizDetalle(v)} style={{ flex:1, padding:"8px", border:`2px solid ${wizDetalle===v?C.navInformes:C.border}`, borderRadius:8, background:wizDetalle===v?C.navInformes+"10":C.white, color:wizDetalle===v?C.navInformes:C.textMid, fontSize:12, fontWeight:wizDetalle===v?700:500, cursor:"pointer" }}>{l}</button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ padding:"12px 16px", background:C.headerBg+"08", borderRadius:10, border:`1px solid ${C.headerBg}20`, fontSize:12, color:C.textMid, marginBottom:20, lineHeight:1.6 }}>
+                      💡 <strong>Panamita IA</strong> consultará los datos reales de Supabase y generará el documento Word con análisis profesional. Este proceso toma aproximadamente 10–30 segundos.
+                    </div>
+                    <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+                      <button onClick={()=>setWizStep(3)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
+                      <button onClick={handleGenerate} style={{ padding:"11px 28px", background:C.navInformes, color:"white", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
+                        ✨ Generar informe con IA
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Estado: cargando */}
+                {wizStatus==="loading" && (
+                  <div style={{ padding:"36px 20px" }}>
+                    <style>{`@keyframes inf-spin{to{transform:rotate(360deg)}}@keyframes inf-pulse{0%,100%{opacity:1}50%{opacity:0.3}}@keyframes inf-slide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}`}</style>
+                    <div style={{ display:"flex", justifyContent:"center", marginBottom:28 }}>
+                      <div style={{ position:"relative", width:64, height:64 }}>
+                        <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:`5px solid ${C.navInformes}22` }}/>
+                        <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"5px solid transparent", borderTopColor:C.navInformes, animation:"inf-spin 0.9s linear infinite" }}/>
+                        <div style={{ position:"absolute", inset:10, borderRadius:"50%", border:"3px solid transparent", borderTopColor:C.navInformes+"66", animation:"inf-spin 1.4s linear infinite reverse" }}/>
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:8, maxWidth:400, margin:"0 auto" }}>
+                      {[
+                        { icon:"🔍", label:"Consultando datos presupuestarios..." },
+                        { icon:"📊", label:"Calculando indicadores de ejecución..." },
+                        { icon:"🤖", label:"Redactando análisis con Panamita IA..." },
+                        { icon:"📄", label:"Preparando el documento Word..." },
+                        { icon:"✨", label:"Finalizando el informe..." },
+                      ].map((step,i)=>{
+                        const done=i<wizLoadPhase, active=i===wizLoadPhase, pending=i>wizLoadPhase;
+                        return (
+                          <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:10, background:active?C.navInformes+"10":done?"#43A04708":C.bg, border:`1px solid ${active?C.navInformes:done?"#43A04740":C.border}`, opacity:pending?0.45:1, animation:active?"inf-slide 0.3s ease":"none", transition:"all 0.4s" }}>
+                            <span style={{ fontSize:18, flexShrink:0 }}>{step.icon}</span>
+                            <span style={{ flex:1, fontSize:12, fontWeight:active?700:500, color:active?C.navInformes:done?"#43A047":C.textMid }}>{step.label}</span>
+                            {done && <span style={{ fontSize:14, color:"#43A047" }}>✓</span>}
+                            {active && <span style={{ fontSize:11, color:C.navInformes, animation:"inf-pulse 1.2s ease-in-out infinite", letterSpacing:2 }}>●●●</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ textAlign:"center", fontSize:11, color:C.textLight, marginTop:20 }}>Esto puede tomar entre 10 y 30 segundos…</div>
+                  </div>
+                )}
+
+                {/* Estado: error */}
+                {wizStatus==="error" && (
+                  <div style={{ padding:"24px", textAlign:"center" }}>
+                    <div style={{ fontSize:32, marginBottom:12 }}>❌</div>
+                    <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:8 }}>Error al generar el informe</div>
+                    <div style={{ fontSize:12, color:C.textMid, marginBottom:20 }}>{wizErrMsg}</div>
+                    <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+                      <button onClick={()=>setWizStatus(null)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Intentar de nuevo</button>
+                      <button onClick={resetWizard} style={{ padding:"9px 18px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer" }}>Nuevo informe</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Estado: éxito + descarga */}
+                {wizStatus==="ok" && wizResult && (
+                  <div style={{ padding:"24px", textAlign:"center" }}>
+                    <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
+                    <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:8 }}>¡Informe generado con éxito!</div>
+                    <div style={{ fontSize:12, color:C.textMid, marginBottom:4 }}>{wizResult.filename}</div>
+                    <div style={{ fontSize:11, color:C.textLight, marginBottom:24 }}>
+                      {rpt?.title} · {wizEnt?.siglas} · {wizAnioInicio===wizAnioFin?wizAnioInicio:`${wizAnioInicio}–${wizAnioFin}`}
+                    </div>
+                    <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
+                      <button onClick={downloadWord} style={{ padding:"12px 24px", background:C.navInformes, color:"white", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
+                        📄 Descargar Word
+                      </button>
+                      <button onClick={()=>window.print()} style={{ padding:"12px 24px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, fontSize:13, fontWeight:600, color:C.textMid, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
+                        🖨️ Imprimir / PDF
+                      </button>
+                      <button onClick={resetWizard} style={{ padding:"12px 24px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, fontSize:13, fontWeight:600, color:C.textMid, cursor:"pointer" }}>
+                        + Nuevo informe
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <style>{`@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}@keyframes bob{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}`}</style>
     </div>

@@ -738,7 +738,7 @@ function Informes() {
 // ── ENTIDADES ─────────────────────────────────────────────────────────────────
 function Entidades({ user }) {
   const ENTIDADES = useContext(EntidadesCtx);
-  const [view, setView] = useState("lista");
+  const [view, setView] = useState("crear");
   const [selected, setSelected] = useState(null);
   const [openGroups, setOpenGroups] = useState({0:true,1:false,2:false,3:false});
   // ── Crear Informe wizard ──
@@ -1214,86 +1214,243 @@ function Entidades({ user }) {
                         <div style={{ textAlign:"center", fontSize:11, color:C.textLight, marginTop:20 }}>Este proceso puede tomar entre 20 y 40 segundos…</div>
                       </div>
                     )}
-                    {wizStatus==="preview" && wizPreview && (
-                      <div>
-                        <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>Vista previa del informe</div>
-                        <div style={{ fontSize:11, color:C.textMid, marginBottom:16 }}>{wizPreview.entidad} · {wizPreview.slides.length} diapositivas</div>
-                        <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:20 }}>
-                          {wizPreview.slides.map(slide=>(
-                            <div key={slide.num} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:10, overflow:"hidden" }}>
-                              <div style={{ background:"#1B2F4E", padding:"8px 14px", display:"flex", alignItems:"center", gap:10 }}>
-                                <div style={{ width:22, height:22, borderRadius:"50%", background:"#142240", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:"white", flexShrink:0 }}>{slide.num}</div>
-                                <div style={{ fontSize:12, fontWeight:700, color:"white" }}>{slide.titulo}</div>
+                    {wizStatus==="preview" && wizPreview && (() => {
+                      const { entidad:pvEnt, siglas:pvSig, objetivo:pvObj, slides:pvSlides } = wizPreview;
+                      const NAV="#1B2F4E", NAV2="#142240", ICE="#EEF4FF", BDR="#C8D8EE", GRY="#EEF2F8";
+                      const pLbl = wizPeriodo ? (wizPeriodo.tipo==="trimestral" ? `${wizPeriodo.opcion} ${wizPeriodo.anio}` : `${wizPeriodo.opcion==="1S"?"1er Sem.":"2do Sem."} ${wizPeriodo.anio}`) : "Cierre 2025";
+                      const pRng = wizPeriodo ? ({"T1":"Ene–Mar","T2":"Abr–Jun","T3":"Jul–Sep","T4":"Oct–Dic","1S":"Ene–Jun","2S":"Jul–Dic"}[wizPeriodo.opcion]||"Ene–Dic")+" "+wizPeriodo.anio : "Enero – Diciembre 2025";
+                      const semC = p => p>=80?{bg:"#C8F0D8",fg:"#0F5E2F"}:p>=60?{bg:"#FFE8B0",fg:"#7A4800"}:{bg:"#FFD0D0",fg:"#7A1010"};
+                      const Pill = ({pct}) => { const s=semC(pct); return <span style={{background:s.bg,color:s.fg,fontSize:7,fontWeight:700,padding:"1px 5px",borderRadius:8,display:"inline-block"}}>{pct}%</span>; };
+                      const PanelHdr = ({label}) => <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:5}}><div style={{width:8,height:8,background:NAV,flexShrink:0}}/><span style={{fontSize:6,fontWeight:700,color:NAV,textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</span></div>;
+                      const SlideHdr = ({sub,sub2}) => (
+                        <div style={{display:"flex",height:42,flexShrink:0}}>
+                          <div style={{flex:1,background:NAV,padding:"5px 12px",display:"flex",flexDirection:"column",justifyContent:"center",overflow:"hidden"}}>
+                            {sub ? <><div style={{fontSize:9,fontWeight:700,color:"white",letterSpacing:"0.3px",lineHeight:1.2}}>{sub.toUpperCase()}</div><div style={{fontSize:6.5,color:"#88AACC"}}>{sub2||""}</div></> : <><div style={{fontSize:11,fontWeight:700,color:"white"}}>{"0"+wizEnt?.codigo_area+String(wizEnt?.codigo_entidad||"").padStart(2,"0")+" · "+pvSig}</div><div style={{fontSize:6,color:"#99B5CC",letterSpacing:"0.8px",textTransform:"uppercase",marginTop:1}}>{pvEnt?.toUpperCase()}</div></>}
+                          </div>
+                          <div style={{width:145,background:NAV2,padding:"4px 10px",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"flex-end",flexShrink:0}}>
+                            <div style={{fontSize:6,color:"#88AACC"}}>Ejecución Presupuestaria</div>
+                            <div style={{fontSize:12,fontWeight:700,color:"white"}}>{pLbl}</div>
+                          </div>
+                        </div>
+                      );
+                      const SlideFooter = () => (
+                        <div style={{height:22,background:GRY,borderTop:"2.5px solid "+NAV,display:"flex",alignItems:"center",padding:"0 12px",flexShrink:0}}>
+                          <span style={{fontSize:6,color:"#5A6E85",flex:1}}>● Período: {pRng}</span>
+                          <span style={{fontSize:6,color:"#5A6E85",flex:1,textAlign:"center"}}>● Fuente: Dirección de Presupuesto de la Nación</span>
+                          <span style={{fontSize:6,color:"#5A6E85",flex:1,textAlign:"right"}}>● {pvSig}</span>
+                        </div>
+                      );
+
+                      const renderPortada = (s) => {
+                        const {kpis} = s;
+                        return (
+                          <div style={{flex:1,overflow:"hidden"}}>
+                            {pvObj && <div style={{display:"flex",alignItems:"stretch",margin:"5px 10px 4px",background:ICE,borderRadius:2,overflow:"hidden"}}><div style={{width:3,background:NAV,flexShrink:0}}/><div style={{padding:"4px 8px"}}><div style={{fontSize:5.5,fontWeight:700,color:NAV,letterSpacing:"0.4px"}}>OBJETIVO GENERAL</div><div style={{fontSize:6.5,color:"#333",lineHeight:1.4,marginTop:1}}>{pvObj.length>160?pvObj.slice(0,160)+"…":pvObj}</div></div></div>}
+                            <div style={{display:"flex",gap:8,padding:"4px 10px"}}>
+                              <div style={{flex:"0 0 46%",border:`1px solid ${BDR}`,borderRadius:4,padding:"6px 8px"}}>
+                                <PanelHdr label="Resumen de Ejecución (en miles de B/.)"/>
+                                <div style={{background:NAV,borderRadius:3,padding:"6px 8px",textAlign:"center",marginBottom:5}}>
+                                  <div style={{fontSize:6,color:"#99B5CC"}}>Total Ejecutado</div>
+                                  <div style={{fontSize:24,fontWeight:700,color:"white",lineHeight:1.1}}>{kpis.total.eje}</div>
+                                  <div style={{fontSize:6,color:"#C8F0D8"}}>miles de balboas · {kpis.total.pct}% de ejecución</div>
+                                  <div style={{background:"#3A5070",height:3,borderRadius:2,marginTop:4,overflow:"hidden"}}><div style={{background:"#C8F0D8",height:"100%",width:`${kpis.total.pct}%`}}/></div>
+                                </div>
+                                <div style={{display:"flex",gap:5}}>
+                                  {[{label:"FUNCIONAMIENTO",k:kpis.fun},{label:"INVERSIÓN",k:kpis.inv}].map((b,bi)=>{
+                                    const s=semC(b.k.pct);
+                                    return <div key={bi} style={{flex:1,background:ICE,border:`0.5px solid ${BDR}`,borderRadius:3,padding:"5px 4px",textAlign:"center"}}>
+                                      <div style={{fontSize:5.5,color:"#5A6E85",letterSpacing:"0.3px"}}>{b.label}</div>
+                                      <div style={{fontSize:15,fontWeight:700,color:NAV,lineHeight:1.2}}>{b.k.eje}</div>
+                                      <div style={{fontSize:5.5,color:"#5A6E85"}}>{b.k.dist}% del total</div>
+                                      <div style={{display:"inline-block",background:s.bg,color:s.fg,fontSize:6.5,fontWeight:700,padding:"1px 6px",borderRadius:10,margin:"2px 0"}}>{b.k.pct}%</div>
+                                      <div style={{background:BDR,height:2.5,borderRadius:2,overflow:"hidden"}}><div style={{background:"#0F5E2F",height:"100%",width:`${b.k.pct}%`}}/></div>
+                                    </div>;
+                                  })}
+                                </div>
                               </div>
-                              <div style={{ padding:"12px 14px", display:"flex", flexDirection:"column", gap:8 }}>
-                                {slide.kpis && (
-                                  <div style={{ display:"flex", gap:8 }}>
-                                    {[{label:"Total",pct:slide.kpis.total.pct,val:slide.kpis.total.eje},{label:"Func.",pct:slide.kpis.fun.pct,val:slide.kpis.fun.eje},{label:"Inv.",pct:slide.kpis.inv.pct,val:slide.kpis.inv.eje}].map(k=>(
-                                      <div key={k.label} style={{ flex:1, padding:"8px 10px", background:C.bg, borderRadius:8, border:`1px solid ${C.border}` }}>
-                                        <div style={{ fontSize:10, color:C.textMid }}>{k.label}</div>
-                                        <div style={{ fontSize:17, fontWeight:700, color:"#1B2F4E" }}>{k.pct}%</div>
-                                        <div style={{ fontSize:10, color:C.textLight }}>B/. {k.val} miles</div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                {slide.narrativa && (
-                                  <div style={{ fontSize:11, color:C.text, lineHeight:1.6, background:"#EEF4FF", borderRadius:7, padding:"10px 12px" }}>{slide.narrativa.length>320?slide.narrativa.slice(0,320)+"…":slide.narrativa}</div>
-                                )}
-                                {slide.grupos && slide.grupos.length>0 && (
-                                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                                    {slide.grupos.map((g,gi)=>(
-                                      <span key={gi} style={{ fontSize:10, padding:"3px 8px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:5, color:C.textMid }}>{g.nombre}: <strong style={{ color:"#1B2F4E" }}>{g.pct}%</strong></span>
-                                    ))}
-                                  </div>
-                                )}
-                                {slide.programas && slide.programas.length>0 && (
-                                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                                    {slide.programas.map((p,pi)=>(
-                                      <span key={pi} style={{ fontSize:10, padding:"3px 8px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:5, color:C.textMid }}>{p.nombre}: <strong style={{ color:"#1B2F4E" }}>{p.pct}%</strong></span>
-                                    ))}
-                                  </div>
-                                )}
-                                {slide.aspectos && slide.aspectos.length>0 && (
-                                  <div>
-                                    <div style={{ fontSize:10, fontWeight:700, color:C.textMid, marginBottom:4, letterSpacing:"0.04em" }}>ASPECTOS</div>
-                                    {slide.aspectos.map((a,ai)=>(
-                                      <div key={ai} style={{ fontSize:11, color:C.text, padding:"3px 0", borderBottom:ai<slide.aspectos.length-1?`1px solid ${C.border}`:"none" }}>· {a}</div>
-                                    ))}
-                                  </div>
-                                )}
-                                {slide.recomendaciones && slide.recomendaciones.length>0 && (
-                                  <div>
-                                    <div style={{ fontSize:10, fontWeight:700, color:C.textMid, marginBottom:4, letterSpacing:"0.04em" }}>RECOMENDACIONES</div>
-                                    {slide.recomendaciones.map((r,ri)=>(
-                                      <div key={ri} style={{ fontSize:11, color:C.text, padding:"3px 0", borderBottom:ri<slide.recomendaciones.length-1?`1px solid ${C.border}`:"none" }}>{ri+1}. {r}</div>
-                                    ))}
-                                  </div>
-                                )}
-                                {slide.secciones && slide.secciones.length>0 && (
-                                  <div style={{ fontSize:11, color:C.textMid, fontStyle:"italic" }}>Secciones: {slide.secciones.join(" · ")}</div>
-                                )}
+                              <div style={{flex:1,border:`1px solid ${BDR}`,borderRadius:4,padding:"6px 8px"}}>
+                                <PanelHdr label={`Ejecución Presupuestaria — ${pLbl}`}/>
+                                <table style={{width:"100%",borderCollapse:"collapse"}}>
+                                  <thead><tr style={{background:NAV}}>{["Categoría","Ley (1)","Mod. (2)","Ejec. (3)","% (3/2)","Dist."].map((h,hi)=><th key={hi} style={{padding:"3px 3px",color:"white",fontWeight:600,fontSize:5.5,textAlign:hi===0?"left":"center"}}>{h}</th>)}</tr></thead>
+                                  <tbody>
+                                    {[
+                                      {label:"TOTAL",bg:"#E8EFF8",bold:true,ley:kpis.total.ley,mod:kpis.total.mod,eje:kpis.total.eje,pct:kpis.total.pct,dist:"100"},
+                                      {label:"  Funcionamiento",bg:"white",bold:false,ley:kpis.fun.ley,mod:kpis.fun.mod,eje:kpis.fun.eje,pct:kpis.fun.pct,dist:kpis.fun.dist},
+                                      {label:"  Inversión",bg:"white",bold:false,ley:kpis.inv.ley,mod:kpis.inv.mod,eje:kpis.inv.eje,pct:kpis.inv.pct,dist:kpis.inv.dist},
+                                    ].map((row,ri)=>{const s=semC(row.pct);return(
+                                      <tr key={ri} style={{background:row.bg,borderBottom:`0.5px solid ${BDR}`}}>
+                                        <td style={{padding:"3px 3px",fontWeight:row.bold?700:400,color:row.bold?NAV:"#333",fontSize:6.5}}>{row.label}</td>
+                                        <td style={{padding:"2px 3px",textAlign:"center",color:row.bold?NAV:"#555",fontSize:6}}>{row.ley}</td>
+                                        <td style={{padding:"2px 3px",textAlign:"center",color:row.bold?NAV:"#555",fontSize:6}}>{row.mod}</td>
+                                        <td style={{padding:"2px 3px",textAlign:"center",color:row.bold?NAV:"#555",fontSize:6}}>{row.eje}</td>
+                                        <td style={{padding:"2px 3px",textAlign:"center"}}><span style={{background:s.bg,color:s.fg,fontSize:6.5,fontWeight:700,padding:"1px 4px",borderRadius:7}}>{row.pct}%</span></td>
+                                        <td style={{padding:"2px 3px",textAlign:"center",color:row.bold?NAV:"#555",fontSize:6}}>{row.dist}%</td>
+                                      </tr>
+                                    );})}
+                                  </tbody>
+                                </table>
+                                <div style={{display:"flex",alignItems:"center",gap:4,marginTop:7}}>
+                                  <span style={{fontSize:5.5,fontWeight:600,color:"#5A6E85"}}>Semáforo:</span>
+                                  {[{l:"≥ 80% Alta",bg:"#C8F0D8",fg:"#0F5E2F"},{l:"60–79% Media",bg:"#FFE8B0",fg:"#7A4800"},{l:"< 60% Baja",bg:"#FFD0D0",fg:"#7A1010"}].map((s,si)=><span key={si} style={{background:s.bg,color:s.fg,fontSize:5.5,fontWeight:600,padding:"1px 5px",borderRadius:8}}>{s.l}</span>)}
+                                </div>
                               </div>
                             </div>
-                          ))}
+                          </div>
+                        );
+                      };
+
+                      const renderFuncionamiento = (s) => {
+                        const {narrativa,grupos=[],programas=[]} = s;
+                        const DC=["#1B2F4E","#2E5F96","#5B93C7","#A8C8E8","#7AA5C8"];
+                        return (
+                          <div style={{flex:1,display:"flex",gap:8,padding:"5px 10px",overflow:"hidden",minHeight:260}}>
+                            <div style={{flex:"0 0 46%",display:"flex",flexDirection:"column",gap:5}}>
+                              <div style={{border:`1px solid ${BDR}`,borderRadius:4,padding:"5px 7px"}}>
+                                <PanelHdr label="Grupos de Gasto — Distribución (%)"/>
+                                <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                                  <div style={{width:54,height:54,borderRadius:"50%",flexShrink:0,background:grupos.length?`conic-gradient(${grupos.map((g,i)=>`#${g.color||DC[i%DC.length].replace("#","")} ${grupos.slice(0,i).reduce((a,b)=>a+(b.distPct||0),0)}% ${grupos.slice(0,i+1).reduce((a,b)=>a+(b.distPct||0),0)}%`).join(",")})`:"#E8EFF8",position:"relative"}}>
+                                    <div style={{position:"absolute",inset:13,borderRadius:"50%",background:"white"}}/>
+                                  </div>
+                                  <div style={{flex:1}}>
+                                    {grupos.slice(0,4).map((g,gi)=>{const col="#"+g.color;return(
+                                      <div key={gi} style={{marginBottom:3}}>
+                                        <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:6,fontWeight:600,color:col}}>{g.nombre.length>16?g.nombre.slice(0,15)+"…":g.nombre}</span><span style={{fontSize:6.5,fontWeight:700,color:col}}>{g.distPct}%</span></div>
+                                        <div style={{height:3.5,background:"#E8EEF5",borderRadius:2,overflow:"hidden"}}><div style={{height:"100%",background:col,width:`${g.distPct}%`}}/></div>
+                                      </div>
+                                    );})}
+                                  </div>
+                                </div>
+                              </div>
+                              <div style={{border:`1px solid ${BDR}`,borderRadius:4,padding:"5px 7px",flex:1}}>
+                                <PanelHdr label="Detalle (en miles de B/.)"/>
+                                <table style={{width:"100%",borderCollapse:"collapse"}}>
+                                  <thead><tr style={{background:NAV}}>{["Grupo de Gasto","Ley","Mod.","Ejec.","%"].map((h,hi)=><th key={hi} style={{padding:"2px 3px",color:"white",fontSize:5.5,textAlign:hi===0?"left":"center"}}>{h}</th>)}</tr></thead>
+                                  <tbody>{grupos.slice(0,5).map((g,gi)=>{const s=semC(g.pct);return(<tr key={gi} style={{background:gi%2===0?"#F8FAFF":"white",borderBottom:`0.5px solid ${BDR}`}}>
+                                    <td style={{padding:"2px 3px",fontSize:6,color:"#333"}}>{g.nombre.length>18?g.nombre.slice(0,17)+"…":g.nombre}</td>
+                                    <td style={{padding:"2px 3px",fontSize:5.5,color:"#888",textAlign:"center"}}>—</td><td style={{padding:"2px 3px",fontSize:5.5,color:"#888",textAlign:"center"}}>—</td><td style={{padding:"2px 3px",fontSize:5.5,color:"#888",textAlign:"center"}}>—</td>
+                                    <td style={{padding:"2px 3px",textAlign:"center"}}><span style={{background:s.bg,color:s.fg,fontSize:6,fontWeight:700,padding:"1px 3px",borderRadius:6}}>{g.pct}%</span></td>
+                                  </tr>);})}</tbody>
+                                </table>
+                              </div>
+                            </div>
+                            <div style={{flex:1,display:"flex",flexDirection:"column",gap:5}}>
+                              <div style={{border:`1px solid ${BDR}`,borderRadius:4,padding:"5px 7px",flex:1}}>
+                                <PanelHdr label="Programas de Funcionamiento (en miles de B/.)"/>
+                                {programas.slice(0,6).map((p,pi)=>(
+                                  <div key={pi} style={{marginBottom:5}}>
+                                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:1}}><span style={{fontSize:6,color:"#333"}}>{p.nombre.length>24?p.nombre.slice(0,23)+"…":p.nombre}</span><Pill pct={p.pct}/></div>
+                                    <div style={{position:"relative",height:5}}><div style={{height:"100%",background:"#D0DCEE",borderRadius:2}}/><div style={{position:"absolute",top:0,left:0,height:"100%",width:`${p.pct}%`,background:NAV,borderRadius:2}}/></div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{border:`1px solid ${BDR}`,borderRadius:4,padding:"5px 7px",background:ICE}}>
+                                <PanelHdr label="Análisis"/>
+                                <div style={{fontSize:6.5,color:"#333",lineHeight:1.5}}>{narrativa?narrativa.slice(0,320)+(narrativa.length>320?"…":""):"Narrativa generada por IA"}</div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      };
+
+                      const renderInversion = (s) => {
+                        const {narrativa,programas=[]} = s;
+                        return (
+                          <div style={{flex:1,display:"flex",gap:8,padding:"5px 10px",overflow:"hidden",minHeight:260}}>
+                            <div style={{flex:"0 0 46%",display:"flex",flexDirection:"column",gap:5}}>
+                              <div style={{border:`1px solid ${BDR}`,borderRadius:4,padding:"5px 7px",flex:1}}>
+                                <PanelHdr label="Programas de Inversión (en miles de B/.)"/>
+                                {programas.slice(0,6).map((p,pi)=>(
+                                  <div key={pi} style={{marginBottom:5}}>
+                                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:1}}><span style={{fontSize:6,color:"#333"}}>{p.nombre.length>24?p.nombre.slice(0,23)+"…":p.nombre}</span><Pill pct={p.pct}/></div>
+                                    <div style={{position:"relative",height:5}}><div style={{height:"100%",background:"#D0DCEE",borderRadius:2}}/><div style={{position:"absolute",top:0,left:0,height:"100%",width:`${p.pct}%`,background:NAV,borderRadius:2}}/></div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <div style={{flex:1,border:`1px solid ${BDR}`,borderRadius:4,padding:"5px 7px",background:ICE}}>
+                              <PanelHdr label="Análisis de Inversión"/>
+                              <div style={{fontSize:6.5,color:"#333",lineHeight:1.5}}>{narrativa?narrativa.slice(0,500)+(narrativa.length>500?"…":""):"Narrativa generada por IA"}</div>
+                            </div>
+                          </div>
+                        );
+                      };
+
+                      const renderConclusiones = (s) => {
+                        const {kpis,aspectos=[],recomendaciones=[],conclusion1,conclusion2} = s;
+                        return (
+                          <div style={{flex:1,display:"flex",flexDirection:"column",padding:"5px 10px",gap:6,overflow:"hidden"}}>
+                            {kpis && <div style={{display:"flex",gap:6,flexShrink:0}}>
+                              {[{label:"EJECUCIÓN TOTAL",pct:kpis.total.pct,val:kpis.total.eje,bg:NAV,tc:"white",pc:"white",bt:"3px solid rgba(255,255,255,0.2)"},
+                                {label:"FUNCIONAMIENTO",pct:kpis.fun.pct,val:kpis.fun.eje,bg:ICE,tc:NAV,pc:NAV,bt:`3px solid ${BDR}`},
+                                {label:"INVERSIÓN",pct:kpis.inv.pct,val:kpis.inv.eje,bg:ICE,tc:NAV,pc:NAV,bt:`3px solid ${BDR}`},
+                                {label:"PARTIDA CRÍTICA",pct:kpis.critica?.pct||0,val:kpis.critica?.nombre||"—",bg:"#FFF8E8",tc:"#7A4800",pc:"#7A1010",bt:"3px solid #FFE8B0"},
+                              ].map((k,ki)=>(
+                                <div key={ki} style={{flex:1,background:k.bg,border:`1px solid ${BDR}`,borderRadius:5,padding:"7px 5px",textAlign:"center",borderTop:k.bt}}>
+                                  <div style={{fontSize:5,letterSpacing:"0.3px",color:k.tc,fontWeight:600,opacity:0.8}}>{k.label}</div>
+                                  <div style={{fontSize:20,fontWeight:800,color:k.pc,lineHeight:1.1,margin:"2px 0"}}>{k.pct}%</div>
+                                  <div style={{fontSize:6,color:k.tc,opacity:0.75}}>{ki<3?`B/. ${k.val} miles`:""}</div>
+                                  {ki===3&&<div style={{fontSize:6,color:"#7A4800",fontWeight:600,marginTop:1}}>{k.val}</div>}
+                                  {ki<3&&<div style={{background:ki===0?"#3A5070":BDR,height:2.5,borderRadius:2,marginTop:3,overflow:"hidden"}}><div style={{height:"100%",background:ki===0?"#C8F0D8":NAV,width:`${k.pct}%`}}/></div>}
+                                </div>
+                              ))}
+                            </div>}
+                            <div style={{display:"flex",gap:6,flex:1,overflow:"hidden"}}>
+                              <div style={{flex:1,border:`1px solid ${BDR}`,borderRadius:4,padding:"5px 7px",overflow:"hidden"}}>
+                                <PanelHdr label="Aspectos Relevantes"/>
+                                {aspectos.slice(0,4).map((a,ai)=>{const txt=typeof a==="string"?a:a.texto; const warn=typeof a==="object"?a.esCritico:false; return(<div key={ai} style={{display:"flex",gap:4,marginBottom:5,alignItems:"flex-start"}}><div style={{width:10,height:10,borderRadius:2,background:warn?"#FFD0D0":"#D0F0DC",border:`0.5px solid ${warn?"#F0C0C0":"#A0D8B0"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:6,flexShrink:0}}>{warn?"!":"✓"}</div><div style={{fontSize:6,color:"#333",lineHeight:1.4}}>{txt?.length>85?txt.slice(0,84)+"…":txt}</div></div>);})}
+                              </div>
+                              <div style={{flex:1,border:`1px solid ${BDR}`,borderRadius:4,padding:"5px 7px",overflow:"hidden"}}>
+                                <PanelHdr label="Recomendaciones"/>
+                                {recomendaciones.slice(0,4).map((r,ri)=>(
+                                  <div key={ri} style={{display:"flex",gap:5,marginBottom:5,alignItems:"flex-start"}}><div style={{width:12,height:12,borderRadius:"50%",background:NAV,color:"white",fontSize:6,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{ri+1}</div><div style={{fontSize:6,color:"#333",lineHeight:1.4}}>{r?.length>85?r.slice(0,84)+"…":r}</div></div>
+                                ))}
+                              </div>
+                              <div style={{flex:1,border:`1px solid ${BDR}`,borderRadius:4,padding:"5px 7px",background:ICE,overflow:"hidden"}}>
+                                <PanelHdr label="Conclusiones"/>
+                                {(conclusion1||conclusion2) ? <>
+                                  {conclusion1&&<div style={{fontSize:6,color:"#333",lineHeight:1.5,marginBottom:4}}>{conclusion1.slice(0,200)}{conclusion1.length>200?"…":""}</div>}
+                                  {conclusion2&&<><div style={{height:0.5,background:BDR,margin:"3px 0"}}/><div style={{fontSize:6,color:"#333",lineHeight:1.5}}>{conclusion2.slice(0,160)}{conclusion2.length>160?"…":""}</div></>}
+                                </> : <div style={{fontSize:6.5,color:"#5A6E85",fontStyle:"italic",lineHeight:1.5}}>Las conclusiones se generarán con inteligencia artificial basándose en los datos de ejecución.</div>}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      };
+
+                      const slideHeaders = {
+                        portada: { sub:null },
+                        funcionamiento: { sub:"Ejecución por Grupos de Gasto y Programas", sub2:"Funcionamiento" },
+                        inversion:      { sub:"Ejecución por Programas y Actividades / Proyectos", sub2:"Inversión" },
+                        conclusiones:   { sub:"Resumen Ejecutivo y Conclusiones", sub2: pvSlides.some(s=>s.type==="inversion") ? "Funcionamiento e Inversión" : "Funcionamiento" },
+                        extra:          { sub:"Slide Adicional", sub2:"" },
+                      };
+
+                      return (
+                        <div>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                            <div><div style={{fontSize:15,fontWeight:700,color:C.text}}>Vista previa del informe</div><div style={{fontSize:11,color:C.textMid}}>{pvEnt} · {pvSlides.length} diapositivas · {pLbl}</div></div>
+                            <div style={{display:"flex",gap:8}}>
+                              <button onClick={()=>setWizStatus(null)} style={{padding:"7px 16px",background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,fontSize:12,fontWeight:600,color:C.textMid,cursor:"pointer"}}>← Volver</button>
+                              <button onClick={()=>{const blob=new Blob([Uint8Array.from(atob(wizBlobData.base64),c=>c.charCodeAt(0))],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=wizBlobData.filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);setWizStatus("ok");}} style={{padding:"7px 22px",background:NAV,color:"white",border:"none",borderRadius:7,fontSize:13,fontWeight:700,cursor:"pointer"}}>⬇ Descargar PPTX</button>
+                            </div>
+                          </div>
+                          {pvSlides.map((slide)=>{
+                            const hdr = slideHeaders[slide.type]||{sub:null};
+                            return (
+                              <div key={slide.num} style={{background:"white",borderRadius:10,border:`1.5px solid ${BDR}`,overflow:"hidden",boxShadow:"0 4px 18px rgba(27,47,78,0.13)",marginBottom:18,display:"flex",flexDirection:"column"}}>
+                                <SlideHdr sub={hdr.sub} sub2={hdr.sub2}/>
+                                {slide.type==="portada"       && renderPortada(slide)}
+                                {slide.type==="funcionamiento" && renderFuncionamiento(slide)}
+                                {slide.type==="inversion"      && renderInversion(slide)}
+                                {slide.type==="conclusiones"   && renderConclusiones(slide)}
+                                {slide.type==="extra" && <div style={{padding:"10px 14px",fontSize:11,color:C.textMid,fontStyle:"italic"}}>Slide adicional: {slide.titulo}{slide.secciones?.length?" · "+slide.secciones.join(" · "):""}</div>}
+                                <SlideFooter/>
+                              </div>
+                            );
+                          })}
                         </div>
-                        <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
-                          <button onClick={()=>setWizStatus(null)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Volver</button>
-                          <button onClick={()=>{
-                            const blob = new Blob([Uint8Array.from(atob(wizBlobData.base64),c=>c.charCodeAt(0))],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement("a");
-                            a.href=url; a.download=wizBlobData.filename;
-                            document.body.appendChild(a); a.click();
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                            setWizStatus("ok");
-                          }} style={{ padding:"9px 26px", background:"#1B2F4E", color:"white", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                            Descargar PPTX
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                     {wizStatus==="ok" && (
                       <div style={{ textAlign:"center", padding:"20px 0" }}>
                         <div style={{ fontSize:48, marginBottom:16 }}>✅</div>

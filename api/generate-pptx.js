@@ -320,33 +320,47 @@ module.exports = async function handler(req, res) {
   const preview = {
     entidad: ent.nombre,
     siglas: ent.siglas,
+    objetivo: ent.objetivo || null,
     slides: [
       {
         num: 1,
+        type: "portada",
         titulo: "Portada / Resumen Ejecutivo",
         kpis: {
-          total: { pct: data.total.pct, eje: fmtM(data.total.eje), mod: fmtM(data.total.mod) },
-          fun:   { pct: data.funcionamiento.pct, eje: fmtM(data.funcionamiento.eje), dist: data.funcionamiento.dist },
-          inv:   { pct: data.inversion.pct, eje: fmtM(data.inversion.eje), dist: data.inversion.dist }
+          total: { pct: data.total.pct, eje: fmtM(data.total.eje), mod: fmtM(data.total.mod), ley: fmtM(data.total.ley) },
+          fun:   { pct: data.funcionamiento.pct, eje: fmtM(data.funcionamiento.eje), mod: fmtM(data.funcionamiento.mod), ley: fmtM(data.funcionamiento.ley), dist: data.funcionamiento.dist },
+          inv:   { pct: data.inversion.pct, eje: fmtM(data.inversion.eje), mod: fmtM(data.inversion.mod), ley: fmtM(data.inversion.ley), dist: data.inversion.dist }
         }
       },
       {
         num: 2,
+        type: "funcionamiento",
         titulo: "Funcionamiento — Grupos y Programas",
         narrativa: narr?.narrativaFun || `Funcionamiento: B/. ${fmtM(data.funcionamiento.eje)} miles devengados (${data.funcionamiento.pct}%).`,
-        grupos: (data.funcionamiento.grupos || []).slice(0, 4).map(g => ({ nombre: g.nombre, pct: g.pct }))
+        grupos: (data.funcionamiento.grupos || []).slice(0, 5).map(g => ({ nombre: g.nombre, pct: g.pct, distPct: g.distPct || 0, color: g.color || "1B2F4E" })),
+        programas: (data.funcionamiento.programas || []).slice(0, 6).map(p => ({ nombre: p.nombre, pct: p.pct }))
       },
       ...(hasInv ? [{
         num: 3,
+        type: "inversion",
         titulo: "Inversión — Programas y Subprogramas",
         narrativa: narr?.narrativaInv || `Inversión: B/. ${fmtM(data.inversion.eje)} miles devengados (${data.inversion.pct}%).`,
-        programas: (data.inversion.programas || []).slice(0, 4).map(p => ({ nombre: p.nombre, pct: p.pct }))
+        programas: (data.inversion.programas || []).slice(0, 6).map(p => ({ nombre: p.nombre, pct: p.pct }))
       }] : []),
       {
         num: hasInv ? 4 : 3,
+        type: "conclusiones",
         titulo: "Resumen Ejecutivo y Conclusiones",
-        aspectos: narr?.aspectos ? narr.aspectos.slice(0, 4).map(a => a.texto) : [],
-        recomendaciones: narr?.recomendaciones ? narr.recomendaciones.slice(0, 4) : []
+        kpis: {
+          total:   { pct: data.total.pct,           eje: fmtM(data.total.eje) },
+          fun:     { pct: data.funcionamiento.pct,  eje: fmtM(data.funcionamiento.eje) },
+          inv:     { pct: data.inversion.pct,        eje: fmtM(data.inversion.eje) },
+          critica: { nombre: data.partidaCritica.nombre, pct: data.partidaCritica.pct }
+        },
+        aspectos: narr?.aspectos ? narr.aspectos.slice(0, 4) : [],
+        recomendaciones: narr?.recomendaciones ? narr.recomendaciones.slice(0, 4) : [],
+        conclusion1: narr?.conclusion1 || null,
+        conclusion2: narr?.conclusion2 || null
       },
       ...(extraSlides || []).map((s, i) => ({
         num: (hasInv ? 5 : 4) + i,

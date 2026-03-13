@@ -748,9 +748,22 @@ function Entidades({ user }) {
   const [wizSearch, setWizSearch] = useState("");
   const [wizDrag, setWizDrag] = useState(false);
   const [wizContexto, setWizContexto] = useState("");
+  const [wizExtraSlides, setWizExtraSlides] = useState([]); // [{id,contenido,loading,preview,error}]
   const [wizStatus, setWizStatus] = useState(null); // null | "loading" | "ok" | "error"
   const [wizErrMsg, setWizErrMsg] = useState("");
-  const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizFile(null); setWizSearch(""); setWizContexto(""); setWizStatus(null); setWizErrMsg(""); };
+  const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizFile(null); setWizSearch(""); setWizContexto(""); setWizExtraSlides([]); setWizStatus(null); setWizErrMsg(""); };
+  const addExtraSlide = () => setWizExtraSlides(p=>[...p,{id:Date.now(),contenido:"",loading:false,preview:null,error:null}]);
+  const removeExtraSlide = id => setWizExtraSlides(p=>p.filter(s=>s.id!==id));
+  const updateExtraSlide = (id,patch) => setWizExtraSlides(p=>p.map(s=>s.id===id?{...s,...patch}:s));
+  const previewExtraSlide = async (id,contenido) => {
+    updateExtraSlide(id,{loading:true,error:null});
+    try {
+      const r = await fetch("/api/preview-slide",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contenido,entidad:wizEnt?.nombre})});
+      const json = await r.json();
+      if (!r.ok) throw new Error(json.error||`Error ${r.status}`);
+      updateExtraSlide(id,{loading:false,preview:json});
+    } catch(e) { updateExtraSlide(id,{loading:false,error:e.message}); }
+  };
   const handleViewToggle = () => { if (view==="crear") resetWizard(); setView(view==="crear"?"lista":"crear"); };
   const GRUPO_NAMES = ["GOBIERNO CENTRAL","INSTITUCIONES DESCENTRALIZADAS","EMPRESAS PÚBLICAS","INTERMEDIARIOS FINANCIEROS"];
   const GRUPO_COLORS = [C.navDash, C.navHistorico, C.navInformes, C.navEntidades];
@@ -943,6 +956,63 @@ function Entidades({ user }) {
                             </div>
                           )}
                         </div>
+
+                        {/* Slides adicionales */}
+                        <div style={{ marginBottom:4 }}>
+                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+                            <div style={{ fontSize:11, fontWeight:700, color:C.textMid, letterSpacing:"0.04em" }}>SLIDES ADICIONALES <span style={{ fontWeight:400, color:C.textLight }}>(opcional)</span></div>
+                            <button onClick={addExtraSlide} style={{ padding:"5px 13px", background:C.navInformes+"12", border:`1px solid ${C.navInformes}40`, borderRadius:7, fontSize:11, fontWeight:700, color:C.navInformes, cursor:"pointer" }}>✚ Añadir slide</button>
+                          </div>
+                          {wizExtraSlides.length===0 && (
+                            <div style={{ fontSize:11, color:C.textLight, fontStyle:"italic", paddingBottom:6 }}>Añade slides con análisis complementario, proyectos específicos u otra información relevante.</div>
+                          )}
+                          {wizExtraSlides.map(slide=>(
+                            <div key={slide.id} style={{ marginBottom:10, padding:"14px 16px", background:C.bg, borderRadius:10, border:`1px solid ${C.border}` }}>
+                              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+                                <div style={{ fontSize:11, fontWeight:700, color:C.navInformes }}>SLIDE ADICIONAL</div>
+                                <button onClick={()=>removeExtraSlide(slide.id)} style={{ fontSize:11, color:"#7A1010", background:"none", border:"none", cursor:"pointer" }}>✕ Eliminar</button>
+                              </div>
+                              {!slide.preview ? (
+                                <>
+                                  <textarea
+                                    value={slide.contenido}
+                                    onChange={e=>updateExtraSlide(slide.id,{contenido:e.target.value})}
+                                    placeholder={"Escribe el contenido libre del slide — proyectos, análisis complementario, situación específica, logros del período..."}
+                                    rows={4}
+                                    style={{ width:"100%", padding:"10px 12px", border:`1px solid ${slide.contenido?C.navInformes:C.border}`, borderRadius:8, fontSize:11, color:C.text, fontFamily:"inherit", resize:"vertical", outline:"none", boxSizing:"border-box", background:C.white, lineHeight:1.6 }}
+                                  />
+                                  {slide.error && <div style={{ fontSize:11, color:"#7A1010", marginTop:6 }}>{slide.error}</div>}
+                                  <div style={{ display:"flex", justifyContent:"flex-end", marginTop:8 }}>
+                                    <button
+                                      onClick={()=>previewExtraSlide(slide.id, slide.contenido)}
+                                      disabled={!slide.contenido.trim()||slide.loading}
+                                      style={{ padding:"7px 16px", background:slide.contenido.trim()&&!slide.loading?C.navInformes:"#ccc", color:"white", border:"none", borderRadius:7, fontSize:11, fontWeight:700, cursor:slide.contenido.trim()&&!slide.loading?"pointer":"not-allowed" }}>
+                                      {slide.loading?"Generando…":"✨ Generar con IA"}
+                                    </button>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div style={{ background:C.white, borderRadius:8, border:`1px solid ${C.border}`, overflow:"hidden", marginBottom:8 }}>
+                                    <div style={{ background:"#1B2F4E", padding:"8px 14px" }}>
+                                      <div style={{ fontSize:12, fontWeight:700, color:"white" }}>{slide.preview.titulo}</div>
+                                    </div>
+                                    {(slide.preview.secciones||[]).map((sec,si)=>(
+                                      <div key={si} style={{ padding:"10px 14px", borderBottom:si<(slide.preview.secciones.length-1)?`1px solid ${C.border}`:"none" }}>
+                                        <div style={{ fontSize:10, fontWeight:700, color:C.navInformes, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.04em" }}>{sec.titulo}</div>
+                                        <div style={{ fontSize:11, color:C.text, lineHeight:1.6 }}>{sec.contenido}</div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+                                    <button onClick={()=>updateExtraSlide(slide.id,{preview:null})} style={{ padding:"5px 13px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:7, fontSize:11, color:C.textMid, cursor:"pointer" }}>Editar contenido</button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
                         <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
                           <button onClick={()=>setWizStep(3)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
                           <button onClick={async ()=>{
@@ -958,7 +1028,7 @@ function Entidades({ user }) {
                               const r = await fetch("/api/generate-pptx", {
                                 method:"POST",
                                 headers:{"Content-Type":"application/json"},
-                                body:JSON.stringify({ codigo, excelBase64, contexto:wizContexto.trim()||null })
+                                body:JSON.stringify({ codigo, excelBase64, contexto:wizContexto.trim()||null, extraSlides:wizExtraSlides.filter(s=>s.preview).map(s=>s.preview) })
                               });
                               const json = await r.json();
                               if (!r.ok) throw new Error(json.error||`Error ${r.status}`);

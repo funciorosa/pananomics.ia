@@ -119,7 +119,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { codigo, excelBase64, contexto } = req.body || {};
+  const { codigo, excelBase64, contexto, extraSlides } = req.body || {};
 
   if (!codigo || !excelBase64) {
     return res.status(400).json({ error: "codigo y excelBase64 son requeridos" });
@@ -162,7 +162,7 @@ module.exports = async function handler(req, res) {
 
   let pptxBase64;
   try {
-    pptxBase64 = await generatePPTXBase64(ent, data, narr);
+    pptxBase64 = await generatePPTXBase64(ent, data, narr, extraSlides || []);
   } catch (e) {
     return res.status(500).json({ error: `Error al generar el PPTX: ${e.message}` });
   }

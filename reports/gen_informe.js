@@ -1045,9 +1045,39 @@ function slide4(pres, ent, data, narr) {
   addFooter(pres, sl, ent.nombre);
 }
 
+// ── SLIDE EXTRA (contenido libre organizado por IA) ──────────────────────────
+
+function slideExtra(pres, ent, slideData) {
+  // slideData: { titulo, secciones: [{titulo, contenido}] }
+  const sl = pres.addSlide();
+  addHeader(pres, sl, {
+    subtitle: slideData.titulo || "Información Adicional",
+    name: ent.nombre.toUpperCase()
+  });
+
+  const cy   = 0.77;
+  const secs = (slideData.secciones || []).slice(0, 2);
+  if (secs.length === 0) { addFooter(pres, sl, ent.siglas); return; }
+
+  const avail = 5.47 - cy - 0.18;
+  const panH  = secs.length === 1 ? avail - 0.1 : (avail - 0.15) / 2;
+
+  secs.forEach((sec, i) => {
+    const panY = cy + 0.05 + i * (panH + 0.1);
+    addPanelBox(pres, sl, 0.18, panY, 9.64, panH);
+    addPanelTitle(pres, sl, 0.18, panY, 9.64, sec.titulo || "");
+    sl.addText(sec.contenido || "", {
+      x: 0.3, y: panY + 0.28, w: 9.42, h: panH - 0.38,
+      fontSize: 8.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
+    });
+  });
+
+  addFooter(pres, sl, ent.siglas);
+}
+
 // ── EXPORT (para Vercel API) ──────────────────────────────────────────────────
 
-async function generatePPTXBase64(ent, data, narr) {
+async function generatePPTXBase64(ent, data, narr, extraSlides) {
   const pres = new pptxgen();
   pres.layout = "LAYOUT_16x9";
   pres.title  = `${ent.siglas} — Informe Cierre 2025`;
@@ -1059,11 +1089,12 @@ async function generatePPTXBase64(ent, data, narr) {
     slide3(pres, ent, data, narr);
   }
   slide4(pres, ent, data, narr);
+  (extraSlides || []).forEach(s => slideExtra(pres, ent, s));
 
   return await pres.write({ outputType: "base64" });
 }
 
-module.exports = { generatePPTXBase64, getEntidad };
+module.exports = { generatePPTXBase64, getEntidad, slideExtra };
 
 // ── MAIN (CLI) ────────────────────────────────────────────────────────────────
 

@@ -287,9 +287,15 @@ function PanamaMap({ provincias }) {
           <div style={{ fontWeight:800, color:"#1a2a4a", marginBottom:5, fontSize:13 }}>{hover.label}</div>
           <div style={{ fontSize:12, color:"#676879", marginBottom:2 }}>Modificado: <b style={{ color:"#323338" }}>{fmt(hover.data.mod)}</b></div>
           <div style={{ fontSize:12, color:"#676879", marginBottom:6 }}>Ejecutado: <b style={{ color:"#323338" }}>{fmt(hover.data.eje)}</b></div>
-          <div style={{ padding:"4px 12px", borderRadius:20, background:heatFill(hover.data.pct), border:`1px solid ${heatStroke(hover.data.pct)}`, textAlign:"center", fontWeight:800, fontSize:14, color:+hover.data.pct>=76?"#064e2c":+hover.data.pct>=60?"#7c3d00":"#7f1d1d" }}>
-            {hover.data.pct}%
-          </div>
+          {hover.data.pct != null ? (
+            <div style={{ padding:"4px 12px", borderRadius:20, background:heatFill(hover.data.pct), border:`1px solid ${heatStroke(hover.data.pct)}`, textAlign:"center", fontWeight:800, fontSize:14, color:+hover.data.pct>=76?"#064e2c":+hover.data.pct>=60?"#7c3d00":"#7f1d1d" }}>
+              {hover.data.pct}%
+            </div>
+          ) : (
+            <div style={{ padding:"4px 12px", borderRadius:20, background:"#DCE3EF", border:"1px solid #A8B2C4", textAlign:"center", fontWeight:700, fontSize:12, color:"#676879" }}>
+              Sin ejecución
+            </div>
+          )}
         </div>
       )}
 
@@ -405,11 +411,11 @@ function Dashboard() {
         totalLey: sum(rows,"total_ley"), totalMod: sum(rows,"total_mod"), totalEje: sum(rows,"total_eje"),
         funcMod: sum(func,"total_mod"), funcEje: sum(func,"total_eje"),
         invMod:  sum(inv,"total_mod"),  invEje:  sum(inv,"total_eje"),
-        grupos: Object.entries(gMap).sort((a,b)=>b[1].mod-a[1].mod).slice(0,8).map(([g,v])=>({name:g.slice(0,28),mod:+(v.mod/1e6).toFixed(2),eje:+(v.eje/1e6).toFixed(2),pct:+(v.eje/v.mod*100).toFixed(1)})),
+        grupos: Object.entries(gMap).sort((a,b)=>b[1].mod-a[1].mod).slice(0,8).map(([g,v])=>({name:g.slice(0,28),mod:+(v.mod/1e6).toFixed(2),eje:+(v.eje/1e6).toFixed(2),pct:v.mod>0?+(v.eje/v.mod*100).toFixed(1):0})),
         fuentes: Object.entries(fMap).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([f,v])=>({name:f.slice(0,30),value:+(v/1e6).toFixed(2)})),
         programas: Object.entries(pMap).sort((a,b)=>b[1].mod-a[1].mod).slice(0,8).map(([p,v])=>({name:p,mod:+(v.mod/1e6).toFixed(2),eje:+(v.eje/1e6).toFixed(2)})),
         funcProgramas: Object.entries(fpMap).sort((a,b)=>b[1].mod-a[1].mod).slice(0,8).map(([p,v])=>({name:p,mod:+(v.mod/1e6).toFixed(2),eje:+(v.eje/1e6).toFixed(2)})),
-        provincias: Object.entries(provMap).sort((a,b)=>b[1].mod-a[1].mod).map(([p,v])=>({name:p,mod:v.mod,eje:v.eje,pct:+(v.eje/v.mod*100).toFixed(1)})),
+        provincias: Object.entries(provMap).sort((a,b)=>b[1].mod-a[1].mod).filter(([p])=>p!=="NO ESPECIFICADA").map(([p,v])=>({name:p,mod:v.mod,eje:v.eje,pct:v.mod>0?+(v.eje/v.mod*100).toFixed(1):null})),
       });
     } catch(e){ setData(DEMO_DATA); }
     setLoading(false);

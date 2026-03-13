@@ -1,0 +1,13 @@
+{
+  "name": "pananomics-reports",
+  "version": "1.0.0",
+  "description": "Generador de informes PPTX para DIPRENA/MEF Panamá",
+  "main": "gen_informe.js",
+  "scripts": {
+    "generar": "node gen_informe.js"
+  },
+  "dependencies": {
+    "pptxgenjs": "^3.12.0",
+    "xlsx": "^0.18.5"
+  }
+}

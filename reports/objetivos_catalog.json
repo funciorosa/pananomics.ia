@@ -1,0 +1,554 @@
+{
+  "001": {
+    "siglas": "ASAMBLEA NACIONAL",
+    "nombre": "Asamblea Nacional",
+    "objetivo": "La Asamblea Nacional es el generador de normas jurídicas, ya sea originarias o modificatorias. Es indispensable contar con una unidad especializada en el análisis, investigación y documentación de temas que motivan la creación o modificación del ordenamiento jurídico, con dedicación plena de forma objetiva y profesional.",
+    "sector": "Gobierno Central"
+  },
+  "002": {
+    "siglas": "AITSA",
+    "nombre": "AEROPUERTO INTERNACIONAL DE TOCUMEN, S.A.",
+    "objetivo": "Operar, mantener y desarrollar el Aeropuerto Internacional de Tocumen y los aeropuertos regionales con criterios de excelencia, eficiencia y transparencia, a fin de garantizar un servicio de calidad y confiable a los usuarios, posicionando a Panamá como el Hub de las Américas y centro logístico y de conectividad aérea regional e intercontinental.",
+    "sector": "Empresas Públicas"
+  },
+  "003": {
+    "siglas": "AMP",
+    "nombre": "AUTORIDAD MARÍTIMA DE PANAMÁ",
+    "objetivo": "Fungir como la autoridad marítima suprema de la República de Panamá para ejercer los derechos y cumplir las responsabilidades del Estado panameño en el marco del Derecho del Mar. Administrar, promover, regular, proyectar y ejecutar las políticas, estrategias, normas y planes relacionados con el funcionamiento y desarrollo del sector marítimo nacional.",
+    "sector": "Empresas Públicas"
+  },
+  "005": {
+    "siglas": "MIRE",
+    "nombre": "Ministerio de Relaciones Exteriores",
+    "objetivo": "Dirigir las relaciones Internacionales y determinar la política exterior del Estado panameño, promoviendo la integración regional y defendiendo en el exterior los intereses de la Nación panameña y de sus ciudadanos.",
+    "sector": "Gobierno Central"
+  },
+  "007": {
+    "siglas": "MEDUCA",
+    "nombre": "Ministerio de Educación",
+    "objetivo": "Fortalecer competencias y actitudes en los estudiantes, para enfrentar los desafíos del siglo XXI y propiciar instancias de actualización docente que fortalezcan las prácticas pedagógicas en el aula.",
+    "sector": "Gobierno Central"
+  },
+  "008": {
+    "siglas": "BINGOS",
+    "nombre": "BINGOS NACIONALES",
+    "objetivo": "Planear, organizar, dirigir, supervisar y controlar el programa de los Bingos Nacionales a nivel nacional, velando por el buen funcionamiento de todas las actividades que se realicen en las salas de bingo existentes, asegurando el desarrollo apropiado de los planes, programas y proyectos institucionales.",
+    "sector": "Empresas Públicas"
+  },
+  "009": {
+    "siglas": "MOP",
+    "nombre": "Ministerio de Obras Públicas",
+    "objetivo": "Administrar las políticas, planes, programas de acción y desarrollo de obras públicas para ejecutar y hacer cumplir la Constitución Política de la República de Panamá, las leyes y demás normas en materia de obras públicas.",
+    "sector": "Gobierno Central"
+  },
+  "010": {
+    "siglas": "MIDA",
+    "nombre": "Ministerio de Desarrollo Agropecuario",
+    "objetivo": "Promover y asegurar el mejoramiento económico, social y político del hombre y la comunidad rural y su participación en la vida nacional, definir y ejecutar la política, planes y programas del sector agropecuario.",
+    "sector": "Gobierno Central"
+  },
+  "012": {
+    "siglas": "MINSA",
+    "nombre": "Ministerio de Salud",
+    "objetivo": "Garantizar a toda la población, con enfoque de género, el acceso a la atención integral, a través de servicios públicos de salud, humanizados en todos sus niveles de intervención, basados en la estrategia de atención primaria de salud.",
+    "sector": "Gobierno Central"
+  },
+  "013": {
+    "siglas": "MITRADEL",
+    "nombre": "Ministerio de Trabajo y Desarrollo Laboral",
+    "objetivo": "Ofrecer al mercado productivo panameño la intermediación efectiva, mediante un registro personal y digital, regionalizado, de las necesidades de mano de obra de las empresas, con las habilidades técnicas y competencias de los trabajadores.",
+    "sector": "Gobierno Central"
+  },
+  "014": {
+    "siglas": "MIVIOT",
+    "nombre": "Ministerio de Vivienda y Ordenamiento Territorial",
+    "objetivo": "Garantizar el desarrollo y ejecución de políticas públicas de vivienda y ordenamiento territorial que contribuyan a mejorar la calidad de vida de la población, especialmente de los sectores más vulnerables.",
+    "sector": "Gobierno Central"
+  },
+  "016": {
+    "siglas": "MEF",
+    "nombre": "Ministerio de Economía y Finanzas",
+    "objetivo": "Formular iniciativas en materia de política económica; la programación de las inversiones públicas y la estrategia social, el diseño y ejecución de las directrices generales y las tareas específicas de la política fiscal.",
+    "sector": "Gobierno Central"
+  },
+  "017": {
+    "siglas": "MINGOB",
+    "nombre": "Ministerio de Gobierno",
+    "objetivo": "Formular y dictar las políticas de gobierno, mediante la regulación de los asuntos administrativos de las provincias y comarcas indígenas, respetando sus patrones culturales, para impulsar su desarrollo.",
+    "sector": "Gobierno Central"
+  },
+  "018": {
+    "siglas": "MINSEG",
+    "nombre": "Ministerio de Seguridad Pública",
+    "objetivo": "Coordinar las acciones de enlace permanente entre la ciudadanía y el Estado en la gestión de Seguridad Pública.",
+    "sector": "Gobierno Central"
+  },
+  "021": {
+    "siglas": "MIDES",
+    "nombre": "Ministerio de Desarrollo Social",
+    "objetivo": "Impulsar el desarrollo humano y procurar la integración social a través de la participación y la promoción de la equidad, con la coordinación y ejecución de políticas, planes, programas y acciones tendientes a superar la pobreza.",
+    "sector": "Gobierno Central"
+  },
+  "026": {
+    "siglas": "TAT",
+    "nombre": "Tribunal Administrativo Tributario",
+    "objetivo": "Conocer y resolver, con transparencia, independencia y eficacia, los recursos de apelación interpuestos contra las decisiones de la Dirección General de Ingresos, impartiendo justicia tributaria especializada.",
+    "sector": "Gobierno Central"
+  },
+  "027": {
+    "siglas": "MIAMBIENTE",
+    "nombre": "Ministerio de Ambiente",
+    "objetivo": "Asegurar el cumplimiento y aplicación de las leyes, los reglamentos y la Política Nacional de Ambiente en materia de protección, conservación, preservación, restauración, la sostenibilidad y racionalización del uso de los recursos naturales.",
+    "sector": "Gobierno Central"
+  },
+  "028": {
+    "siglas": "MICULTURA",
+    "nombre": "Ministerio de Cultura",
+    "objetivo": "Fortalecer las expresiones culturales panameñas desarrollando políticas públicas con enfoque en los derechos humanos, basadas en las diversas áreas de la cultura que generen programas y proyectos.",
+    "sector": "Gobierno Central"
+  },
+  "029": {
+    "siglas": "MIDEM",
+    "nombre": "Ministerio de la Mujer",
+    "objetivo": "Promover y garantizar la igualdad de oportunidades para las mujeres mediante la formulación, coordinación y ejecución de políticas públicas, planes, programas y proyectos orientados a su desarrollo integral.",
+    "sector": "Gobierno Central"
+  },
+  "030": {
+    "siglas": "ÓRGANO JUDICIAL",
+    "nombre": "Órgano Judicial",
+    "objetivo": "Ofrecer a la ciudadanía mecanismos alternativos de resolución de conflictos, como la mediación judicial, de manera gratuita, rápida, imparcial y confidencial, con el fin de promover una cultura de paz.",
+    "sector": "Gobierno Central"
+  },
+  "036": {
+    "siglas": "PGN",
+    "nombre": "Procuraduría General de la Nación",
+    "objetivo": "Garantizar el acceso a la justicia mediante la investigación eficiente, transparente y expedita de los delitos, la aplicación de mecanismos alternativos de solución de conflictos y el ejercicio de la acción penal pública.",
+    "sector": "Gobierno Central"
+  },
+  "037": {
+    "siglas": "PADM",
+    "nombre": "Procuraduría de la Administración",
+    "objetivo": "La Procuraduría de la Administración es una institución que, mediante una gestión de calidad desarrollada dentro del marco constitucional y legal, defiende los intereses del Estado y de los municipios.",
+    "sector": "Gobierno Central"
+  },
+  "040": {
+    "siglas": "TE",
+    "nombre": "Tribunal Electoral",
+    "objetivo": "Garantizar la libertad, honradez y eficacia del sufragio popular, así como administrar el registro de los hechos vitales y actos jurídicos relacionados con el estado civil de las personas.",
+    "sector": "Gobierno Central"
+  },
+  "041": {
+    "siglas": "FGE",
+    "nombre": "Fiscalía General Electoral",
+    "objetivo": "Contribuir a la procuración de la justicia electoral mediante la realización de investigaciones y actuaciones transparentes, legales y constitucionales, orientadas a prevenir y combatir los delitos y faltas electorales.",
+    "sector": "Gobierno Central"
+  },
+  "042": {
+    "siglas": "TAFP",
+    "nombre": "Tribunal Administrativo de la Función Pública",
+    "objetivo": "Resolver las apelaciones por impugnaciones de acciones de recursos humanos, dirigidas a servidores públicos permanentes, mediante la observancia del debido proceso.",
+    "sector": "Gobierno Central"
+  },
+  "046": {
+    "siglas": "Tribunal de Cuentas",
+    "nombre": "Tribunal de Cuentas",
+    "objetivo": "Garantizar a la ciudadanía que los fondos o bienes del Estado, sustraídos y malversados en cualquier forma, sean recuperados. Llevar los procesos de responsabilidad patrimonial con la debida celeridad y eficiencia.",
+    "sector": "Gobierno Central"
+  },
+  "047": {
+    "siglas": "Fiscalía General de Cuentas",
+    "nombre": "Fiscalía General de Cuentas",
+    "objetivo": "Instruir la investigación patrimonial por las irregularidades detectadas por la Contraloría General de la República, para la aplicación de las sanciones que correspondan por el mal uso de los fondos y bienes públicos.",
+    "sector": "Gobierno Central"
+  },
+  "049": {
+    "siglas": "DEFENSORÍA DEL PUEBLO",
+    "nombre": "Defensoría del Pueblo",
+    "objetivo": "Garantizar la protección, promoción y defensa de los derechos humanos en la República de Panamá, mediante acciones de educación, monitoreo, investigación y supervisión de la actuación de la administración pública.",
+    "sector": "Gobierno Central"
+  },
+  "102": {
+    "siglas": "AMPYME",
+    "nombre": "Autoridad de la Micro, Pequeña y Mediana Empresa",
+    "objetivo": "Promover la creación de la micro, pequeñas y medianas empresas, contribuyendo al crecimiento económico del país, la generación de empleos productivos y una mejor distribución del ingreso nacional. Estimular la colaboración de todas las entidades del Estado como facilitadores de las iniciativas del desarrollo de los empresarios de AMPYME, eliminando obstáculos burocráticos. Contribuir y promover la cultura emprendedora en la población panameña y servir de enlace entre el sector AMPYME y las entidades estatales para facilitar el acceso a servicios públicos y sociales.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "103": {
+    "siglas": "ATTT",
+    "nombre": "Autoridad del Tránsito y Transporte Terrestre",
+    "objetivo": "Planificar, investigar, dirigir, supervisar y controlar las operaciones de tránsito y transporte terrestre en el país. Regular la movilización eficiente de personas y cargas, así como atender todo lo relacionado con la regulación de los vehículos y el uso de las vías.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "106": {
+    "siglas": "ASEP",
+    "nombre": "Autoridad Nacional de los Servicios Públicos",
+    "objetivo": "Regular, fiscalizar y controlar las actividades de generación, transmisión, distribución y comercialización de energía eléctrica, telecomunicaciones, radio, televisión, agua potable y alcantarillado sanitario.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "107": {
+    "siglas": "ANATI",
+    "nombre": "Autoridad Nacional de Administración de Tierras",
+    "objetivo": "Regular y administrar las tierras del Estado panameño, garantizando la legalidad y seguridad jurídica de la tenencia de la tierra.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "109": {
+    "siglas": "ADUANAS",
+    "nombre": "Autoridad Nacional de Aduanas",
+    "objetivo": "Facilitar el comercio mundial, garantizando su seguridad y recaudar eficientemente los tributos aduaneros para contribuir al desarrollo sostenible del país.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "110": {
+    "siglas": "CSS",
+    "nombre": "Caja de Seguro Social",
+    "objetivo": "Proveer servicios de salud y prestaciones económicas eficientes, oportunas, seguras y de calidad a la población asegurada de Panamá.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "111": {
+    "siglas": "GORGAS",
+    "nombre": "Instituto Conmemorativo Gorgas de Estudios de la Salud",
+    "objetivo": "Su objetivo principal, a través del Centro de Investigación de Enfermedades Emergentes, es desarrollar la vigilancia epidemiológica y la investigación de enfermedades transmisibles e infecciosas en Panamá.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "113": {
+    "siglas": "SSNF",
+    "nombre": "Servicio Nacional de Fronteras",
+    "objetivo": "La SSNF es un organismo autónomo del Estado creado para administrar, regular y controlar las zonas fronterizas del territorio panameño, garantizando la seguridad y el orden en las fronteras nacionales.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "114": {
+    "siglas": "ACODECO",
+    "nombre": "Autoridad de Protección al Consumidor y Defensa de la Competencia",
+    "objetivo": "Garantizar el cumplimiento de los preceptos constitucionales y legales en defensa de los derechos de los consumidores y de la libre competencia en los mercados.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "115": {
+    "siglas": "SIACAP",
+    "nombre": "Sistema de Ahorro y Capitalización de Pensiones de los Servidores Públicos",
+    "objetivo": "El Consejo de Administración del SIACAP (CODA) es el órgano encargado de la administración del sistema de ahorro y capitalización de pensiones de los servidores públicos.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "120": {
+    "siglas": "IFARHU",
+    "nombre": "Instituto para la Formación y Aprovechamiento de Recursos Humanos",
+    "objetivo": "Planificar la formación y el aprovechamiento del recurso humano en Panamá, a través de la ejecución de programas de becas y créditos educativos.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "121": {
+    "siglas": "SENADIS",
+    "nombre": "Secretaría Nacional de Discapacidad",
+    "objetivo": "Desarrollar programas y proyectos que aseguren la inclusión social de las personas con discapacidad, promoviendo sus derechos y oportunidades de desarrollo.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "125": {
+    "siglas": "IDIAP",
+    "nombre": "Instituto de Investigación Agropecuaria de Panamá",
+    "objetivo": "Normar todas las actividades de investigación agropecuaria del sector público, liderando el desarrollo tecnológico del sector.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "126": {
+    "siglas": "ARAP",
+    "nombre": "Autoridad de los Recursos Acuáticos de Panamá",
+    "objetivo": "Administrar, fomentar, promover, desarrollar, proyectar y aplicar las políticas, estrategias y regulaciones de los recursos acuáticos de Panamá.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "127": {
+    "siglas": "DGCP",
+    "nombre": "Dirección General de Contrataciones Públicas",
+    "objetivo": "Administrar el Sistema Electrónico PanamaCompra, regulando, interpretando, fiscalizando y asesorando los procesos de contratación pública.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "128": {
+    "siglas": "TACCP",
+    "nombre": "Tribunal Administrativo de Contrataciones Públicas",
+    "objetivo": "Resolver oportunamente las controversias sometidas a su jurisdicción en materia de contratación pública.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "129": {
+    "siglas": "APA",
+    "nombre": "Autoridad Panameña de Alimentos",
+    "objetivo": "Tramitar la documentación de la producción agroindustrial, industrial, exportaciones e importaciones de alimentos, garantizando su inocuidad y calidad.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "131": {
+    "siglas": "SERTV",
+    "nombre": "Sistema Estatal de Radio y Televisión",
+    "objetivo": "Planificar, producir y emitir programación educativa, cultural e informativa, en apoyo al sistema educativo y la cultura panameña.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "132": {
+    "siglas": "SENACYT",
+    "nombre": "Secretaría Nacional de Ciencia, Tecnología e Innovación",
+    "objetivo": "Fortalecer, apoyar, inducir y promover el desarrollo de la ciencia, la tecnología y la innovación como herramientas para el desarrollo sostenible del país.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "134": {
+    "siglas": "SENNIAF",
+    "nombre": "Secretaría Nacional de Niñez, Adolescencia y Familia",
+    "objetivo": "Fortalecer la institucionalidad del sistema de protección integral de acuerdo a los derechos de la niñez, adolescencia y familia en Panamá.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "135": {
+    "siglas": "PANDEPORTES",
+    "nombre": "Autoridad de Pandeportes",
+    "objetivo": "Asegurar el cumplimiento y aplicación de la ley, los reglamentos y la política nacional en materia de educación física, deporte y recreación.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "137": {
+    "siglas": "INADEH",
+    "nombre": "Instituto Nacional de Formación Profesional y Capacitación para el Desarrollo Humano",
+    "objetivo": "Institución enfocada en la capacitación continua y formación de aspirantes en carreras técnicas y oficios para el desarrollo del capital humano panameño.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "139": {
+    "siglas": "ITSE",
+    "nombre": "Instituto Técnico Superior Especializado",
+    "objetivo": "Mejorar la calidad y pertinencia de las carreras ofrecidas, formando profesionales técnicos especializados que respondan a las necesidades del mercado laboral.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "140": {
+    "siglas": "IPHE",
+    "nombre": "Instituto Panameño de Habilitación Especial",
+    "objetivo": "Habilitar a niños, niñas y jóvenes que por su condición de discapacidad ameriten atención especializada para su desarrollo integral.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "141": {
+    "siglas": "APAP",
+    "nombre": "Autoridad del Programa de Ayuda de Panamá",
+    "objetivo": "Determinar de forma clara y oportuna, las políticas y los objetivos de la Autoridad del Programa de Ayuda de Panamá.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "142": {
+    "siglas": "IPACOOP",
+    "nombre": "Instituto Panameño Autónomo Cooperativo",
+    "objetivo": "Planificar y programar el desarrollo del cooperativismo nacional. Colaborar y coordinar con los organismos internacionales de cooperativismo.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "145": {
+    "siglas": "ATP",
+    "nombre": "Autoridad de Turismo de Panamá",
+    "objetivo": "Fortalecer la actividad turística como sector económico estratégico de Panamá, desarrollando e implementando políticas, planes y programas para su promoción y desarrollo.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "146": {
+    "siglas": "AIG",
+    "nombre": "Autoridad Nacional para la Innovación Gubernamental",
+    "objetivo": "Desarrollar y promover nuevas soluciones tecnológicas para la modernización del Estado y la mejora de los servicios públicos digitales.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "147": {
+    "siglas": "AND",
+    "nombre": "Autoridad Nacional de Descentralización",
+    "objetivo": "Contribuir al desarrollo social y económico del país mediante un manejo eficiente y transparente de los recursos de descentralización.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "148": {
+    "siglas": "REGISTRO PÚBLICO DE PANAMÁ",
+    "nombre": "Registro Público de Panamá",
+    "objetivo": "Servir de medio de constitución y de transmisión del dominio de los bienes inmuebles y demás derechos reales, garantizando la seguridad jurídica de los actos y contratos registrables.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "150": {
+    "siglas": "ANTAI",
+    "nombre": "Autoridad Nacional de Transparencia y Acceso a la Información",
+    "objetivo": "Velar por el cumplimiento de los derechos consagrados en la Constitución Política referentes a la transparencia en la gestión pública y el acceso a la información.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "151": {
+    "siglas": "BOMBEROS",
+    "nombre": "Benemérito Cuerpo de Bomberos de Panamá",
+    "objetivo": "Prevención, control, extinción de incendios y demás calamidades conexas, así como la atención de emergencias que pongan en riesgo la vida humana, los bienes y el ambiente.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "152": {
+    "siglas": "PROPANAMA",
+    "nombre": "ProPanamá",
+    "objetivo": "Promover el crecimiento productivo, competitivo, inclusivo y sostenible de Panamá, atrayendo inversión extranjera directa y fomentando las exportaciones.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "153": {
+    "siglas": "IMPHA",
+    "nombre": "Instituto de Meteorología e Hidrología de Panamá",
+    "objetivo": "Ofrecer información confiable y oportuna en los temas meteorológicos, hidrológicos y climatológicos para la toma de decisiones en sectores clave del país.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "187": {
+    "siglas": "UNACHI",
+    "nombre": "Universidad Autónoma de Chiriquí",
+    "objetivo": "Formar profesionales competentes, íntegros y comprometidos, con capacidad de investigar e innovar en beneficio de la región y el país.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "190": {
+    "siglas": "UP",
+    "nombre": "Universidad de Panamá",
+    "objetivo": "Formar profesionales íntegros y bilingües, fortaleciendo el conocimiento de estudiantes con calidad académica y científica para contribuir al desarrollo nacional.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "191": {
+    "siglas": "UMIP",
+    "nombre": "Universidad Marítima Internacional de Panamá",
+    "objetivo": "Formar profesionales capaces de realizar las tareas operacionales y administrativas en el sector marítimo, portuario y logístico.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "193": {
+    "siglas": "UDELAS",
+    "nombre": "Universidad Especializada de las Américas",
+    "objetivo": "Formar integralmente al hombre y a la mujer como profesionales capaces de acometer los retos del mundo contemporáneo en las áreas de su especialidad.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "194": {
+    "siglas": "UAPI",
+    "nombre": "Universidad Autónoma de Panamá Indígena",
+    "objetivo": "Formar profesionales indígenas con alta vocación, capaces de aplicar la ciencia y la tecnología para el desarrollo de sus comunidades.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "195": {
+    "siglas": "UTP",
+    "nombre": "Universidad Tecnológica de Panamá",
+    "objetivo": "Aportar a la sociedad capital humano calificado, emprendedor e innovador, con formación científica y tecnológica de calidad.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "197": {
+    "siglas": "ZFB",
+    "nombre": "Zona Franca de Barú",
+    "objetivo": "La Zona Franca de Barú se establece bajo el Régimen Fiscal y Aduanero Especial destinado a promover el desarrollo económico y social de la región de Barú, Chiriquí.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "198": {
+    "siglas": "INA",
+    "nombre": "Instituto Nacional de Agricultura",
+    "objetivo": "Formar técnicos integrales altamente capacitados en el ámbito de la agrotecnología para contribuir al desarrollo del sector agropecuario nacional.",
+    "sector": "Inst. Descentralizadas"
+  },
+  "038": {
+    "siglas": "AAC",
+    "nombre": "AUTORIDAD AERONÁUTICA CIVIL",
+    "objetivo": "Dirigir y reglamentar los servicios de transporte aéreo; regular y prestar servicios a la navegación aérea, la seguridad operacional y aeroportuaria; y la certificación y administración de aeródromos. Organizar y fiscalizar el uso del espacio aéreo panameño bajo condiciones de equidad, competencia y protección al ambiente.",
+    "sector": "Empresas Públicas"
+  },
+  "066": {
+    "siglas": "IDAAN",
+    "nombre": "INST. DE ACUEDUCTOS Y ALCANTARILLADOS NACIONALES",
+    "objetivo": "Mejorar el nivel de salud de la población panameña a través de la prestación de servicios de agua potable y alcantarillado sanitario de calidad, con eficiencia y responsabilidad ambiental, procurando alcanzar niveles óptimos de productividad y ser la empresa líder de los servicios públicos en Panamá.",
+    "sector": "Empresas Públicas"
+  },
+  "070": {
+    "siglas": "IMA",
+    "nombre": "INSTITUTO DE MERCADEO AGROPECUARIO",
+    "objetivo": "Ser facilitadores y gestores de los procesos de mercadeo y comercialización en los ámbitos nacional e internacional de los sectores agropecuario y agroindustrial, con un enfoque de desarrollo integral y sostenible, garantizando el acceso a alimentos de calidad a precios justos y la seguridad alimentaria de la población panameña.",
+    "sector": "Empresas Públicas"
+  },
+  "073": {
+    "siglas": "EGESA",
+    "nombre": "EMPRESA DE GENERACIÓN ELÉCTRICA, S.A.",
+    "objetivo": "Proveer energía eléctrica de manera eficiente, segura y sustentable, contribuyendo al desarrollo energético del país mediante la participación activa en el mercado eléctrico mayorista y la diversificación de la matriz energética con nuevas tecnologías limpias y renovables.",
+    "sector": "Empresas Públicas"
+  },
+  "075": {
+    "siglas": "ENA",
+    "nombre": "EMPRESA NACIONAL DE AUTOPISTAS, S.A.",
+    "objetivo": "Coadyuvar en el desarrollo económico del País, a través de la explotación eficiente de las autopistas de peaje, garantizando una operación segura y la provisión de servicios de calidad, procurando un absoluto respeto al medio ambiente.",
+    "sector": "Empresas Públicas"
+  },
+  "078": {
+    "siglas": "ETESA",
+    "nombre": "EMPRESA DE TRANSMISIÓN ELÉCTRICA, S.A.",
+    "objetivo": "Garantizar un servicio de transmisión eléctrica continuo, seguro, confiable y ambientalmente responsable, transportando la energía desde las empresas generadoras hasta las distribuidoras, planificando la expansión del Sistema Interconectado Nacional para atender el crecimiento de la demanda con visión de futuro.",
+    "sector": "Empresas Públicas"
+  },
+  "079": {
+    "siglas": "CADENA DE FRIO",
+    "nombre": "EMPRESA MERCADOS NACIONALES DE LA CADENA DE FRIO",
+    "objetivo": "Lograr aumentar los niveles de calidad e inocuidad de los productos alimenticios perecederos comercializados en todo el territorio nacional, para coadyuvar con la reducción de las mermas y el costo de la canasta básica, mediante la operación de un sistema integral de cadena de frío a lo largo de todo el país.",
+    "sector": "Empresas Públicas"
+  },
+  "080": {
+    "siglas": "METRO",
+    "nombre": "EMPRESA METRO DE PANAMA, S.A.",
+    "objetivo": "Movilizar de forma rápida, segura y sostenible a la población, transformando la ciudad de Panamá y creando una cultura de convivencia, ofreciendo un servicio de transporte masivo eficiente que contribuya a reducir la congestión vehicular y mejorar la calidad de vida de los ciudadanos.",
+    "sector": "Empresas Públicas"
+  },
+  "081": {
+    "siglas": "MIBUS",
+    "nombre": "TRANSPORTE MASIVO DE PANAMÁ, S.A.",
+    "objetivo": "Brindar el servicio de transporte masivo de pasajeros en los distritos de Panamá y San Miguelito de manera eficiente, segura y moderna, siendo la principal empresa encargada de la movilización urbana, con un sistema de gestión de flota innovador que priorice las necesidades de los usuarios.",
+    "sector": "Empresas Públicas"
+  },
+  "082": {
+    "siglas": "LNB",
+    "nombre": "LOTERÍA NACIONAL DE BENEFICENCIA",
+    "objetivo": "Contribuir a financiar, por conducto del Gobierno Nacional, los programas de Desarrollo Social del Estado, mejorando la calidad de vida de los ciudadanos mediante la explotación exclusiva del juego de la lotería y otros similares, con un capital humano idóneo y altamente comprometido.",
+    "sector": "Empresas Públicas"
+  },
+  "095": {
+    "siglas": "AGENCIA",
+    "nombre": "AGENCIA ESPECIAL DE AGUADULCE",
+    "objetivo": "Administrar y operar las instalaciones de almacenamiento y procesamiento agropecuario de la región de Aguadulce, brindando servicios de apoyo a los productores del sector agropecuario nacional para el almacenamiento, secado y comercialización de sus productos, contribuyendo al desarrollo del sector agrícola panameño.",
+    "sector": "Empresas Públicas"
+  },
+  "096": {
+    "siglas": "ZLC",
+    "nombre": "ZONA LIBRE DE COLÓN",
+    "objetivo": "Atraer inversiones extranjeras y promover el comercio internacional mediante la exoneración de impuestos de importaciones, exportaciones y otras operaciones comerciales, consolidando a Panamá como un centro estratégico de distribución y reexportación regional, con una plataforma logística integrada por puertos, ferrocarril, autopista y aeropuerto.",
+    "sector": "Empresas Públicas"
+  },
+  "097": {
+    "siglas": "AAPP",
+    "nombre": "AGENCIA PANAMÁ-PACÍFICO",
+    "objetivo": "Administrar, dirigir, operar y desarrollar el Área Económica Especial Panamá-Pacífico, integrándose a la economía nacional para fortalecer la capacidad competitiva de Panamá en la economía global, incentivando la atracción de inversiones, la generación de empleo y el desarrollo de actividades de alto contenido tecnológico.",
+    "sector": "Empresas Públicas"
+  },
+  "098": {
+    "siglas": "AAUD",
+    "nombre": "AUTORIDAD DE ASEO URBANO Y DOMICILIARIO",
+    "objetivo": "Brindar servicios de recolección y disposición final de residuos sólidos de forma eficiente, con miras a proteger la salud pública, velar por la conservación del ambiente y el aprovechamiento de los desechos, utilizando estrategias y recursos tecnológicos y humanos para satisfacer las necesidades de los usuarios.",
+    "sector": "Empresas Públicas"
+  },
+  "310": {
+    "siglas": "SBP",
+    "nombre": "Superintendencia de Bancos de Panamá",
+    "objetivo": "El principal objetivo de la SBP es velar por la solidez y eficiencia del sistema bancario y para ello la SBP debe ejecutar las inspecciones ordenadas por la Ley Bancaria, por la Junta Directiva y aquellas que considere necesarias o prudentes.",
+    "sector": "Intermediarios Financieros"
+  },
+  "311": {
+    "siglas": "SSR",
+    "nombre": "Superintendencia de Seguros y Reaseguros",
+    "objetivo": "El objetivo fundamental de la Superintendencia de Seguros y Reaseguros de Panamá, es la protección de los contratantes y el fomento de un mercado de seguros inclusivo, por medio del ejercicio de funciones y actividades que garanticen la solvencia y liquidez de las aseguradoras y el ejercicio de las actividades reguladas en cumplimiento de la Ley No. 12 de 2012 y sus reglamentaciones, a fin de brindar al sector financiero nacional e internacional servicios eficientes que rindan beneficios al país.",
+    "sector": "Intermediarios Financieros"
+  },
+  "315": {
+    "siglas": "BDA",
+    "nombre": "Banco de Desarrollo Agropecuario",
+    "objetivo": "El Banco ofrecerá asistencia crediticia y técnica para satisfacer las necesidades de la actividad agropecuaria y agroindustrial, de manera prioritaria al sector de escasos recursos y sus grupos organizados, y una atención especial al micro, pequeño y mediano productor, en cumplimiento del mandato constitucional.",
+    "sector": "Intermediarios Financieros"
+  },
+  "330": {
+    "siglas": "BHN",
+    "nombre": "Banco Hipotecario Nacional",
+    "objetivo": "El Banco tendrá como objetivo general estructurar, de conformidad con sus propios parámetros, planes de ejecución que permitan reconocer a la ciudadanía el derecho a viviendas además de asistir, colaborar y contribuir con la función que realiza el Ministerio de Vivienda y Ordenamiento Territorial, en materia de vivienda y desarrollo habitacional, de conformidad con las políticas de desarrollo económico y social del Estado.",
+    "sector": "Intermediarios Financieros"
+  },
+  "345": {
+    "siglas": "BNP",
+    "nombre": "Banco Nacional de Panamá",
+    "objetivo": "Formular y consolidar una institución financiera sólida y confiable que ofrezca productos y servicios de alta calidad, capaces de superar las expectativas de sus clientes; atraer y retener talento humano mediante políticas efectivas de retribución, beneficios y desarrollo profesional; implementar tecnología avanzada que permita optimizar la automatización de los procesos internos, garantizando agilidad, eficiencia y rentabilidad; y actuar con total transparencia, guiados por principios y valores éticos que fortalezcan la confianza del público.",
+    "sector": "Intermediarios Financieros"
+  },
+  "360": {
+    "siglas": "CA",
+    "nombre": "Caja de Ahorros",
+    "objetivo": "Fomentar el hábito del ahorro y ofrecer variedad de productos y servicios bancarios competitivos e innovadores dirigidos a satisfacer las necesidades y expectativas de la población, y optimizar los niveles de rentabilidad y liquidez para fortalecer el patrimonio del Banco.",
+    "sector": "Intermediarios Financieros"
+  },
+  "365": {
+    "siglas": "SMV",
+    "nombre": "Superintendencia de Mercado de Valores",
+    "objetivo": "Regular, supervisar y fiscalizar las actividades del mercado de valores que se desarrollen en la República de Panamá.",
+    "sector": "Intermediarios Financieros"
+  },
+  "390": {
+    "siglas": "ISA",
+    "nombre": "Instituto de Seguro Agropecuario",
+    "objetivo": "Incrementar el aseguramiento de los medianos y pequeños productores por medio de una oferta de productos y servicios modernos, entregado por un personal técnico calificado e identificado con las necesidades de cada productor y con las características técnicas o comerciales de cada rubro o especie; respaldado por una infraestructura institucional robusta y moderna; que se rige bajo procesos estandarizados y transparentes.",
+    "sector": "Intermediarios Financieros"
+  }
+}

@@ -43,6 +43,12 @@ function short(name, maxLen = 18) {
   return name.length > maxLen ? name.substring(0, maxLen - 1) + "…" : name;
 }
 
+/** Sanear texto AI para evitar caracteres inválidos en XML/PPTX */
+function sanitize(s) {
+  if (typeof s !== "string") return s;
+  return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "").replace(/[\uFFFE\uFFFF]/g, "").trim();
+}
+
 // ── COMPONENTES DE LAYOUT ────────────────────────────────────────────────────
 
 function addHeader(pres, slide, opts = {}) {
@@ -767,7 +773,7 @@ function slide2(pres, ent, data, narr) {
   const anH = 5.47 - anY - 0.18;
   addPanelBox(pres, sl, rx, anY, 4.72, anH);
   addPanelTitle(pres, sl, rx, anY, 4.72, "Análisis");
-  sl.addText(narr?.narrativaFun || buildNarrFun(data, ent), {
+  sl.addText(narr?.narrativaFun ? sanitize(narr.narrativaFun) : buildNarrFun(data, ent), {
     x: rx + 0.12, y: anY + 0.25, w: 4.48, h: anH - 0.35,
     fontSize: 7.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
   });
@@ -858,7 +864,7 @@ function slide3(pres, ent, data, narr) {
   const rx = 5.06;
   addPanelBox(pres, sl, rx, cy, 4.72, 5.47 - cy - 0.18);
   addPanelTitle(pres, sl, rx, cy, 4.72, "Análisis de Inversión");
-  sl.addText(narr?.narrativaInv || buildNarrInv(data, ent), {
+  sl.addText(narr?.narrativaInv ? sanitize(narr.narrativaInv) : buildNarrInv(data, ent), {
     x: rx + 0.12, y: cy + 0.25, w: 4.48, h: 4.6,
     fontSize: 7.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
   });
@@ -967,7 +973,7 @@ function slide4(pres, ent, data, narr) {
   addPanelTitle(pres, sl, 0.18, py, 3.1, "Aspectos Relevantes");
 
   const aspectos = narr?.aspectos
-    ? narr.aspectos.map(a => ({ txt: ["", a.texto, ""], warn: a.esCritico }))
+    ? narr.aspectos.map(a => ({ txt: ["", sanitize(a.texto), ""], warn: a.esCritico }))
     : buildAspectos(data, ent);
   aspectos.forEach((a, i) => {
     const ay          = py + 0.28 + i * 0.64;
@@ -1001,7 +1007,7 @@ function slide4(pres, ent, data, narr) {
     fontSize: 6, bold: true, color: "0F5E2F", fontFace: "Calibri", charSpacing: 0.5, margin: 0
   });
 
-  const recs = narr?.recomendaciones || buildRecs(data, ent);
+  const recs = narr?.recomendaciones ? narr.recomendaciones.map(r => sanitize(r)) : buildRecs(data, ent);
   recs.forEach((r, i) => {
     const ry2 = py + 0.28 + i * 0.64;
     sl.addShape(pres.shapes.OVAL, {
@@ -1027,8 +1033,8 @@ function slide4(pres, ent, data, narr) {
   addPanelTitle(pres, sl, 6.74, py, 3.04, "Conclusiones");
 
   const concl = buildConclusiones(data, ent);
-  const conclP1 = narr?.conclusion1 || concl.p1;
-  const conclP2 = narr?.conclusion2 || concl.p2;
+  const conclP1 = narr?.conclusion1 ? sanitize(narr.conclusion1) : concl.p1;
+  const conclP2 = narr?.conclusion2 ? sanitize(narr.conclusion2) : concl.p2;
   sl.addText(conclP1, {
     x: 6.86, y: py + 0.25, w: 2.8, h: panH / 2 - 0.1,
     fontSize: 7.5, color: NAV, fontFace: "Calibri", valign: "top", margin: 0
@@ -1066,7 +1072,7 @@ function slideExtra(pres, ent, slideData) {
     const panY = cy + 0.05 + i * (panH + 0.1);
     addPanelBox(pres, sl, 0.18, panY, 9.64, panH);
     addPanelTitle(pres, sl, 0.18, panY, 9.64, sec.titulo || "");
-    sl.addText(sec.contenido || "", {
+    sl.addText(sanitize(sec.contenido || ""), {
       x: 0.3, y: panY + 0.28, w: 9.42, h: panH - 0.38,
       fontSize: 8.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
     });

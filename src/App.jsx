@@ -749,9 +749,11 @@ function Entidades({ user }) {
   const [wizDrag, setWizDrag] = useState(false);
   const [wizContexto, setWizContexto] = useState("");
   const [wizExtraSlides, setWizExtraSlides] = useState([]); // [{id,contenido,loading,preview,error}]
-  const [wizStatus, setWizStatus] = useState(null); // null | "loading" | "ok" | "error"
+  const [wizStatus, setWizStatus] = useState(null); // null | "loading" | "preview" | "ok" | "error"
   const [wizErrMsg, setWizErrMsg] = useState("");
-  const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizFile(null); setWizSearch(""); setWizContexto(""); setWizExtraSlides([]); setWizStatus(null); setWizErrMsg(""); };
+  const [wizPreview, setWizPreview] = useState(null);
+  const [wizBlobData, setWizBlobData] = useState(null); // {base64, filename}
+  const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizFile(null); setWizSearch(""); setWizContexto(""); setWizExtraSlides([]); setWizStatus(null); setWizErrMsg(""); setWizPreview(null); setWizBlobData(null); };
   const addExtraSlide = () => setWizExtraSlides(p=>[...p,{id:Date.now(),contenido:"",loading:false,preview:null,error:null}]);
   const removeExtraSlide = id => setWizExtraSlides(p=>p.filter(s=>s.id!==id));
   const updateExtraSlide = (id,patch) => setWizExtraSlides(p=>p.map(s=>s.id===id?{...s,...patch}:s));
@@ -1032,14 +1034,9 @@ function Entidades({ user }) {
                               });
                               const json = await r.json();
                               if (!r.ok) throw new Error(json.error||`Error ${r.status}`);
-                              const blob = new Blob([Uint8Array.from(atob(json.pptxBase64),c=>c.charCodeAt(0))],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement("a");
-                              a.href=url; a.download=json.filename;
-                              document.body.appendChild(a); a.click();
-                              document.body.removeChild(a);
-                              URL.revokeObjectURL(url);
-                              setWizStatus("ok");
+                              setWizPreview(json.preview || null);
+                              setWizBlobData({ base64: json.pptxBase64.replace(/\s/g, ""), filename: json.filename });
+                              setWizStatus("preview");
                             } catch(e) {
                               setWizErrMsg(e.message);
                               setWizStatus("error");
@@ -1055,6 +1052,86 @@ function Entidades({ user }) {
                         <div style={{ fontSize:42, marginBottom:16 }}>⚙️</div>
                         <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:8 }}>Generando informe…</div>
                         <div style={{ fontSize:12, color:C.textMid }}>Procesando Excel y construyendo diapositivas. Un momento.</div>
+                      </div>
+                    )}
+                    {wizStatus==="preview" && wizPreview && (
+                      <div>
+                        <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>Vista previa del informe</div>
+                        <div style={{ fontSize:11, color:C.textMid, marginBottom:16 }}>{wizPreview.entidad} · {wizPreview.slides.length} diapositivas</div>
+                        <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:20 }}>
+                          {wizPreview.slides.map(slide=>(
+                            <div key={slide.num} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:10, overflow:"hidden" }}>
+                              <div style={{ background:"#1B2F4E", padding:"8px 14px", display:"flex", alignItems:"center", gap:10 }}>
+                                <div style={{ width:22, height:22, borderRadius:"50%", background:"#142240", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:"white", flexShrink:0 }}>{slide.num}</div>
+                                <div style={{ fontSize:12, fontWeight:700, color:"white" }}>{slide.titulo}</div>
+                              </div>
+                              <div style={{ padding:"12px 14px", display:"flex", flexDirection:"column", gap:8 }}>
+                                {slide.kpis && (
+                                  <div style={{ display:"flex", gap:8 }}>
+                                    {[{label:"Total",pct:slide.kpis.total.pct,val:slide.kpis.total.eje},{label:"Func.",pct:slide.kpis.fun.pct,val:slide.kpis.fun.eje},{label:"Inv.",pct:slide.kpis.inv.pct,val:slide.kpis.inv.eje}].map(k=>(
+                                      <div key={k.label} style={{ flex:1, padding:"8px 10px", background:C.bg, borderRadius:8, border:`1px solid ${C.border}` }}>
+                                        <div style={{ fontSize:10, color:C.textMid }}>{k.label}</div>
+                                        <div style={{ fontSize:17, fontWeight:700, color:"#1B2F4E" }}>{k.pct}%</div>
+                                        <div style={{ fontSize:10, color:C.textLight }}>B/. {k.val} miles</div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {slide.narrativa && (
+                                  <div style={{ fontSize:11, color:C.text, lineHeight:1.6, background:"#EEF4FF", borderRadius:7, padding:"10px 12px" }}>{slide.narrativa.length>320?slide.narrativa.slice(0,320)+"…":slide.narrativa}</div>
+                                )}
+                                {slide.grupos && slide.grupos.length>0 && (
+                                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                                    {slide.grupos.map((g,gi)=>(
+                                      <span key={gi} style={{ fontSize:10, padding:"3px 8px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:5, color:C.textMid }}>{g.nombre}: <strong style={{ color:"#1B2F4E" }}>{g.pct}%</strong></span>
+                                    ))}
+                                  </div>
+                                )}
+                                {slide.programas && slide.programas.length>0 && (
+                                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                                    {slide.programas.map((p,pi)=>(
+                                      <span key={pi} style={{ fontSize:10, padding:"3px 8px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:5, color:C.textMid }}>{p.nombre}: <strong style={{ color:"#1B2F4E" }}>{p.pct}%</strong></span>
+                                    ))}
+                                  </div>
+                                )}
+                                {slide.aspectos && slide.aspectos.length>0 && (
+                                  <div>
+                                    <div style={{ fontSize:10, fontWeight:700, color:C.textMid, marginBottom:4, letterSpacing:"0.04em" }}>ASPECTOS</div>
+                                    {slide.aspectos.map((a,ai)=>(
+                                      <div key={ai} style={{ fontSize:11, color:C.text, padding:"3px 0", borderBottom:ai<slide.aspectos.length-1?`1px solid ${C.border}`:"none" }}>· {a}</div>
+                                    ))}
+                                  </div>
+                                )}
+                                {slide.recomendaciones && slide.recomendaciones.length>0 && (
+                                  <div>
+                                    <div style={{ fontSize:10, fontWeight:700, color:C.textMid, marginBottom:4, letterSpacing:"0.04em" }}>RECOMENDACIONES</div>
+                                    {slide.recomendaciones.map((r,ri)=>(
+                                      <div key={ri} style={{ fontSize:11, color:C.text, padding:"3px 0", borderBottom:ri<slide.recomendaciones.length-1?`1px solid ${C.border}`:"none" }}>{ri+1}. {r}</div>
+                                    ))}
+                                  </div>
+                                )}
+                                {slide.secciones && slide.secciones.length>0 && (
+                                  <div style={{ fontSize:11, color:C.textMid, fontStyle:"italic" }}>Secciones: {slide.secciones.join(" · ")}</div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+                          <button onClick={()=>setWizStatus(null)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Volver</button>
+                          <button onClick={()=>{
+                            const blob = new Blob([Uint8Array.from(atob(wizBlobData.base64),c=>c.charCodeAt(0))],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href=url; a.download=wizBlobData.filename;
+                            document.body.appendChild(a); a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            setWizStatus("ok");
+                          }} style={{ padding:"9px 26px", background:"#1B2F4E", color:"white", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                            Descargar PPTX
+                          </button>
+                        </div>
                       </div>
                     )}
                     {wizStatus==="ok" && (

@@ -168,5 +168,47 @@ module.exports = async function handler(req, res) {
   }
 
   const outFilename = `${ent.siglas.replace(/[^a-zA-Z0-9]/g, "_")}_Cierre2025.pptx`;
-  return res.status(200).json({ pptxBase64, filename: outFilename, aiNarratives: !!narr });
+
+  // Construir preview por slide para mostrar en la UI antes de descargar
+  const hasInv = data.inversion.mod > 0;
+  const preview = {
+    entidad: ent.nombre,
+    siglas: ent.siglas,
+    slides: [
+      {
+        num: 1,
+        titulo: "Portada / Resumen Ejecutivo",
+        kpis: {
+          total: { pct: data.total.pct, eje: fmtM(data.total.eje), mod: fmtM(data.total.mod) },
+          fun:   { pct: data.funcionamiento.pct, eje: fmtM(data.funcionamiento.eje), dist: data.funcionamiento.dist },
+          inv:   { pct: data.inversion.pct, eje: fmtM(data.inversion.eje), dist: data.inversion.dist }
+        }
+      },
+      {
+        num: 2,
+        titulo: "Funcionamiento — Grupos y Programas",
+        narrativa: narr?.narrativaFun || `Funcionamiento: B/. ${fmtM(data.funcionamiento.eje)} miles devengados (${data.funcionamiento.pct}%).`,
+        grupos: (data.funcionamiento.grupos || []).slice(0, 4).map(g => ({ nombre: g.nombre, pct: g.pct }))
+      },
+      ...(hasInv ? [{
+        num: 3,
+        titulo: "Inversión — Programas y Subprogramas",
+        narrativa: narr?.narrativaInv || `Inversión: B/. ${fmtM(data.inversion.eje)} miles devengados (${data.inversion.pct}%).`,
+        programas: (data.inversion.programas || []).slice(0, 4).map(p => ({ nombre: p.nombre, pct: p.pct }))
+      }] : []),
+      {
+        num: hasInv ? 4 : 3,
+        titulo: "Resumen Ejecutivo y Conclusiones",
+        aspectos: narr?.aspectos ? narr.aspectos.slice(0, 4).map(a => a.texto) : [],
+        recomendaciones: narr?.recomendaciones ? narr.recomendaciones.slice(0, 4) : []
+      },
+      ...(extraSlides || []).map((s, i) => ({
+        num: (hasInv ? 5 : 4) + i,
+        titulo: s.titulo || "Slide Adicional",
+        secciones: (s.secciones || []).map(sec => sec.titulo)
+      }))
+    ]
+  };
+
+  return res.status(200).json({ pptxBase64, filename: outFilename, aiNarratives: !!narr, preview });
 };

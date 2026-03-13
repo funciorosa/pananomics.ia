@@ -55,22 +55,20 @@ function sanitize(s) {
     .trim();
 }
 
-/** Convierte texto plano con \n y bullets • en array de text objects para pptxgenjs */
+/** Convierte texto plano con \n en array de text objects para pptxgenjs 3.x.
+ *  breakLine:true va en el ítem ANTERIOR al salto (formato correcto de pptxgenjs). */
 function narrativeToPptx(text, opts = {}) {
   if (!text || typeof text !== "string") return [{ text: "" }];
   const clean = sanitize(text);
-  const lines = clean.split("\n");
-  const result = [];
-  lines.forEach((line, i) => {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      if (i > 0) result.push({ text: "", options: { breakLine: true } });
-      return;
+  const lines = clean.split("\n").map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return [{ text: "" }];
+  return lines.map((line, i) => {
+    const o = Object.keys(opts).length ? { ...opts } : undefined;
+    if (i < lines.length - 1) {
+      return { text: line, options: { ...(o || {}), breakLine: true } };
     }
-    if (i > 0) result.push({ text: "", options: { breakLine: true } });
-    result.push({ text: trimmed, options: { ...opts } });
+    return o ? { text: line, options: o } : { text: line };
   });
-  return result.length ? result : [{ text: "" }];
 }
 
 /** Etiqueta corta del período para header — ej: "T1 2025", "1er Sem. 2026" */

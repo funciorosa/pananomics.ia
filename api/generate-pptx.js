@@ -89,37 +89,57 @@ Devuelve ÚNICAMENTE un JSON válido, sin markdown, sin texto adicional, con exa
 }
 Incluye entre 3 y 4 aspectos y entre 3 y 4 recomendaciones. Sé muy específico: menciona nombres reales de grupos, programas y cifras concretas del presupuesto.`;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1500,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
+  console.log("[narr] Llamando Claude API para narrativas...");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+
+  let response;
+  try {
+    response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 2000,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+  } catch (fetchErr) {
+    clearTimeout(timeout);
+    console.warn("[narr] Fetch error:", fetchErr.name, fetchErr.message);
+    return null;
+  }
+  clearTimeout(timeout);
 
   if (!response.ok) {
     const errText = await response.text();
-    console.warn("Claude API error:", response.status, errText);
+    console.warn("[narr] Claude API error:", response.status, errText.slice(0, 200));
     return null;
   }
 
   const apiData = await response.json();
   const raw = apiData.content?.[0]?.text || "";
+  console.log("[narr] Respuesta recibida, longitud:", raw.length);
 
   try {
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    console.log("[narr] JSON parseado OK");
+    return parsed;
   } catch (_) {
     const match = raw.match(/\{[\s\S]*\}/);
     if (match) {
-      try { return JSON.parse(match[0]); } catch (__) {}
+      try {
+        const parsed = JSON.parse(match[0]);
+        console.log("[narr] JSON extraído con regex OK");
+        return parsed;
+      } catch (__) {}
     }
-    console.warn("Failed to parse Claude JSON:", raw.slice(0, 300));
+    console.warn("[narr] Failed to parse JSON:", raw.slice(0, 300));
     return null;
   }
 }
@@ -363,10 +383,24 @@ module.exports = async function handler(req, res) {
           inv:     { pct: data.inversion.pct,        eje: fmtM(data.inversion.eje) },
           critica: { nombre: data.partidaCritica.nombre, pct: data.partidaCritica.pct }
         },
-        aspectos: narr?.aspectos ? narr.aspectos.slice(0, 4) : [],
-        recomendaciones: narr?.recomendaciones ? narr.recomendaciones.slice(0, 4) : [],
-        conclusion1: narr?.conclusion1 || null,
-        conclusion2: narr?.conclusion2 || null
+        aspectos: narr?.aspectos
+          ? narr.aspectos.slice(0, 4)
+          : [
+              { texto: `Ejecución total del ${data.total.pct}% con B/. ${fmtM(data.total.eje)} miles devengados sobre B/. ${fmtM(data.total.mod)} modificados.`, esCritico: false },
+              { texto: `Funcionamiento (${data.funcionamiento.dist}% del total) ejecutó ${data.funcionamiento.pct}%.`, esCritico: data.funcionamiento.pct < 60 },
+              ...(data.inversion.mod > 0 ? [{ texto: `Inversión (${data.inversion.dist}% del total) ejecutó ${data.inversion.pct}%.`, esCritico: data.inversion.pct < 60 }] : []),
+              { texto: `Partida crítica: ${data.partidaCritica.nombre} con ${data.partidaCritica.pct}% de ejecución.`, esCritico: data.partidaCritica.pct < 60 }
+            ],
+        recomendaciones: narr?.recomendaciones
+          ? narr.recomendaciones.slice(0, 4)
+          : [
+              `Revisar asignaciones de ${data.partidaCritica.nombre} (${data.partidaCritica.pct}%) e identificar partidas sin ejecución para redistribución oportuna.`,
+              `Implementar seguimiento quincenal de ejecución por programa para detectar rezagos a tiempo.`,
+              `Fortalecer la coordinación entre unidades ejecutoras para acelerar compromisos presupuestarios pendientes.`,
+              `Realizar evaluación de metas físicas vs. financieras para asegurar coherencia en la ejecución.`
+            ],
+        conclusion1: narr?.conclusion1 || `${ent.nombre} registró una ejecución presupuestaria del ${data.total.pct}% al cierre del período, con B/. ${fmtM(data.total.eje)} miles devengados de B/. ${fmtM(data.total.mod)} miles modificados. El componente de funcionamiento alcanzó ${data.funcionamiento.pct}%.`,
+        conclusion2: narr?.conclusion2 || (hasInv ? `La inversión representó el ${data.inversion.dist}% del presupuesto total, con una ejecución del ${data.inversion.pct}%, totalizando B/. ${fmtM(data.inversion.eje)} miles devengados.` : null)
       },
       ...(extraSlides || []).map((s, i) => ({
         num: (hasInv ? 5 : 4) + i,

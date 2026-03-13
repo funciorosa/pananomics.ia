@@ -105,59 +105,12 @@ async function _handler(req, res) {
     .slice(0,20)
     .map(([k,v])=>({ label:k, ...v, pct: v.mod>0 ? +(v.eje/v.mod*100).toFixed(1) : 0 }));
 
-  // ── 5. Generar narrativa con Claude Haiku ────────────────────────────────────
+  // ── 5. Narrativa (template — sin llamada externa para garantizar velocidad) ──
   const entityLabel = nombre_entidad || (area ? `Sector: ${area}` : "Panamá (consolidado)");
   const periodoLabel = (!anio_inicio && !anio_fin) ? "Todos los años" : anio_inicio === anio_fin ? String(anio_inicio) : `${anio_inicio}–${anio_fin}`;
   const fechaHoy = new Date().toLocaleDateString("es-PA", { day:"2-digit", month:"long", year:"numeric" });
 
   let narr = "";
-  try {
-    const apiKey = process.env.ANTHROPIC_KEY;
-    if (apiKey) {
-      const dataStr = byDim.slice(0,10).map(d=>`- ${d.label}: Ley B/.${(d.ley/1e6).toFixed(1)}M | Mod B/.${(d.mod/1e6).toFixed(1)}M | Eje B/.${(d.eje/1e6).toFixed(1)}M | ${d.pct}%`).join("\n");
-      const yearStr = byYear.map(y=>`${y.anio}: Ley B/.${(y.ley/1e6).toFixed(1)}M | Mod B/.${(y.mod/1e6).toFixed(1)}M | Eje B/.${(y.eje/1e6).toFixed(1)}M | ${y.pct}%`).join("\n");
-
-      const prompt = `Eres un analista presupuestario senior del MEF de Panamá (DIPRENA). Redacta el RESUMEN EJECUTIVO en 3 párrafos en español formal usando SOLO los datos reales provistos.
-
-ENTIDAD: ${entityLabel}
-PERÍODO: ${periodoLabel}
-TIPO DE INFORME: ${report_title}
-
-TOTALES:
-- Presupuesto Ley: B/.${(totalLey/1e6).toFixed(1)}M
-- Presupuesto Modificado: B/.${(totalMod/1e6).toFixed(1)}M
-- Ejecutado: B/.${(totalEje/1e6).toFixed(1)}M
-- % Ejecución: ${pctGlobal.toFixed(1)}%
-- Sin ejecutar: B/.${(sinEjecutar/1e6).toFixed(1)}M
-
-DESGLOSE POR ${dimLabel.toUpperCase()}:
-${dataStr}
-
-EVOLUCIÓN ANUAL:
-${yearStr}
-
-Reglas:
-- Párrafo 1: Contexto general del presupuesto con cifras clave
-- Párrafo 2: Análisis de los principales componentes con hallazgos concretos
-- Párrafo 3: Alertas críticas y recomendaciones accionables
-- Citar números exactos con B/.
-- NO inventar datos fuera de los provistos
-- Máximo 120 palabras por párrafo
-- Devuelve SOLO los 3 párrafos con etiquetas <p>...</p>, sin títulos ni listas`;
-
-      const controller = new AbortController();
-      const claudeTimeout = setTimeout(() => controller.abort(), 25000);
-      const cr = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json", "x-api-key":apiKey, "anthropic-version":"2023-06-01" },
-        body: JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:900, messages:[{ role:"user", content:prompt }] }),
-        signal: controller.signal
-      });
-      clearTimeout(claudeTimeout);
-      const cj = await cr.json();
-      narr = cj?.content?.[0]?.text || "";
-    }
-  } catch(e) { /* use template */ }
 
   if (!narr) {
     narr = `<p>La entidad <strong>${entityLabel}</strong> registró durante el período <strong>${periodoLabel}</strong> un presupuesto modificado de <strong>${fmtM(totalMod)}</strong> frente a un presupuesto Ley de <strong>${fmtM(totalLey)}</strong>, con un monto ejecutado de <strong>${fmtM(totalEje)}</strong>, equivalente a una tasa de ejecución global de <strong>${pctGlobal.toFixed(1)}%</strong>.</p>

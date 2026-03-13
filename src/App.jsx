@@ -25,7 +25,13 @@ async function sbRpc(fn, body = {}) {
 
 // ── INFORME HTML (client-side generation) ────────────────────────────────────
 function buildInformeHTML(rows, opts = {}) {
-  const { nombre_entidad, area, anio_inicio, anio_fin, report_type = 1, report_title = "Ejecución Presupuestaria", report_icon = "📊" } = opts;
+  const { nombre_entidad, area, anio_inicio, anio_fin, report_type = 1, report_title = "Ejecución Presupuestaria", report_icon = "📊", filters = {} } = opts;
+  // Aplicar filtros multi-selección client-side
+  if (Array.isArray(filters.tipo) && filters.tipo.length > 1)        rows = rows.filter(r => filters.tipo.includes(r.tipo_presupuesto));
+  if (Array.isArray(filters.fuente) && filters.fuente.length > 1)    rows = rows.filter(r => filters.fuente.includes(r.fuente_ingreso));
+  if (Array.isArray(filters.grupo_gasto) && filters.grupo_gasto.length > 1) rows = rows.filter(r => filters.grupo_gasto.includes(r.grupo_gasto));
+  if (Array.isArray(filters.areaDesarrollo) && filters.areaDesarrollo.length > 1) rows = rows.filter(r => filters.areaDesarrollo.includes(r.area_desarrollo));
+  if (Array.isArray(filters.sector) && filters.sector.length > 1)    rows = rows.filter(r => filters.sector.includes(r.sector));
   const fmtM = n => { const v=+n||0; if(Math.abs(v)>=1e9)return `B/.${(v/1e9).toFixed(2)}B`; if(Math.abs(v)>=1e6)return `B/.${(v/1e6).toFixed(1)}M`; if(Math.abs(v)>=1e3)return `B/.${(v/1e3).toFixed(0)}K`; return `B/.${Math.round(v).toLocaleString("en-US")}`; };
   const fmt = n => Math.round(+n||0).toLocaleString("en-US");
   const semColor = p => +p>=90?"#0B6E4F":+p>=70?"#C8922A":"#C0392B";
@@ -810,18 +816,20 @@ function Informes() {
     try {
       const f = wizFilters;
       const rpt = reportes.find(r => r.id === activeCard);
+      // Para filtros multi: si hay 1 valor, enviar al RPC; si hay múltiples, enviar null y filtrar client-side
+      const rpcVal = v => Array.isArray(v) ? (v.length===1 ? v[0] : null) : (v||null);
       // Llamar Supabase RPC directamente desde el frontend
       const rows = await sbRpc("consultar_informe", {
         p_entidad:     wizEnt?.nombre        || null,
         p_area:        wizEnt ? null : (wizArea ?? null),
-        p_fuente:      f.fuente              ?? null,
-        p_tipo:        f.tipo                ?? null,
+        p_fuente:      rpcVal(f.fuente),
+        p_tipo:        rpcVal(f.tipo),
         p_anio_inicio: wizAnioInicio         || null,
         p_anio_fin:    wizAnioFin            || null,
-        p_grupo_gasto: f.grupo_gasto         ?? null,
+        p_grupo_gasto: rpcVal(f.grupo_gasto),
       });
       if (!rows || rows.length === 0) throw new Error("Sin resultados para los filtros indicados.");
-      // Generar HTML en el cliente
+      // Generar HTML en el cliente (con filtros client-side para multi-selección)
       const html = buildInformeHTML(rows, {
         nombre_entidad: wizEnt?.nombre || null,
         area:           wizEnt ? null : (wizArea ?? null),
@@ -830,6 +838,7 @@ function Informes() {
         report_type:    activeCard,
         report_title:   rpt?.title || "Informe Presupuestario",
         report_icon:    rpt?.icon  || "📊",
+        filters:        f,
       });
       const entSlug = (wizEnt?.nombre || wizArea || "Panama").replace(/\s+/g,"_").slice(0,25);
       const filename = `informe_${entSlug}_${wizAnioInicio||"all"}.html`.replace(/[^a-zA-Z0-9_.\-]/g,"_");
@@ -910,8 +919,21 @@ function Informes() {
     const BtnGroup = ({opts,val,onChange,multi}) => (
       <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
         {opts.map(o => {
-          const active = multi?(val||[]).includes(o.v):(val === o.v || (val == null && o.v == null));
-          return <button key={o.v} onClick={()=>{ if(multi){ const cur=val||[]; onChange(active?cur.filter(x=>x!==o.v):[...cur,o.v]); } else onChange(o.v); }}
+          let active;
+          if (multi) {
+            active = o.v === null
+              ? (!val || (Array.isArray(val) && val.length === 0))
+              : Array.isArray(val) && val.includes(o.v);
+          } else {
+            active = val === o.v || (val == null && o.v == null);
+          }
+          const handleClick = () => {
+            if (multi) {
+              if (o.v === null) { onChange(null); }
+              else { const cur=Array.isArray(val)?val:[]; onChange(active?cur.filter(x=>x!==o.v):[...cur,o.v]); }
+            } else { onChange(o.v); }
+          };
+          return <button key={String(o.v)} onClick={handleClick}
             style={{ padding:"7px 14px", border:`2px solid ${active?C.navInformes:C.border}`, borderRadius:8, background:active?C.navInformes+"10":C.white, color:active?C.navInformes:C.textMid, fontSize:12, fontWeight:active?700:500, cursor:"pointer", transition:"all 0.15s" }}>{o.l}</button>;
         })}
       </div>
@@ -922,7 +944,7 @@ function Informes() {
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <div>
             <Lbl c="TIPO DE PRESUPUESTO"/>
-            <BtnGroup val={f.tipo??null} onChange={v=>setF("tipo",v)} opts={[
+            <BtnGroup multi val={f.tipo??null} onChange={v=>setF("tipo",v)} opts={[
               {v:null,l:"Todos"},
               {v:"FUNCIONAMIENTO",l:"Funcionamiento"},
               {v:"INVERSION",l:"Inversión"},
@@ -943,7 +965,7 @@ function Informes() {
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <div>
             <Lbl c="FUENTE DE INGRESO"/>
-            <BtnGroup val={f.fuente??null} onChange={v=>setF("fuente",v)} opts={[
+            <BtnGroup multi val={f.fuente??null} onChange={v=>setF("fuente",v)} opts={[
               {v:null,l:"Todas"},
               {v:"Ingresos Corrientes",l:"Ingresos Corrientes"},
               {v:"Gobierno Central",l:"Gobierno Central"},
@@ -965,7 +987,7 @@ function Informes() {
           <div style={{ padding:"10px 14px", background:C.navInformes+"10", borderRadius:8, border:`1px solid ${C.navInformes}30`, fontSize:12, color:C.navInformes, fontWeight:600 }}>📌 Este informe analiza únicamente presupuesto de Inversión</div>
           <div>
             <Lbl c="ÁREA DE DESARROLLO"/>
-            <BtnGroup val={f.areaDesarrollo??null} onChange={v=>setF("areaDesarrollo",v)} opts={[
+            <BtnGroup multi val={f.areaDesarrollo??null} onChange={v=>setF("areaDesarrollo",v)} opts={[
               {v:null,l:"Todas"},
               {v:"DESARROLLO DE LOS SERVICIOS SOCIALES",l:"Servicios Sociales"},
               {v:"DESARROLLO DE LA INFRAESTRUCTURA",l:"Infraestructura"},
@@ -982,7 +1004,7 @@ function Informes() {
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <div>
             <Lbl c="TIPO DE PRESUPUESTO"/>
-            <BtnGroup val={f.tipo??null} onChange={v=>setF("tipo",v)} opts={[
+            <BtnGroup multi val={f.tipo??null} onChange={v=>setF("tipo",v)} opts={[
               {v:null,l:"Todos"},
               {v:"FUNCIONAMIENTO",l:"Funcionamiento"},
               {v:"INVERSION",l:"Inversión"},
@@ -1003,7 +1025,7 @@ function Informes() {
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <div>
             <Lbl c="GRUPO DE GASTO"/>
-            <BtnGroup val={f.grupo_gasto??null} onChange={v=>setF("grupo_gasto",v)} opts={[
+            <BtnGroup multi val={f.grupo_gasto??null} onChange={v=>setF("grupo_gasto",v)} opts={[
               {v:null,l:"Todos"},
               {v:"SERVICIOS PERSONALES",l:"Servicios Personales"},
               {v:"SERVICIOS NO PERSONALES",l:"Serv. No Personales"},
@@ -1024,7 +1046,7 @@ function Informes() {
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <div>
             <Lbl c="TIPO DE PRESUPUESTO"/>
-            <BtnGroup val={f.tipo??null} onChange={v=>setF("tipo",v)} opts={[
+            <BtnGroup multi val={f.tipo??null} onChange={v=>setF("tipo",v)} opts={[
               {v:null,l:"Todos"},
               {v:"FUNCIONAMIENTO",l:"Funcionamiento"},
               {v:"INVERSION",l:"Inversión"}
@@ -1032,7 +1054,7 @@ function Informes() {
           </div>
           <div>
             <Lbl c="SECTOR"/>
-            <BtnGroup val={f.sector??null} onChange={v=>setF("sector",v)} opts={[
+            <BtnGroup multi val={f.sector??null} onChange={v=>setF("sector",v)} opts={[
               {v:null,l:"Todos"},
               {v:"EDUCACION Y CULTURA",l:"Educación"},
               {v:"SALUD",l:"Salud"},

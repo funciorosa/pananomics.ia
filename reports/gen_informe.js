@@ -47,11 +47,23 @@ function short(name, maxLen = 18) {
 function sanitize(s) {
   if (typeof s !== "string") return s;
   return s
-    .replace(/\r\n/g, "\n").replace(/\r/g, "\n")           // normalizar saltos de línea
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")    // control chars XML 1.0 inválidos
-    .replace(/[\uD800-\uDFFF]/g, "")                        // surrogates
-    .replace(/[\uFEFF\uFFFE\uFFFF]/g, "")                   // BOM y non-chars
-    .replace(/[\u200B-\u200D\u2028\u2029]/g, "")            // zero-width y separadores de línea
+    // Normalizar saltos de línea
+    .replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+    // Normalizar puntuación tipográfica Unicode → ASCII equivalente
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")   // comillas simples
+    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')   // comillas dobles
+    .replace(/[\u2013\u2014\u2015\u2212]/g, "-")               // guiones/dashes
+    .replace(/[\u2026]/g, "...")                                // elipsis
+    .replace(/[\u00A0\u202F\u2007\u2060]/g, " ")               // espacios especiales
+    .replace(/\u2022/g, "-")                                    // bullet • → -
+    .replace(/[\u2010\u2011]/g, "-")                           // hyphens especiales
+    // Eliminar caracteres inválidos en XML 1.0
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+    .replace(/[\x80-\x9F]/g, "")                               // C1 control chars
+    .replace(/[\uD800-\uDFFF]/g, "")                           // surrogates
+    .replace(/[\uFDD0-\uFDEF]/g, "")                           // non-characters Unicode
+    .replace(/[\uFEFF\uFFFE\uFFFF]/g, "")                      // BOM y non-chars
+    .replace(/[\u200B-\u200D\u2028\u2029]/g, "")               // zero-width y separadores
     .trim();
 }
 
@@ -1035,7 +1047,7 @@ function slide4(pres, ent, data, narr, periodo) {
   addPanelTitle(pres, sl, 0.18, py, 3.1, "Aspectos Relevantes");
 
   const aspectos = narr?.aspectos
-    ? narr.aspectos.map(a => ({ txt: ["", sanitize(a.texto), ""], warn: a.esCritico }))
+    ? narr.aspectos.map(a => ({ txt: [sanitize(a.texto)], warn: a.esCritico }))
     : buildAspectos(data, ent);
   aspectos.forEach((a, i) => {
     const ay          = py + 0.28 + i * 0.64;
@@ -1048,11 +1060,14 @@ function slide4(pres, ent, data, narr, periodo) {
       x: 0.28, y: ay + 0.03, w: 0.14, h: 0.14,
       fontSize: 7, bold: true, color: WHT, fontFace: "Calibri", align: "center", margin: 0
     });
-    sl.addText([
-      { text: a.txt[0] },
-      { text: a.txt[1], options: { bold: true, color: a.warn ? "7A1010" : NAV } },
-      { text: a.txt[2] }
-    ], {
+    const aspectoRuns = a.txt.length === 1
+      ? [{ text: a.txt[0] }]
+      : [
+          ...(a.txt[0] ? [{ text: a.txt[0] }] : []),
+          { text: a.txt[1], options: { bold: true, color: a.warn ? "7A1010" : NAV } },
+          ...(a.txt[2] ? [{ text: a.txt[2] }] : [])
+        ];
+    sl.addText(aspectoRuns, {
       x: 0.46, y: ay, w: 2.72, h: 0.56,
       fontSize: 7.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
     });

@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/generate-pptx.js": {
+      "maxDuration": 60
+    }
+  }
+}

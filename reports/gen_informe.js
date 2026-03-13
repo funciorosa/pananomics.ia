@@ -588,7 +588,7 @@ function slide1(pres, ent, data) {
 
 // ── SLIDE 2 — FUNCIONAMIENTO ─────────────────────────────────────────────────
 
-function slide2(pres, ent, data) {
+function slide2(pres, ent, data, narr) {
   const sl = pres.addSlide();
   addHeader(pres, sl, {
     subtitle: "Ejecución por Grupos de Gasto y Programas",
@@ -767,7 +767,7 @@ function slide2(pres, ent, data) {
   const anH = 5.47 - anY - 0.18;
   addPanelBox(pres, sl, rx, anY, 4.72, anH);
   addPanelTitle(pres, sl, rx, anY, 4.72, "Análisis");
-  sl.addText(buildNarrFun(data, ent), {
+  sl.addText(narr?.narrativaFun || buildNarrFun(data, ent), {
     x: rx + 0.12, y: anY + 0.25, w: 4.48, h: anH - 0.35,
     fontSize: 7.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
   });
@@ -777,7 +777,7 @@ function slide2(pres, ent, data) {
 
 // ── SLIDE 3 — INVERSIÓN ──────────────────────────────────────────────────────
 
-function slide3(pres, ent, data) {
+function slide3(pres, ent, data, narr) {
   const sl = pres.addSlide();
   addHeader(pres, sl, {
     subtitle: "Ejecución por Programas y Actividades / Proyectos",
@@ -858,7 +858,7 @@ function slide3(pres, ent, data) {
   const rx = 5.06;
   addPanelBox(pres, sl, rx, cy, 4.72, 5.47 - cy - 0.18);
   addPanelTitle(pres, sl, rx, cy, 4.72, "Análisis de Inversión");
-  sl.addText(buildNarrInv(data, ent), {
+  sl.addText(narr?.narrativaInv || buildNarrInv(data, ent), {
     x: rx + 0.12, y: cy + 0.25, w: 4.48, h: 4.6,
     fontSize: 7.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
   });
@@ -868,7 +868,7 @@ function slide3(pres, ent, data) {
 
 // ── SLIDE 4 — CONCLUSIONES ───────────────────────────────────────────────────
 
-function slide4(pres, ent, data) {
+function slide4(pres, ent, data, narr) {
   const sl = pres.addSlide();
   const hasInv = data.inversion.mod > 0;
   addHeader(pres, sl, {
@@ -966,7 +966,9 @@ function slide4(pres, ent, data) {
   addPanelBox(pres, sl, 0.18, py, 3.1, panH);
   addPanelTitle(pres, sl, 0.18, py, 3.1, "Aspectos Relevantes");
 
-  const aspectos = buildAspectos(data, ent);
+  const aspectos = narr?.aspectos
+    ? narr.aspectos.map(a => ({ txt: ["", a.texto, ""], warn: a.esCritico }))
+    : buildAspectos(data, ent);
   aspectos.forEach((a, i) => {
     const ay          = py + 0.28 + i * 0.64;
     const bulletColor = a.warn ? "7A1010" : NAV;
@@ -999,7 +1001,7 @@ function slide4(pres, ent, data) {
     fontSize: 6, bold: true, color: "0F5E2F", fontFace: "Calibri", charSpacing: 0.5, margin: 0
   });
 
-  const recs = buildRecs(data, ent);
+  const recs = narr?.recomendaciones || buildRecs(data, ent);
   recs.forEach((r, i) => {
     const ry2 = py + 0.28 + i * 0.64;
     sl.addShape(pres.shapes.OVAL, {
@@ -1025,7 +1027,9 @@ function slide4(pres, ent, data) {
   addPanelTitle(pres, sl, 6.74, py, 3.04, "Conclusiones");
 
   const concl = buildConclusiones(data, ent);
-  sl.addText(concl.p1, {
+  const conclP1 = narr?.conclusion1 || concl.p1;
+  const conclP2 = narr?.conclusion2 || concl.p2;
+  sl.addText(conclP1, {
     x: 6.86, y: py + 0.25, w: 2.8, h: panH / 2 - 0.1,
     fontSize: 7.5, color: NAV, fontFace: "Calibri", valign: "top", margin: 0
   });
@@ -1033,7 +1037,7 @@ function slide4(pres, ent, data) {
     x: 6.86, y: py + panH / 2 + 0.08, w: 2.8, h: 0.012,
     fill: { color: BDR }, line: { color: BDR }
   });
-  sl.addText(concl.p2, {
+  sl.addText(conclP2, {
     x: 6.86, y: py + panH / 2 + 0.13, w: 2.8, h: panH / 2 - 0.15,
     fontSize: 7.5, color: NAV, fontFace: "Calibri", valign: "top", margin: 0
   });
@@ -1043,18 +1047,18 @@ function slide4(pres, ent, data) {
 
 // ── EXPORT (para Vercel API) ──────────────────────────────────────────────────
 
-async function generatePPTXBase64(ent, data) {
+async function generatePPTXBase64(ent, data, narr) {
   const pres = new pptxgen();
   pres.layout = "LAYOUT_16x9";
   pres.title  = `${ent.siglas} — Informe Cierre 2025`;
   pres.author = "Dirección de Presupuesto de la Nación";
 
   slide1(pres, ent, data);
-  slide2(pres, ent, data);
+  slide2(pres, ent, data, narr);
   if (data.inversion.mod > 0) {
-    slide3(pres, ent, data);
+    slide3(pres, ent, data, narr);
   }
-  slide4(pres, ent, data);
+  slide4(pres, ent, data, narr);
 
   return await pres.write({ outputType: "base64" });
 }

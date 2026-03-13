@@ -741,6 +741,15 @@ function Entidades({ user }) {
   const [view, setView] = useState("lista");
   const [selected, setSelected] = useState(null);
   const [openGroups, setOpenGroups] = useState({0:true,1:false,2:false,3:false});
+  // ── Crear Informe wizard ──
+  const [wizStep, setWizStep] = useState(1);
+  const [wizEnt, setWizEnt] = useState(null);
+  const [wizFile, setWizFile] = useState(null);
+  const [wizSearch, setWizSearch] = useState("");
+  const [wizDrag, setWizDrag] = useState(false);
+  const [wizStatus, setWizStatus] = useState(null); // null | "ok" | "error"
+  const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizFile(null); setWizSearch(""); setWizStatus(null); };
+  const handleViewToggle = () => { if (view==="crear") resetWizard(); setView(view==="crear"?"lista":"crear"); };
   const GRUPO_NAMES = ["GOBIERNO CENTRAL","INSTITUCIONES DESCENTRALIZADAS","EMPRESAS PÚBLICAS","INTERMEDIARIOS FINANCIEROS"];
   const GRUPO_COLORS = [C.navDash, C.navHistorico, C.navInformes, C.navEntidades];
   const GRUPO_ICONS = ["🏛","🏢","🏭","🏦"];
@@ -757,22 +766,177 @@ function Entidades({ user }) {
           <div style={{ fontSize:12, color:C.textMid }}>Informes de monitoreo previos · Crear nuevo informe</div>
         </div>
         {user.isAdmin && (
-          <button onClick={()=>setView(view==="crear"?"lista":"crear")} style={{ marginLeft:"auto", padding:"8px 18px", background:view==="crear"?C.navEntidades:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+          <button onClick={handleViewToggle} style={{ marginLeft:"auto", padding:"8px 18px", background:view==="crear"?C.navEntidades:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>
             {view==="crear" ? "← Ver Repositorio" : "+ Crear Informe"}
           </button>
         )}
       </div>
       <div style={{ padding:"24px 28px" }}>
         {view==="crear" ? (
-          <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}`, maxWidth:700, margin:"0 auto" }}>
-            <div style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:6 }}>Crear Informe de Monitoreo</div>
-            <div style={{ fontSize:12, color:C.textMid, marginBottom:20 }}>Plantilla predeterminada — el analista actualiza los datos y el sistema genera el informe automáticamente.</div>
-            <div style={{ background:C.navInformes+"12", border:`1px dashed ${C.navInformes}50`, borderRadius:10, padding:"20px", textAlign:"center" }}>
-              <div style={{ fontSize:32, marginBottom:10 }}>🔧</div>
-              <div style={{ fontSize:13, fontWeight:700, color:C.navInformes, marginBottom:6 }}>Plantilla en diseño</div>
-              <div style={{ fontSize:12, color:C.textMid }}>La plantilla de informe de monitoreo se definirá en la próxima sesión de trabajo.</div>
-            </div>
-          </div>
+          (() => {
+            const GRUPO_NAMES_W = ["Gobierno Central","Inst. Descentralizadas","Empresas Públicas","Intermediarios Financieros"];
+            const GRUPO_COLORS_W = [C.navDash, C.navHistorico, C.navInformes, C.navEntidades];
+            const filtradas = wizSearch.trim()
+              ? ENTIDADES.filter(e => e.nombre.toLowerCase().includes(wizSearch.toLowerCase()) || e.siglas.toLowerCase().includes(wizSearch.toLowerCase()))
+              : ENTIDADES;
+            const Steps = () => (
+              <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
+                {["Entidad","Excel","Generar"].map((lbl,i)=>{
+                  const n=i+1; const done=wizStep>n; const active=wizStep===n;
+                  return (
+                    <React.Fragment key={n}>
+                      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                        <div style={{ width:30, height:30, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, background: done?"#43A047": active?C.navInformes:C.border, color: (done||active)?"white":C.textLight, transition:"all 0.2s" }}>
+                          {done ? "✓" : n}
+                        </div>
+                        <div style={{ fontSize:10, fontWeight:600, color: active?C.navInformes: done?"#43A047":C.textLight }}>{lbl}</div>
+                      </div>
+                      {i<2 && <div style={{ flex:1, height:2, background: wizStep>n?"#43A047":C.border, margin:"0 8px", marginBottom:18, transition:"all 0.3s" }}/>}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            );
+            return (
+              <div style={{ maxWidth:720, margin:"0 auto" }}>
+                {/* Step 1 — Seleccionar Entidad */}
+                {wizStep===1 && (
+                  <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
+                    <Steps/>
+                    <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>¿Para qué entidad es el informe?</div>
+                    <div style={{ fontSize:12, color:C.textMid, marginBottom:16 }}>Selecciona una entidad de la lista. Puedes buscar por nombre o siglas.</div>
+                    <input
+                      value={wizSearch} onChange={e=>setWizSearch(e.target.value)}
+                      placeholder="Buscar entidad — ej: MIVIOT, Ministerio de Salud..."
+                      style={{ width:"100%", padding:"10px 14px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, color:C.text, outline:"none", marginBottom:16, boxSizing:"border-box" }}
+                    />
+                    <div style={{ maxHeight:340, overflowY:"auto", border:`1px solid ${C.border}`, borderRadius:10 }}>
+                      {(wizSearch.trim() ? [{idx:-1,list:filtradas}] : [0,1,2,3].map(i=>({idx:i,list:ENTIDADES.filter(e=>e.codigo_area===i)}))).map(({idx,list}) => (
+                        <div key={idx}>
+                          {idx>=0 && list.length>0 && (
+                            <div style={{ padding:"6px 14px", background:GRUPO_COLORS_W[idx]+"12", borderBottom:`1px solid ${C.border}`, fontSize:10, fontWeight:800, color:GRUPO_COLORS_W[idx], letterSpacing:"0.05em" }}>
+                              {GRUPO_NAMES_W[idx].toUpperCase()}
+                            </div>
+                          )}
+                          {list.map(e => (
+                            <div key={e.nombre} onClick={()=>{ setWizEnt(e); setWizStep(2); setWizSearch(""); }}
+                              style={{ padding:"10px 14px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:12, cursor:"pointer", transition:"background 0.15s" }}
+                              onMouseEnter={ev=>ev.currentTarget.style.background=C.bg}
+                              onMouseLeave={ev=>ev.currentTarget.style.background="white"}>
+                              <div style={{ padding:"2px 7px", background:(idx>=0?GRUPO_COLORS_W[idx]:C.navInformes)+"18", borderRadius:5, fontSize:10, fontWeight:800, color:idx>=0?GRUPO_COLORS_W[idx]:C.navInformes, whiteSpace:"nowrap" }}>{e.siglas}</div>
+                              <div style={{ fontSize:12, color:C.text, flex:1 }}>{e.nombre}</div>
+                              <div style={{ fontSize:16, color:C.textLight }}>›</div>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                      {filtradas.length===0 && <div style={{ padding:"20px", textAlign:"center", fontSize:12, color:C.textMid }}>No se encontraron entidades.</div>}
+                    </div>
+                  </div>
+                )}
+                {/* Step 2 — Subir Excel */}
+                {wizStep===2 && wizEnt && (
+                  <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
+                    <Steps/>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20, padding:"10px 14px", background:C.navInformes+"10", borderRadius:8, border:`1px solid ${C.navInformes}30` }}>
+                      <div style={{ padding:"2px 8px", background:C.navInformes+"20", borderRadius:5, fontSize:11, fontWeight:800, color:C.navInformes }}>{wizEnt.siglas}</div>
+                      <div style={{ fontSize:13, color:C.text, fontWeight:600 }}>{wizEnt.nombre}</div>
+                      <button onClick={()=>{ setWizEnt(null); setWizStep(1); }} style={{ marginLeft:"auto", fontSize:11, color:C.textLight, background:"none", border:"none", cursor:"pointer" }}>Cambiar</button>
+                    </div>
+                    <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>Sube el export Excel de DIPRENA</div>
+                    <div style={{ fontSize:12, color:C.textMid, marginBottom:16 }}>Exporta desde el sistema DIPRENA el archivo de ejecución presupuestaria (Cierre 2025) en formato .xlsx.</div>
+                    <label
+                      onDragOver={e=>{ e.preventDefault(); setWizDrag(true); }}
+                      onDragLeave={()=>setWizDrag(false)}
+                      onDrop={e=>{ e.preventDefault(); setWizDrag(false); const f=e.dataTransfer.files[0]; if(f&&f.name.endsWith(".xlsx")) setWizFile(f); }}
+                      style={{ display:"block", border:`2px dashed ${wizDrag?C.navInformes:wizFile?`#43A047`:C.border}`, borderRadius:12, padding:"32px 20px", textAlign:"center", cursor:"pointer", background:wizFile?"#43A04708":wizDrag?C.navInformes+"08":C.bg, transition:"all 0.2s" }}>
+                      <input type="file" accept=".xlsx" style={{ display:"none" }} onChange={e=>{ const f=e.target.files[0]; if(f) setWizFile(f); }}/>
+                      {wizFile ? (
+                        <>
+                          <div style={{ fontSize:28, marginBottom:8 }}>✅</div>
+                          <div style={{ fontSize:13, fontWeight:700, color:"#43A047", marginBottom:4 }}>{wizFile.name}</div>
+                          <div style={{ fontSize:11, color:C.textMid }}>{(wizFile.size/1024).toFixed(1)} KB · Haz clic para cambiar</div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ fontSize:32, marginBottom:8 }}>📂</div>
+                          <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:4 }}>Arrastra el archivo aquí o haz clic para seleccionar</div>
+                          <div style={{ fontSize:11, color:C.textMid }}>Solo archivos .xlsx · Hoja "Resultado consulta"</div>
+                        </>
+                      )}
+                    </label>
+                    <div style={{ marginTop:20, display:"flex", gap:10, justifyContent:"flex-end" }}>
+                      <button onClick={()=>setWizStep(1)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
+                      <button onClick={()=>{ if(wizFile) setWizStep(3); }} disabled={!wizFile} style={{ padding:"9px 22px", background:wizFile?C.navInformes:"#ccc", color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:wizFile?"pointer":"not-allowed" }}>Continuar →</button>
+                    </div>
+                  </div>
+                )}
+                {/* Step 3 — Confirmar y Generar */}
+                {wizStep===3 && wizEnt && wizFile && (
+                  <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
+                    <Steps/>
+                    {wizStatus===null && (
+                      <>
+                        <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:16 }}>Confirma y genera el informe</div>
+                        <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:24 }}>
+                          <div style={{ display:"flex", gap:14, padding:"14px 16px", background:C.bg, borderRadius:10, border:`1px solid ${C.border}`, alignItems:"center" }}>
+                            <span style={{ fontSize:22 }}>🏛</span>
+                            <div>
+                              <div style={{ fontSize:11, color:C.textMid, marginBottom:2 }}>ENTIDAD</div>
+                              <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{wizEnt.nombre}</div>
+                              <div style={{ fontSize:11, color:C.textMid }}>{wizEnt.siglas} · {["Gobierno Central","Inst. Descentralizadas","Empresas Públicas","Intermediarios Financieros"][wizEnt.codigo_area]}</div>
+                            </div>
+                          </div>
+                          <div style={{ display:"flex", gap:14, padding:"14px 16px", background:C.bg, borderRadius:10, border:`1px solid ${C.border}`, alignItems:"center" }}>
+                            <span style={{ fontSize:22 }}>📊</span>
+                            <div>
+                              <div style={{ fontSize:11, color:C.textMid, marginBottom:2 }}>ARCHIVO EXCEL</div>
+                              <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{wizFile.name}</div>
+                              <div style={{ fontSize:11, color:C.textMid }}>{(wizFile.size/1024).toFixed(1)} KB · Export DIPRENA</div>
+                            </div>
+                          </div>
+                          <div style={{ display:"flex", gap:14, padding:"14px 16px", background:"#43A04708", borderRadius:10, border:`1px solid #43A04730`, alignItems:"center" }}>
+                            <span style={{ fontSize:22 }}>📄</span>
+                            <div>
+                              <div style={{ fontSize:11, color:C.textMid, marginBottom:2 }}>RESULTADO</div>
+                              <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{wizEnt.siglas}_Cierre2025.pptx</div>
+                              <div style={{ fontSize:11, color:C.textMid }}>4 slides · Portada · Funcionamiento · Inversión · Conclusiones</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+                          <button onClick={()=>setWizStep(2)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
+                          <button onClick={()=>setWizStatus("ok")} style={{ padding:"9px 26px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
+                            ✨ Generar Informe
+                          </button>
+                        </div>
+                      </>
+                    )}
+                    {wizStatus==="ok" && (
+                      <div style={{ textAlign:"center", padding:"20px 0" }}>
+                        <div style={{ fontSize:48, marginBottom:16 }}>🎉</div>
+                        <div style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:8 }}>¡Informe listo para generar!</div>
+                        <div style={{ fontSize:12, color:C.textMid, marginBottom:20, lineHeight:1.6 }}>
+                          El módulo de generación está listo. Para producir el PPTX, ejecuta desde la carpeta <strong>reports/</strong>:
+                        </div>
+                        <div style={{ background:"#1B2F4E", borderRadius:10, padding:"14px 20px", textAlign:"left", marginBottom:20, fontFamily:"monospace", fontSize:12, color:"#C8F0D8" }}>
+                          <div style={{ color:"#7A9BBF", marginBottom:6 }}># Instalar dependencias (primera vez)</div>
+                          <div style={{ marginBottom:10 }}>npm install</div>
+                          <div style={{ color:"#7A9BBF", marginBottom:6 }}># Generar informe</div>
+                          <div>CODIGO={`${String(wizEnt.codigo_area)+String(wizEnt.codigo_entidad).padStart(2,'0')}`} node gen_informe.js "{wizFile.name}"</div>
+                        </div>
+                        <div style={{ fontSize:11, color:C.textMid, marginBottom:20 }}>Próximamente: descarga directa desde esta pantalla cuando el servidor esté activo.</div>
+                        <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+                          <button onClick={()=>{ resetWizard(); setView("lista"); }} style={{ padding:"9px 22px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>Volver al repositorio</button>
+                          <button onClick={()=>{ resetWizard(); setWizStep(1); }} style={{ padding:"9px 22px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>+ Nuevo informe</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()
         ) : (
           <div>
             {[0,1,2,3].map(i => (

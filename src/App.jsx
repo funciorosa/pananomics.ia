@@ -3656,6 +3656,12 @@ Responde como un analista presupuestario experto hablando directamente con un co
       <div style={{ padding:"0 24px 8px", display:"flex", gap:6, flexWrap:"wrap" }}>
         {chips.map(c=><button key={c} onClick={()=>setInput(c)} style={{ padding:"5px 12px", background:C.white, border:`1px solid ${C.border}`, borderRadius:20, color:C.textMid, fontSize:11, cursor:"pointer" }} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.headerBg;e.currentTarget.style.color=C.headerBg;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textMid;}}>{c}</button>)}
       </div>
+      <div style={{ margin:"0 24px 8px", background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:10, padding:"10px 14px", display:"flex", alignItems:"flex-start", gap:10 }}>
+        <Panamita mood="idle" size={32}/>
+        <p style={{ fontSize:11.5, color:"#78350F", lineHeight:1.6, margin:0 }}>
+          <strong>Nota:</strong> La ejecución presupuestaria del <strong>Banco Nacional de Panamá</strong> y la <strong>Caja de Ahorros</strong> suele integrarse manualmente, por lo que es posible que no esté incluida en la base de datos expuesta. En consecuencia, los resultados pueden presentar variaciones.
+        </p>
+      </div>
       <div style={{ background:C.white, borderTop:`1px solid ${C.border}`, padding:"10px 24px 14px", display:"flex", gap:10, alignItems:"flex-end" }}>
         <textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}} placeholder="Escríbele a Panamita... (Enter para enviar)" rows={1}
           style={{ flex:1, padding:"10px 14px", border:`1.5px solid ${C.border}`, borderRadius:10, fontSize:13, color:C.text, background:C.bg, resize:"none", outline:"none", lineHeight:1.6 }}

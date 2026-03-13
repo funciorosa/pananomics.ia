@@ -747,8 +747,9 @@ function Entidades({ user }) {
   const [wizFile, setWizFile] = useState(null);
   const [wizSearch, setWizSearch] = useState("");
   const [wizDrag, setWizDrag] = useState(false);
-  const [wizStatus, setWizStatus] = useState(null); // null | "ok" | "error"
-  const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizFile(null); setWizSearch(""); setWizStatus(null); };
+  const [wizStatus, setWizStatus] = useState(null); // null | "loading" | "ok" | "error"
+  const [wizErrMsg, setWizErrMsg] = useState("");
+  const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizFile(null); setWizSearch(""); setWizStatus(null); setWizErrMsg(""); };
   const handleViewToggle = () => { if (view==="crear") resetWizard(); setView(view==="crear"?"lista":"crear"); };
   const GRUPO_NAMES = ["GOBIERNO CENTRAL","INSTITUCIONES DESCENTRALIZADAS","EMPRESAS PÚBLICAS","INTERMEDIARIOS FINANCIEROS"];
   const GRUPO_COLORS = [C.navDash, C.navHistorico, C.navInformes, C.navEntidades];
@@ -906,29 +907,68 @@ function Entidades({ user }) {
                         </div>
                         <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
                           <button onClick={()=>setWizStep(2)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
-                          <button onClick={()=>setWizStatus("ok")} style={{ padding:"9px 26px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
+                          <button onClick={async ()=>{
+                            setWizStatus("loading");
+                            setWizErrMsg("");
+                            try {
+                              const buf = await wizFile.arrayBuffer();
+                              const bytes = new Uint8Array(buf);
+                              let bin = "";
+                              for (let i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+                              const excelBase64 = btoa(bin);
+                              const codigo = String(wizEnt.codigo_area)+String(wizEnt.codigo_entidad).padStart(2,"0");
+                              const r = await fetch("/api/generate-pptx", {
+                                method:"POST",
+                                headers:{"Content-Type":"application/json"},
+                                body:JSON.stringify({ codigo, excelBase64, filename:wizFile.name })
+                              });
+                              const json = await r.json();
+                              if (!r.ok) throw new Error(json.error||`Error ${r.status}`);
+                              const blob = new Blob([Uint8Array.from(atob(json.pptxBase64),c=>c.charCodeAt(0))],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href=url; a.download=json.filename;
+                              document.body.appendChild(a); a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                              setWizStatus("ok");
+                            } catch(e) {
+                              setWizErrMsg(e.message);
+                              setWizStatus("error");
+                            }
+                          }} style={{ padding:"9px 26px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
                             ✨ Generar Informe
                           </button>
                         </div>
                       </>
                     )}
+                    {wizStatus==="loading" && (
+                      <div style={{ textAlign:"center", padding:"40px 0" }}>
+                        <div style={{ fontSize:42, marginBottom:16 }}>⚙️</div>
+                        <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:8 }}>Generando informe…</div>
+                        <div style={{ fontSize:12, color:C.textMid }}>Procesando Excel y construyendo diapositivas. Un momento.</div>
+                      </div>
+                    )}
                     {wizStatus==="ok" && (
                       <div style={{ textAlign:"center", padding:"20px 0" }}>
-                        <div style={{ fontSize:48, marginBottom:16 }}>🎉</div>
-                        <div style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:8 }}>¡Informe listo para generar!</div>
-                        <div style={{ fontSize:12, color:C.textMid, marginBottom:20, lineHeight:1.6 }}>
-                          El módulo de generación está listo. Para producir el PPTX, ejecuta desde la carpeta <strong>reports/</strong>:
+                        <div style={{ fontSize:48, marginBottom:16 }}>✅</div>
+                        <div style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:8 }}>¡Informe generado!</div>
+                        <div style={{ fontSize:12, color:C.textMid, marginBottom:24, lineHeight:1.6 }}>
+                          El archivo <strong>{wizEnt.siglas}_Cierre2025.pptx</strong> se descargó automáticamente.
                         </div>
-                        <div style={{ background:"#1B2F4E", borderRadius:10, padding:"14px 20px", textAlign:"left", marginBottom:20, fontFamily:"monospace", fontSize:12, color:"#C8F0D8" }}>
-                          <div style={{ color:"#7A9BBF", marginBottom:6 }}># Instalar dependencias (primera vez)</div>
-                          <div style={{ marginBottom:10 }}>npm install</div>
-                          <div style={{ color:"#7A9BBF", marginBottom:6 }}># Generar informe</div>
-                          <div>CODIGO={`${String(wizEnt.codigo_area)+String(wizEnt.codigo_entidad).padStart(2,'0')}`} node gen_informe.js "{wizFile.name}"</div>
-                        </div>
-                        <div style={{ fontSize:11, color:C.textMid, marginBottom:20 }}>Próximamente: descarga directa desde esta pantalla cuando el servidor esté activo.</div>
                         <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
                           <button onClick={()=>{ resetWizard(); setView("lista"); }} style={{ padding:"9px 22px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>Volver al repositorio</button>
-                          <button onClick={()=>{ resetWizard(); setWizStep(1); }} style={{ padding:"9px 22px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>+ Nuevo informe</button>
+                          <button onClick={()=>resetWizard()} style={{ padding:"9px 22px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>+ Nuevo informe</button>
+                        </div>
+                      </div>
+                    )}
+                    {wizStatus==="error" && (
+                      <div style={{ textAlign:"center", padding:"20px 0" }}>
+                        <div style={{ fontSize:42, marginBottom:16 }}>⚠️</div>
+                        <div style={{ fontSize:15, fontWeight:700, color:"#7A1010", marginBottom:8 }}>Error al generar</div>
+                        <div style={{ fontSize:12, color:C.textMid, marginBottom:20, background:"#FFF0F0", border:"1px solid #F0C0C0", borderRadius:8, padding:"12px 16px", textAlign:"left" }}>{wizErrMsg}</div>
+                        <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+                          <button onClick={()=>setWizStatus(null)} style={{ padding:"9px 22px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>Reintentar</button>
                         </div>
                       </div>
                     )}

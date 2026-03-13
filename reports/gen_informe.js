@@ -1041,7 +1041,27 @@ function slide4(pres, ent, data) {
   addFooter(pres, sl, ent.nombre);
 }
 
-// ── MAIN ─────────────────────────────────────────────────────────────────────
+// ── EXPORT (para Vercel API) ──────────────────────────────────────────────────
+
+async function generatePPTXBase64(ent, data) {
+  const pres = new pptxgen();
+  pres.layout = "LAYOUT_16x9";
+  pres.title  = `${ent.siglas} — Informe Cierre 2025`;
+  pres.author = "Dirección de Presupuesto de la Nación";
+
+  slide1(pres, ent, data);
+  slide2(pres, ent, data);
+  if (data.inversion.mod > 0) {
+    slide3(pres, ent, data);
+  }
+  slide4(pres, ent, data);
+
+  return await pres.write({ outputType: "base64" });
+}
+
+module.exports = { generatePPTXBase64, getEntidad };
+
+// ── MAIN (CLI) ────────────────────────────────────────────────────────────────
 
 async function main() {
   // ── Entidad ─────────────────────────────────────────────────────────────────
@@ -1098,7 +1118,9 @@ async function main() {
   console.log(`✅ PPTX generado: ${fname}`);
 }
 
-main().catch(err => {
-  console.error("❌ Error:", err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(err => {
+    console.error("❌ Error:", err.message);
+    process.exit(1);
+  });
+}

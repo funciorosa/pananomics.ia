@@ -839,7 +839,7 @@ function Informes() {
         reportType: rpt?.title || "",
         entity: wizScopeLabel,
         periodo: wizAnioInicio === wizAnioFin ? `${wizAnioInicio}` : `${wizAnioInicio}–${wizAnioFin}`,
-        filename: json.filename,
+        filename: filename,
         generatedAt: new Date().toISOString()
       };
       const updated = [entry, ...reportHistory].slice(0, 10);

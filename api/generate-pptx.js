@@ -124,14 +124,21 @@ Incluye entre 3 y 4 aspectos y entre 3 y 4 recomendaciones. Sé muy específico:
 
   const apiData = await response.json();
   const raw = apiData.content?.[0]?.text || "";
-  console.log("[narr] Respuesta recibida, longitud:", raw.length);
+  console.log("[narr] Respuesta recibida, longitud:", raw.length, "| inicio:", raw.slice(0, 80));
+
+  // Limpiar markdown code blocks si los hay
+  const cleaned = raw
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```\s*$/, "")
+    .trim();
 
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(cleaned);
     console.log("[narr] JSON parseado OK");
     return parsed;
   } catch (_) {
-    const match = raw.match(/\{[\s\S]*\}/);
+    // Intentar extraer el primer objeto JSON de la respuesta
+    const match = cleaned.match(/\{[\s\S]*\}/);
     if (match) {
       try {
         const parsed = JSON.parse(match[0]);
@@ -139,7 +146,7 @@ Incluye entre 3 y 4 aspectos y entre 3 y 4 recomendaciones. Sé muy específico:
         return parsed;
       } catch (__) {}
     }
-    console.warn("[narr] Failed to parse JSON:", raw.slice(0, 300));
+    console.warn("[narr] Failed to parse JSON:", cleaned.slice(0, 300));
     return null;
   }
 }

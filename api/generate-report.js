@@ -131,11 +131,15 @@ Reglas:
 - Máximo 120 palabras por párrafo
 - Devuelve SOLO los 3 párrafos con etiquetas <p>...</p>, sin títulos ni listas`;
 
+      const controller = new AbortController();
+      const claudeTimeout = setTimeout(() => controller.abort(), 25000);
       const cr = await fetch("https://api.anthropic.com/v1/messages", {
         method:"POST",
         headers:{ "Content-Type":"application/json", "x-api-key":apiKey, "anthropic-version":"2023-06-01" },
-        body: JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:900, messages:[{ role:"user", content:prompt }] })
+        body: JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:900, messages:[{ role:"user", content:prompt }] }),
+        signal: controller.signal
       });
+      clearTimeout(claudeTimeout);
       const cj = await cr.json();
       narr = cj?.content?.[0]?.text || "";
     }

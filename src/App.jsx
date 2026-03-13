@@ -2194,6 +2194,20 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos*
           nombre_programa: { type:"string",  description:"Nombre parcial del programa (opcional)" }
         }
       }
+    },
+    {
+      name: "generar_word",
+      description: "Genera y provee un archivo Word (.docx) descargable con un informe formateado de datos del presupuesto. Úsala cuando el usuario pida un Word, documento Word, informe en Word, .docx, o similar. Acepta los mismos filtros que consultar_presupuesto.",
+      input_schema: {
+        type: "object",
+        properties: {
+          fuente_ingreso:  { type:"string",  description:"Fuente de financiamiento (opcional)" },
+          nombre_entidad:  { type:"string",  description:"Nombre parcial o completo de la entidad (opcional)" },
+          anio:            { type:"integer", description:"Año fiscal entre 2016 y 2025 (opcional)" },
+          tipo_presupuesto:{ type:"string",  description:"FUNCIONAMIENTO o INVERSION (opcional)" },
+          nombre_programa: { type:"string",  description:"Nombre parcial del programa (opcional)" }
+        }
+      }
     }
   ];
 
@@ -2245,8 +2259,17 @@ REGLAS:
             const r = await fetch("/api/export-excel", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(inp) });
             const json = await r.json();
             if (json.xlsxBase64 && json.filas > 0) {
-              pendingDownloads.push({ base64: json.xlsxBase64, filename: json.filename, filas: json.filas });
+              pendingDownloads.push({ base64: json.xlsxBase64, filename: json.filename, filas: json.filas, mime:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", icon:"📊" });
               return { type:"tool_result", tool_use_id:tb.id, content:`Excel generado con ${json.filas} filas. Archivo: ${json.filename}` };
+            }
+            return { type:"tool_result", tool_use_id:tb.id, content: json.message || "Sin datos para los filtros indicados." };
+          }
+          if (tb.name === "generar_word") {
+            const r = await fetch("/api/export-word", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(inp) });
+            const json = await r.json();
+            if (json.docxBase64 && json.filas > 0) {
+              pendingDownloads.push({ base64: json.docxBase64, filename: json.filename, filas: json.filas, mime:"application/vnd.openxmlformats-officedocument.wordprocessingml.document", icon:"📄" });
+              return { type:"tool_result", tool_use_id:tb.id, content:`Word generado con ${json.filas} filas. Archivo: ${json.filename}` };
             }
             return { type:"tool_result", tool_use_id:tb.id, content: json.message || "Sin datos para los filtros indicados." };
           }
@@ -2299,13 +2322,13 @@ REGLAS:
               <div style={{ padding:"12px 16px", borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px", background:m.role==="user"?C.headerBg:C.white, color:m.role==="user"?"white":C.text, fontSize:13, lineHeight:1.7, boxShadow:"0 2px 8px rgba(0,0,0,0.07)", border:m.role==="assistant"?`1px solid ${C.border}`:"none" }} dangerouslySetInnerHTML={{__html:fmtTxt(m.text)}}/>
               {m.downloads?.map((dl,di)=>(
                 <div key={di} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12, boxShadow:"0 2px 8px rgba(0,0,0,0.07)" }}>
-                  <span style={{ fontSize:24, flexShrink:0 }}>📊</span>
+                  <span style={{ fontSize:24, flexShrink:0 }}>{dl.icon||"📎"}</span>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:12, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dl.filename}</div>
-                    <div style={{ fontSize:11, color:C.textMid }}>{dl.filas} filas · Excel (.xlsx)</div>
+                    <div style={{ fontSize:11, color:C.textMid }}>{dl.filas} filas · {dl.filename.endsWith(".docx")?"Word (.docx)":"Excel (.xlsx)"}</div>
                   </div>
                   <button onClick={()=>{
-                    const blob = new Blob([Uint8Array.from(atob(dl.base64),c=>c.charCodeAt(0))],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+                    const blob = new Blob([Uint8Array.from(atob(dl.base64),c=>c.charCodeAt(0))],{type:dl.mime||"application/octet-stream"});
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement("a");
                     a.href=url; a.download=dl.filename;

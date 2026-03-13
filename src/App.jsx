@@ -1909,7 +1909,7 @@ function ChatView({ user }) {
   const ENTIDADES = useContext(EntidadesCtx);
   const [messages, setMessages] = useState([{ role:"assistant", text:`¡Hola ${user.name}! Soy **Panamita** 👋 Estoy conectada a la base de datos en tiempo real.\n\nTengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos** (normativa + PEI/POA de 28 instituciones). Puedes preguntarme:\n\n• _¿Cómo ejecutó MEDUCA en 2024?_\n• _¿Qué entidades reciben fondos FECCI en el sector agropecuario?_\n• _Compara MINSA vs MIDA en inversión 2023_\n• _Entidades financiadas con Dividendos del Canal_\n\n¿Qué quieres analizar?` }]);
   const [input, setInput] = useState(""); const [loading, setLoading] = useState(false);
-  const [mood, setMood] = useState("idle"); const [dbCtx, setDbCtx] = useState(""); const [libCtx, setLibCtx] = useState("");
+  const [mood, setMood] = useState("idle"); const [libCtx, setLibCtx] = useState("");
   const bottomRef = useRef(null);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [messages]);
   useEffect(() => { loadContexts(); }, []);
@@ -1932,12 +1932,6 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos*
   }, [ENTIDADES.length]);
 
   const loadContexts = async () => {
-    // Presupuesto: RPC retorna resumen completo (872 entidad/año) sin límite de filas
-    try {
-      const raw = await sbRpc("get_resumen_para_chat", {});
-      const ctx = typeof raw === "string" ? raw : (Array.isArray(raw) ? raw[0] : null);
-      if (ctx) setDbCtx(ctx);
-    } catch {}
     // Documentos: tabla normativa + PEI_DOCS
     const peiCtx = PEI_DOCS.map(d=>`[${d.titulo_corto} (${d.anio})]: ${d.resumen_contexto}`).join("\n");
     try {
@@ -1964,14 +1958,18 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos*
 
   const SYSTEM_PROMPT = `Eres Panamita, asistente de análisis presupuestario de PANANOMICS.IA (DIPRENA — MEF de Panamá).
 
-RESUMEN PRESUPUESTARIO (872 combinaciones entidad/año, 2016–2025):
-${dbCtx}
+BASE DE DATOS: Tienes acceso a ~872 combinaciones entidad/año del presupuesto nacional de Panamá (2016–2025), con datos de Ley, Modificado, Devengado y % de ejecución, por fuente de ingreso, tipo (FUNCIONAMIENTO/INVERSIÓN) y programa. Usa SIEMPRE la herramienta consultar_presupuesto para obtener datos concretos antes de responder — nunca inventes cifras.
 
-BIBLIOTECA DOCUMENTAL (normativa + PEI/POA/planes de 28 instituciones):
-${libCtx}
+ENTIDADES DISPONIBLES: ${ENTIDADES.length} entidades públicas (Gobierno Central, Inst. Descentralizadas, Empresas Públicas, Intermediarios Financieros).
 
-REGLAS: Meta ≥76%=✓ | 60-75%=⚠ | <60%=✗. Responde en español con markdown. Sé preciso con cifras.
-Cuando necesites datos cruzados (por fuente de ingreso, sector, programa, etc.) usa la herramienta consultar_presupuesto.`;
+BIBLIOTECA: 34 documentos (normativa presupuestaria + PEI/POA/Planes de 28 instituciones).
+${libCtx ? libCtx.slice(0, 2000) : ""}
+
+REGLAS:
+- Siempre consulta la BD antes de dar cifras. Usa múltiples llamadas si necesitas cruzar datos.
+- Ejecución: ≥76%=✓ buena | 60–75%=⚠ media | <60%=✗ crítica
+- Responde en español con markdown. Sé conciso y preciso.
+- Si te piden un informe/PDF, genera el análisis en texto estructurado (el usuario lo exportará).`;
 
   const send = async () => {
     if (!input.trim() || loading) return;
@@ -1979,8 +1977,8 @@ Cuando necesites datos cruzados (por fuente de ingreso, sector, programa, etc.) 
     setMessages(p=>[...p,{ role:"user", text:txt }]);
     setLoading(true); setMood("thinking");
 
-    // Construir historial API (solo mensajes texto del estado)
-    const apiMsgs = messages.slice(1).concat([{role:"user",text:txt}]).map(m=>({role:m.role,content:m.text}));
+    // Construir historial API — últimos 6 mensajes para no exceder límite de tokens
+    const apiMsgs = messages.slice(1).concat([{role:"user",text:txt}]).slice(-6).map(m=>({role:m.role,content:m.text}));
 
     try {
       const callAI = async (msgs) => {

@@ -12,6 +12,15 @@ async function sbQuery(tabla, params = "") {
   if (!res.ok) return [];
   return res.json();
 }
+async function sbRpc(fn, body = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: "POST",
+    headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
 
 // ── COLORS ────────────────────────────────────────────────────────────────────
 const C = {
@@ -369,30 +378,31 @@ function Dashboard() {
   const loadAnual = async () => {
     setLoading(true);
     try {
-      const rows = await sbQuery("presupuesto", `select=tipo_presupuesto,presupuesto_ley,presupuesto_modificado,ejecutado,grupo_gasto,fuente_ingreso,nombre_programa,nombre_subprograma,provincia_comarca&anio=eq.${anio}&nombre_entidad=eq.${encodeURIComponent(entidad)}&limit=10000`);
+      // RPC agrega server-side — sin límite de 1,000 filas
+      const rows = await sbRpc("get_presupuesto_anual", { p_entidad: entidad, p_anio: anio });
       if (!rows.length) { setData(DEMO_DATA); setLoading(false); return; }
-      const sum = (arr,k) => arr.reduce((s,r)=>s+(+r[k]||0),0);
       const func = rows.filter(r=>r.tipo_presupuesto==="FUNCIONAMIENTO");
       const inv  = rows.filter(r=>r.tipo_presupuesto==="INVERSION");
+      const sum  = (arr,k) => arr.reduce((s,r)=>s+(+r[k]||0),0);
       // Grupos de gasto (func)
       const gMap = {};
-      func.forEach(r=>{ const g=r.grupo_gasto||"Sin clasificar"; if(!gMap[g])gMap[g]={mod:0,eje:0}; gMap[g].mod+=+r.presupuesto_modificado||0; gMap[g].eje+=+r.ejecutado||0; });
+      func.forEach(r=>{ const g=r.grupo_gasto||"Sin clasificar"; if(!gMap[g])gMap[g]={mod:0,eje:0}; gMap[g].mod+=+r.total_mod||0; gMap[g].eje+=+r.total_eje||0; });
       // Fuentes
       const fMap = {};
-      rows.forEach(r=>{ const f=r.fuente_ingreso||"Otras"; if(!fMap[f])fMap[f]=0; fMap[f]+=+r.presupuesto_modificado||0; });
+      rows.forEach(r=>{ const f=r.fuente_ingreso||"Otras"; if(!fMap[f])fMap[f]=0; fMap[f]+=+r.total_mod||0; });
       // Programas inversión
       const pMap = {};
-      inv.forEach(r=>{ const p=(r.nombre_programa||"Sin Programa").slice(0,35); if(!pMap[p])pMap[p]={mod:0,eje:0}; pMap[p].mod+=+r.presupuesto_modificado||0; pMap[p].eje+=+r.ejecutado||0; });
+      inv.forEach(r=>{ const p=(r.nombre_programa||"Sin Programa").slice(0,35); if(!pMap[p])pMap[p]={mod:0,eje:0}; pMap[p].mod+=+r.total_mod||0; pMap[p].eje+=+r.total_eje||0; });
       // Programas funcionamiento
       const fpMap = {};
-      func.forEach(r=>{ const p=(r.nombre_programa||"Sin Programa").slice(0,35); if(!fpMap[p])fpMap[p]={mod:0,eje:0}; fpMap[p].mod+=+r.presupuesto_modificado||0; fpMap[p].eje+=+r.ejecutado||0; });
+      func.forEach(r=>{ const p=(r.nombre_programa||"Sin Programa").slice(0,35); if(!fpMap[p])fpMap[p]={mod:0,eje:0}; fpMap[p].mod+=+r.total_mod||0; fpMap[p].eje+=+r.total_eje||0; });
       // Provincias
       const provMap = {};
-      rows.forEach(r=>{ const p=r.provincia_comarca||"No especificada"; if(!provMap[p])provMap[p]={mod:0,eje:0}; provMap[p].mod+=+r.presupuesto_modificado||0; provMap[p].eje+=+r.ejecutado||0; });
+      rows.forEach(r=>{ const p=r.provincia_comarca||"No especificada"; if(!provMap[p])provMap[p]={mod:0,eje:0}; provMap[p].mod+=+r.total_mod||0; provMap[p].eje+=+r.total_eje||0; });
       setData({
-        totalLey: sum(rows,"presupuesto_ley"), totalMod: sum(rows,"presupuesto_modificado"), totalEje: sum(rows,"ejecutado"),
-        funcMod: sum(func,"presupuesto_modificado"), funcEje: sum(func,"ejecutado"),
-        invMod: sum(inv,"presupuesto_modificado"), invEje: sum(inv,"ejecutado"),
+        totalLey: sum(rows,"total_ley"), totalMod: sum(rows,"total_mod"), totalEje: sum(rows,"total_eje"),
+        funcMod: sum(func,"total_mod"), funcEje: sum(func,"total_eje"),
+        invMod:  sum(inv,"total_mod"),  invEje:  sum(inv,"total_eje"),
         grupos: Object.entries(gMap).sort((a,b)=>b[1].mod-a[1].mod).slice(0,8).map(([g,v])=>({name:g.slice(0,28),mod:+(v.mod/1e6).toFixed(2),eje:+(v.eje/1e6).toFixed(2),pct:+(v.eje/v.mod*100).toFixed(1)})),
         fuentes: Object.entries(fMap).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([f,v])=>({name:f.slice(0,30),value:+(v/1e6).toFixed(2)})),
         programas: Object.entries(pMap).sort((a,b)=>b[1].mod-a[1].mod).slice(0,8).map(([p,v])=>({name:p,mod:+(v.mod/1e6).toFixed(2),eje:+(v.eje/1e6).toFixed(2)})),
@@ -406,10 +416,9 @@ function Dashboard() {
   const loadHistorico = async () => {
     setLoading(true);
     try {
-      const rows = await sbQuery("presupuesto", `select=anio,presupuesto_ley,presupuesto_modificado,ejecutado&nombre_entidad=eq.${encodeURIComponent(entidad)}&anio=lte.2025&limit=50000`);
-      const byYear = {};
-      rows.forEach(r=>{ const y=r.anio; if(!byYear[y])byYear[y]={ley:0,mod:0,eje:0}; byYear[y].ley+=+r.presupuesto_ley||0; byYear[y].mod+=+r.presupuesto_modificado||0; byYear[y].eje+=+r.ejecutado||0; });
-      const hist = Object.entries(byYear).sort((a,b)=>+a[0]-+b[0]).map(([y,v])=>({ year:+y, Ley:+(v.ley/1e6).toFixed(2), Modificado:+(v.mod/1e6).toFixed(2), Ejecutado:+(v.eje/1e6).toFixed(2), Ejecucion:+(v.eje/v.mod*100).toFixed(1) }));
+      // RPC ya devuelve totales por año — sin límite de 1,000 filas
+      const rows = await sbRpc("get_presupuesto_historico", { p_entidad: entidad });
+      const hist = rows.map(r=>({ year:r.anio, Ley:+(+r.total_ley/1e6).toFixed(2), Modificado:+(+r.total_mod/1e6).toFixed(2), Ejecutado:+(+r.total_eje/1e6).toFixed(2), Ejecucion:+(+r.total_eje/+r.total_mod*100).toFixed(1) }));
       setHistData(hist.length ? hist : DEMO_HIST);
     } catch(e){ setHistData(DEMO_HIST); }
     setLoading(false);

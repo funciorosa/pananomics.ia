@@ -20,6 +20,16 @@ function semBg(p)    { if (+p>=90) return "#E8F5F0"; if (+p>=70) return "#FFF8E1
 function short(s, n=30) { return s && s.length>n ? s.slice(0,n)+"…" : (s||""); }
 
 module.exports = async function handler(req, res) {
+  // Top-level catch — always return JSON, never HTML
+  try {
+    return await _handler(req, res);
+  } catch (e) {
+    console.error("[generate-report] CRASH:", e?.message, e?.stack);
+    return res.status(500).json({ error: `Error interno: ${e?.message || String(e)}` });
+  }
+};
+
+async function _handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const {
@@ -27,6 +37,8 @@ module.exports = async function handler(req, res) {
     anio_inicio, anio_fin, grupo_gasto,
     report_type = 1, report_title = "Ejecución Presupuestaria", report_icon = "📊"
   } = req.body || {};
+
+  console.log("[generate-report] params:", { nombre_entidad, area, fuente_ingreso, tipo_presupuesto, anio_inicio, anio_fin, grupo_gasto, report_type });
 
   // ── 1. Query Supabase ────────────────────────────────────────────────────────
   let rows;
@@ -44,8 +56,10 @@ module.exports = async function handler(req, res) {
         p_grupo_gasto: grupo_gasto    || null
       })
     });
-    if (!r.ok) throw new Error(`Supabase ${r.status}: ${await r.text()}`);
-    rows = await r.json();
+    const rawText = await r.text();
+    console.log("[generate-report] Supabase status:", r.status, "body[:200]:", rawText.slice(0,200));
+    if (!r.ok) throw new Error(`Supabase ${r.status}: ${rawText}`);
+    rows = JSON.parse(rawText);
   } catch (e) {
     return res.status(500).json({ error: `Error consultando datos: ${e.message}` });
   }

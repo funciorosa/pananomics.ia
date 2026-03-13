@@ -1381,7 +1381,13 @@ function Informes() {
                       <button onClick={downloadHTML} style={{ padding:"12px 24px", background:C.headerBg, color:"white", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
                         📥 Descargar HTML
                       </button>
-                      <button onClick={()=>{ previewHTML(); setTimeout(()=>window.print(),800); }} style={{ padding:"12px 24px", background:"#D32F2F", color:"white", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
+                      <button onClick={()=>{
+                        if(!wizResult?.html)return;
+                        const blob=new Blob([wizResult.html],{type:"text/html;charset=utf-8"});
+                        const url=URL.createObjectURL(blob);
+                        const win=window.open(url,"_blank");
+                        if(win){win.onload=()=>{setTimeout(()=>win.print(),400);};}
+                      }} style={{ padding:"12px 24px", background:"#D32F2F", color:"white", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
                         📄 Exportar PDF
                       </button>
                       <button onClick={resetWizard} style={{ padding:"12px 24px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, fontSize:13, fontWeight:600, color:C.textMid, cursor:"pointer" }}>

@@ -49,6 +49,43 @@ function sanitize(s) {
   return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "").replace(/[\uFFFE\uFFFF]/g, "").trim();
 }
 
+/** Etiqueta corta del período para header — ej: "T1 2025", "1er Sem. 2026" */
+function periodoLabel(periodo) {
+  if (!periodo) return "Cierre 2025";
+  const { tipo, opcion, anio } = periodo;
+  if (tipo === "trimestral") {
+    const nombres = { T1: "T1", T2: "T2", T3: "T3", T4: "T4" };
+    return `${nombres[opcion] || opcion} ${anio}`;
+  }
+  if (tipo === "semestral") {
+    return `${opcion === "1S" ? "1er Sem." : "2do Sem."} ${anio}`;
+  }
+  return "Cierre 2025";
+}
+
+/** Rango de meses del período para footer — ej: "Enero – Marzo 2025" */
+function periodoRango(periodo) {
+  if (!periodo) return "Enero – Diciembre 2025";
+  const { opcion, anio } = periodo || {};
+  const rangos = {
+    T1: "Enero – Marzo", T2: "Abril – Junio",
+    T3: "Julio – Septiembre", T4: "Octubre – Diciembre",
+    "1S": "Enero – Junio", "2S": "Julio – Diciembre"
+  };
+  return `${rangos[opcion] || "Enero – Diciembre"} ${anio || 2025}`;
+}
+
+/** Nombre largo del período para narrativas — ej: "Primer Trimestre 2025" */
+function periodoNombre(periodo) {
+  if (!periodo) return "Cierre Enero–Diciembre 2025";
+  const { tipo, opcion, anio } = periodo;
+  const nombresT = { T1: "Primer Trimestre", T2: "Segundo Trimestre", T3: "Tercer Trimestre", T4: "Cuarto Trimestre" };
+  const nombresS = { "1S": "Primer Semestre", "2S": "Segundo Semestre" };
+  if (tipo === "trimestral") return `${nombresT[opcion] || opcion} ${anio}`;
+  if (tipo === "semestral") return `${nombresS[opcion] || opcion} ${anio}`;
+  return "Cierre 2025";
+}
+
 // ── COMPONENTES DE LAYOUT ────────────────────────────────────────────────────
 
 function addHeader(pres, slide, opts = {}) {
@@ -102,7 +139,7 @@ function addHeader(pres, slide, opts = {}) {
   });
 }
 
-function addFooter(pres, slide, entity = "Dirección de Presupuesto de la Nación") {
+function addFooter(pres, slide, entity = "Dirección de Presupuesto de la Nación", periodo = null) {
   slide.addShape(pres.shapes.RECTANGLE, {
     x: 0, y: 5.47, w: 10, h: 0.04,
     fill: { color: NAV }, line: { color: NAV }
@@ -112,7 +149,7 @@ function addFooter(pres, slide, entity = "Dirección de Presupuesto de la Nació
     fill: { color: GRY }, line: { color: GRY }
   });
   const items = [
-    "● Período: Enero – Diciembre 2025",
+    `● Período: ${periodoRango(periodo)}`,
     "● Fuente: Dirección de Presupuesto de la Nación",
     `● ${entity}`
   ];
@@ -353,10 +390,10 @@ function buildConclusiones(data, ent) {
 
 // ── SLIDE 1 — PORTADA ────────────────────────────────────────────────────────
 
-function slide1(pres, ent, data) {
+function slide1(pres, ent, data, periodo) {
   const sl = pres.addSlide();
   const headerCode = `${ent.codigo} · ${ent.siglas}`;
-  addHeader(pres, sl, { code: headerCode, name: ent.nombre.toUpperCase() });
+  addHeader(pres, sl, { code: headerCode, name: ent.nombre.toUpperCase(), period: periodoLabel(periodo) });
 
   // Banda objetivo
   sl.addShape(pres.shapes.RECTANGLE, {
@@ -473,7 +510,7 @@ function slide1(pres, ent, data) {
   // ── Panel derecho: tabla resumen ──
   const rx = 5.06, ry = 1.25, rw = 4.72, rh = 3.95;
   addPanelBox(pres, sl, rx, ry, rw, rh);
-  addPanelTitle(pres, sl, rx, ry, rw, "Ejecución Presupuestaria — Cierre 2025");
+  addPanelTitle(pres, sl, rx, ry, rw, `Ejecución Presupuestaria — ${periodoLabel(periodo)}`);
 
   const headers = ["Categoría", "Ley (1)", "Modificado (2)", "Ejecutado (3)", "% (3/2)", "Dist."];
   const colW    = [1.38, 0.62, 0.82, 0.72, 0.56, 0.44];
@@ -589,17 +626,18 @@ function slide1(pres, ent, data) {
     fontSize: 6, color: "AAAAAA", fontFace: "Calibri", margin: 0
   });
 
-  addFooter(pres, sl, ent.nombre);
+  addFooter(pres, sl, ent.nombre, periodo);
 }
 
 // ── SLIDE 2 — FUNCIONAMIENTO ─────────────────────────────────────────────────
 
-function slide2(pres, ent, data, narr) {
+function slide2(pres, ent, data, narr, periodo) {
   const sl = pres.addSlide();
   addHeader(pres, sl, {
     subtitle: "Ejecución por Grupos de Gasto y Programas",
     name: "Funcionamiento",
-    siglas: ent.siglas
+    siglas: ent.siglas,
+    period: periodoLabel(periodo)
   });
 
   const lx = 0.18, cy = 0.77;
@@ -778,17 +816,18 @@ function slide2(pres, ent, data, narr) {
     fontSize: 7.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
   });
 
-  addFooter(pres, sl, ent.siglas);
+  addFooter(pres, sl, ent.siglas, periodo);
 }
 
 // ── SLIDE 3 — INVERSIÓN ──────────────────────────────────────────────────────
 
-function slide3(pres, ent, data, narr) {
+function slide3(pres, ent, data, narr, periodo) {
   const sl = pres.addSlide();
   addHeader(pres, sl, {
     subtitle: "Ejecución por Programas y Actividades / Proyectos",
     name: "Inversión",
-    siglas: ent.siglas
+    siglas: ent.siglas,
+    period: periodoLabel(periodo)
   });
 
   const cy = 0.77;
@@ -869,17 +908,18 @@ function slide3(pres, ent, data, narr) {
     fontSize: 7.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
   });
 
-  addFooter(pres, sl, ent.siglas);
+  addFooter(pres, sl, ent.siglas, periodo);
 }
 
 // ── SLIDE 4 — CONCLUSIONES ───────────────────────────────────────────────────
 
-function slide4(pres, ent, data, narr) {
+function slide4(pres, ent, data, narr, periodo) {
   const sl = pres.addSlide();
   const hasInv = data.inversion.mod > 0;
   addHeader(pres, sl, {
     subtitle: "Resumen Ejecutivo y Conclusiones",
-    name: hasInv ? "Funcionamiento e Inversión" : "Funcionamiento"
+    name: hasInv ? "Funcionamiento e Inversión" : "Funcionamiento",
+    period: periodoLabel(periodo)
   });
 
   const cy = 0.77;
@@ -1048,22 +1088,23 @@ function slide4(pres, ent, data, narr) {
     fontSize: 7.5, color: NAV, fontFace: "Calibri", valign: "top", margin: 0
   });
 
-  addFooter(pres, sl, ent.nombre);
+  addFooter(pres, sl, ent.nombre, periodo);
 }
 
 // ── SLIDE EXTRA (contenido libre organizado por IA) ──────────────────────────
 
-function slideExtra(pres, ent, slideData) {
+function slideExtra(pres, ent, slideData, periodo) {
   // slideData: { titulo, secciones: [{titulo, contenido}] }
   const sl = pres.addSlide();
   addHeader(pres, sl, {
     subtitle: slideData.titulo || "Información Adicional",
-    name: ent.nombre.toUpperCase()
+    name: ent.nombre.toUpperCase(),
+    period: periodoLabel(periodo)
   });
 
   const cy   = 0.77;
   const secs = (slideData.secciones || []).slice(0, 2);
-  if (secs.length === 0) { addFooter(pres, sl, ent.siglas); return; }
+  if (secs.length === 0) { addFooter(pres, sl, ent.siglas, periodo); return; }
 
   const avail = 5.47 - cy - 0.18;
   const panH  = secs.length === 1 ? avail - 0.1 : (avail - 0.15) / 2;
@@ -1078,24 +1119,24 @@ function slideExtra(pres, ent, slideData) {
     });
   });
 
-  addFooter(pres, sl, ent.siglas);
+  addFooter(pres, sl, ent.siglas, periodo);
 }
 
 // ── EXPORT (para Vercel API) ──────────────────────────────────────────────────
 
-async function generatePPTXBase64(ent, data, narr, extraSlides) {
+async function generatePPTXBase64(ent, data, narr, extraSlides, periodo) {
   const pres = new pptxgen();
   pres.layout = "LAYOUT_16x9";
-  pres.title  = `${ent.siglas} — Informe Cierre 2025`;
+  pres.title  = `${ent.siglas} — Informe ${periodoLabel(periodo)}`;
   pres.author = "Dirección de Presupuesto de la Nación";
 
-  slide1(pres, ent, data);
-  slide2(pres, ent, data, narr);
+  slide1(pres, ent, data, periodo);
+  slide2(pres, ent, data, narr, periodo);
   if (data.inversion.mod > 0) {
-    slide3(pres, ent, data, narr);
+    slide3(pres, ent, data, narr, periodo);
   }
-  slide4(pres, ent, data, narr);
-  (extraSlides || []).forEach(s => slideExtra(pres, ent, s));
+  slide4(pres, ent, data, narr, periodo);
+  (extraSlides || []).forEach(s => slideExtra(pres, ent, s, periodo));
 
   return await pres.write({ outputType: "base64" });
 }

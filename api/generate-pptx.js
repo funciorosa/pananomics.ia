@@ -14,7 +14,7 @@ function fmtM(n) { return Math.round(n).toLocaleString("en-US"); }
 
 // ── Generador de narrativas con Claude API ────────────────────────────────────
 
-async function generateNarratives(ent, data, apiKey, contexto) {
+async function generateNarratives(ent, data, apiKey, contexto, periodo) {
   const f   = data.funcionamiento;
   const inv = data.inversion;
 
@@ -36,11 +36,23 @@ async function generateNarratives(ent, data, apiKey, contexto) {
     ? `\nCONTEXTO ADICIONAL DEL ANALISTA:\n${contexto}\n`
     : "";
 
+  // Determinar etiqueta y rango del período
+  function getPeriodoInfo(p) {
+    if (!p) return { label: "Cierre 2025", rango: "Enero–Diciembre 2025" };
+    const { tipo, opcion, anio } = p;
+    const labelsT = { T1: "T1", T2: "T2", T3: "T3", T4: "T4" };
+    const labelsS = { "1S": "1er Semestre", "2S": "2do Semestre" };
+    const rangos  = { T1: "Enero–Marzo", T2: "Abril–Junio", T3: "Julio–Septiembre", T4: "Octubre–Diciembre", "1S": "Enero–Junio", "2S": "Julio–Diciembre" };
+    const label = tipo === "trimestral" ? `${labelsT[opcion]} ${anio}` : `${labelsS[opcion]} ${anio}`;
+    return { label, rango: `${rangos[opcion] || "Enero–Diciembre"} ${anio}` };
+  }
+  const periodoInfo = getPeriodoInfo(periodo);
+
   const prompt = `Eres un analista presupuestario del MEF de Panamá. Redacta en español formal, con enfoque técnico y objetivo. Los montos son en miles de balboas (B/.).
 
 ENTIDAD: ${ent.nombre} (${ent.siglas}) — Código ${ent.codigo}
 SECTOR: ${ent.sector || "Gobierno Central"}
-PERÍODO: Enero–Diciembre 2025
+PERÍODO: ${periodoInfo.rango}
 ${contextoSection}
 RESUMEN DE EJECUCIÓN:
 - Total:          Ley ${fmtM(data.total.ley)}, Mod ${fmtM(data.total.mod)}, Dev ${fmtM(data.total.eje)}, Ejec ${data.total.pct}%
@@ -60,22 +72,22 @@ PARTIDA CRÍTICA: ${data.partidaCritica.nombre} (${data.partidaCritica.pct}%)
 
 Devuelve ÚNICAMENTE un JSON válido, sin markdown, sin texto adicional, con exactamente esta estructura:
 {
-  "narrativaFun": "Párrafo de 3-4 oraciones analizando el funcionamiento: comportamiento de grupos de gasto principales, nivel de ejecución y hallazgos clave.",
-  "narrativaInv": ${inv.mod > 0 ? '"Párrafo de 3-4 oraciones analizando la inversión: programas destacados, nivel de ejecución y alertas."' : "null"},
+  "narrativaFun": "2-3 párrafos detallados analizando el funcionamiento del período ${periodoInfo.rango}: resumen general con montos y % total, luego análisis de cada grupo de gasto con cifras específicas (Modificado, Devengado, %), y finalmente análisis por programa con los de mayor y menor ejecución. Menciona partidas críticas y fortalezas.",
+  "narrativaInv": ${inv.mod > 0 ? `"2-3 párrafos analizando la inversión del período ${periodoInfo.rango}: resumen general, análisis por programa con cifras específicas, subprogramas y proyectos destacados o rezagados, y alertas sobre ejecuciones bajas."` : "null"},
   "aspectos": [
-    { "texto": "Aspecto relevante positivo o neutral.", "esCritico": false },
-    { "texto": "Aspecto de atención o bajo rendimiento.", "esCritico": true }
+    { "texto": "Aspecto relevante positivo o neutral con cifras específicas.", "esCritico": false },
+    { "texto": "Aspecto de atención o bajo rendimiento con cifras específicas.", "esCritico": true }
   ],
   "recomendaciones": [
-    "Recomendación 1 accionable y específica para la entidad.",
+    "Recomendación 1 accionable y específica para la entidad basada en datos reales.",
     "Recomendación 2.",
     "Recomendación 3.",
     "Recomendación 4."
   ],
-  "conclusion1": "Párrafo conclusivo sobre el desempeño general y de funcionamiento.",
-  "conclusion2": ${inv.mod > 0 ? '"Párrafo conclusivo sobre la ejecución de inversión y perspectivas."' : "null"}
+  "conclusion1": "Párrafo conclusivo sobre el desempeño general y de funcionamiento en el período ${periodoInfo.rango}, con cifras clave.",
+  "conclusion2": ${inv.mod > 0 ? `"Párrafo conclusivo sobre la inversión en el período ${periodoInfo.rango}, perspectivas y áreas de mejora."` : "null"}
 }
-Incluye entre 3 y 4 aspectos y entre 3 y 4 recomendaciones. Sé específico con los nombres de grupos, programas y cifras reales del presupuesto.`;
+Incluye entre 3 y 4 aspectos y entre 3 y 4 recomendaciones. Sé muy específico: menciona nombres reales de grupos, programas y cifras concretas del presupuesto.`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -119,7 +131,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { codigo, excelBase64, contexto, extraSlides } = req.body || {};
+  const { codigo, excelBase64, contexto, extraSlides, periodo } = req.body || {};
 
   if (!codigo || !excelBase64) {
     return res.status(400).json({ error: "codigo y excelBase64 son requeridos" });
@@ -154,7 +166,7 @@ module.exports = async function handler(req, res) {
   let narr = null;
   if (apiKey) {
     try {
-      narr = await generateNarratives(ent, data, apiKey, contexto || null);
+      narr = await generateNarratives(ent, data, apiKey, contexto || null, periodo || null);
     } catch (e) {
       console.warn("Error generando narrativas:", e.message);
     }
@@ -162,12 +174,15 @@ module.exports = async function handler(req, res) {
 
   let pptxBase64;
   try {
-    pptxBase64 = await generatePPTXBase64(ent, data, narr, extraSlides || []);
+    pptxBase64 = await generatePPTXBase64(ent, data, narr, extraSlides || [], periodo || null);
   } catch (e) {
     return res.status(500).json({ error: `Error al generar el PPTX: ${e.message}` });
   }
 
-  const outFilename = `${ent.siglas.replace(/[^a-zA-Z0-9]/g, "_")}_Cierre2025.pptx`;
+  const periodoSlug = periodo
+    ? `${periodo.opcion}_${periodo.anio}`.replace(/[^a-zA-Z0-9]/g, "_")
+    : "Cierre2025";
+  const outFilename = `${ent.siglas.replace(/[^a-zA-Z0-9]/g, "_")}_${periodoSlug}.pptx`;
 
   // Construir preview por slide para mostrar en la UI antes de descargar
   const hasInv = data.inversion.mod > 0;

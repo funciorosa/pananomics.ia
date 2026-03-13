@@ -744,6 +744,7 @@ function Entidades({ user }) {
   // ── Crear Informe wizard ──
   const [wizStep, setWizStep] = useState(1);
   const [wizEnt, setWizEnt] = useState(null);
+  const [wizPeriodo, setWizPeriodo] = useState(null); // { tipo:"trimestral"|"semestral", opcion:"T1"…|"1S"|"2S", anio:2025|2026 }
   const [wizFile, setWizFile] = useState(null);
   const [wizSearch, setWizSearch] = useState("");
   const [wizDrag, setWizDrag] = useState(false);
@@ -753,7 +754,16 @@ function Entidades({ user }) {
   const [wizErrMsg, setWizErrMsg] = useState("");
   const [wizPreview, setWizPreview] = useState(null);
   const [wizBlobData, setWizBlobData] = useState(null); // {base64, filename}
-  const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizFile(null); setWizSearch(""); setWizContexto(""); setWizExtraSlides([]); setWizStatus(null); setWizErrMsg(""); setWizPreview(null); setWizBlobData(null); };
+  const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizPeriodo(null); setWizFile(null); setWizSearch(""); setWizContexto(""); setWizExtraSlides([]); setWizStatus(null); setWizErrMsg(""); setWizPreview(null); setWizBlobData(null); };
+  // Helper: etiqueta del período seleccionado
+  const periodoLabel = (p) => {
+    if (!p) return null;
+    const labT = { T1:"T1", T2:"T2", T3:"T3", T4:"T4" };
+    const labS = { "1S":"1er Semestre", "2S":"2do Semestre" };
+    const rng  = { T1:"Ene–Mar", T2:"Abr–Jun", T3:"Jul–Sep", T4:"Oct–Dic", "1S":"Ene–Jun", "2S":"Jul–Dic" };
+    const lbl  = p.tipo==="trimestral" ? labT[p.opcion] : labS[p.opcion];
+    return `${lbl} ${p.anio}  ·  ${rng[p.opcion]}`;
+  };
   const addExtraSlide = () => setWizExtraSlides(p=>[...p,{id:Date.now(),contenido:"",loading:false,preview:null,error:null}]);
   const removeExtraSlide = id => setWizExtraSlides(p=>p.filter(s=>s.id!==id));
   const updateExtraSlide = (id,patch) => setWizExtraSlides(p=>p.map(s=>s.id===id?{...s,...patch}:s));
@@ -798,7 +808,7 @@ function Entidades({ user }) {
               : ENTIDADES;
             const Steps = () => (
               <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
-                {["Entidad","Excel","Contexto","Generar"].map((lbl,i)=>{
+                {["Entidad","Período","Excel","Contexto","Generar"].map((lbl,i)=>{
                   const n=i+1; const done=wizStep>n; const active=wizStep===n;
                   return (
                     <React.Fragment key={n}>
@@ -808,7 +818,7 @@ function Entidades({ user }) {
                         </div>
                         <div style={{ fontSize:10, fontWeight:600, color: active?C.navInformes: done?"#43A047":C.textLight }}>{lbl}</div>
                       </div>
-                      {i<3 && <div style={{ flex:1, height:2, background: wizStep>n?"#43A047":C.border, margin:"0 8px", marginBottom:18, transition:"all 0.3s" }}/>}
+                      {i<4 && <div style={{ flex:1, height:2, background: wizStep>n?"#43A047":C.border, margin:"0 8px", marginBottom:18, transition:"all 0.3s" }}/>}
                     </React.Fragment>
                   );
                 })}
@@ -836,7 +846,7 @@ function Entidades({ user }) {
                             </div>
                           )}
                           {list.map(e => (
-                            <div key={e.nombre} onClick={()=>{ setWizEnt(e); setWizStep(2); setWizSearch(""); }}
+                            <div key={e.nombre} onClick={()=>{ setWizEnt(e); setWizStep(2); setWizSearch(""); setWizPeriodo(null); }}
                               style={{ padding:"10px 14px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:12, cursor:"pointer", transition:"background 0.15s" }}
                               onMouseEnter={ev=>ev.currentTarget.style.background=C.bg}
                               onMouseLeave={ev=>ev.currentTarget.style.background="white"}>
@@ -851,17 +861,122 @@ function Entidades({ user }) {
                     </div>
                   </div>
                 )}
-                {/* Step 2 — Subir Excel */}
-                {wizStep===2 && wizEnt && (
+                {/* Step 2 — Seleccionar Período */}
+                {wizStep===2 && wizEnt && (() => {
+                  const ANOS = [2025, 2026];
+                  const TRIMES = [
+                    { op:"T1", label:"T1", rango:"Ene – Mar" },
+                    { op:"T2", label:"T2", rango:"Abr – Jun" },
+                    { op:"T3", label:"T3", rango:"Jul – Sep" },
+                    { op:"T4", label:"T4", rango:"Oct – Dic" },
+                  ];
+                  const SEMESTRES = [
+                    { op:"1S", label:"1er Semestre", rango:"Ene – Jun" },
+                    { op:"2S", label:"2do Semestre", rango:"Jul – Dic" },
+                  ];
+                  const pTipo  = wizPeriodo?.tipo  || null;
+                  const pOpcion= wizPeriodo?.opcion|| null;
+                  const pAnio  = wizPeriodo?.anio  || null;
+                  const setPTipo = t  => setWizPeriodo(p=>({ tipo:t, opcion:null, anio:p?.anio||2025 }));
+                  const setPOp   = op => setWizPeriodo(p=>({ ...p, opcion:op }));
+                  const setPAnio = a  => setWizPeriodo(p=>({ ...p, anio:a }));
+                  const canContinue = pTipo && pOpcion && pAnio;
+                  return (
+                    <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
+                      <Steps/>
+                      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20, padding:"10px 14px", background:C.navInformes+"10", borderRadius:8, border:`1px solid ${C.navInformes}30` }}>
+                        <div style={{ padding:"2px 8px", background:C.navInformes+"20", borderRadius:5, fontSize:11, fontWeight:800, color:C.navInformes }}>{wizEnt.siglas}</div>
+                        <div style={{ fontSize:13, color:C.text, fontWeight:600 }}>{wizEnt.nombre}</div>
+                        <button onClick={()=>{ setWizEnt(null); setWizStep(1); }} style={{ marginLeft:"auto", fontSize:11, color:C.textLight, background:"none", border:"none", cursor:"pointer" }}>Cambiar</button>
+                      </div>
+                      <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>Selecciona el período del informe</div>
+                      <div style={{ fontSize:12, color:C.textMid, marginBottom:20 }}>Elige el año y el período de análisis.</div>
+
+                      {/* Año */}
+                      <div style={{ marginBottom:18 }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:C.textMid, letterSpacing:"0.04em", marginBottom:8 }}>AÑO</div>
+                        <div style={{ display:"flex", gap:10 }}>
+                          {ANOS.map(a=>(
+                            <button key={a} onClick={()=>setPAnio(a)}
+                              style={{ flex:1, padding:"10px 0", border:`2px solid ${pAnio===a?C.navInformes:C.border}`, borderRadius:10, fontSize:15, fontWeight:700, color:pAnio===a?C.navInformes:C.textMid, background:pAnio===a?C.navInformes+"10":C.white, cursor:"pointer", transition:"all 0.15s" }}>
+                              {a}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Tipo */}
+                      <div style={{ marginBottom:18 }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:C.textMid, letterSpacing:"0.04em", marginBottom:8 }}>TIPO DE PERÍODO</div>
+                        <div style={{ display:"flex", gap:10 }}>
+                          {[{v:"trimestral",l:"Trimestral"},{v:"semestral",l:"Semestral"}].map(({v,l})=>(
+                            <button key={v} onClick={()=>setPTipo(v)}
+                              style={{ flex:1, padding:"10px 0", border:`2px solid ${pTipo===v?C.navInformes:C.border}`, borderRadius:10, fontSize:13, fontWeight:700, color:pTipo===v?C.navInformes:C.textMid, background:pTipo===v?C.navInformes+"10":C.white, cursor:"pointer", transition:"all 0.15s" }}>
+                              {l}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Opciones de período */}
+                      {pTipo==="trimestral" && (
+                        <div style={{ marginBottom:20 }}>
+                          <div style={{ fontSize:11, fontWeight:700, color:C.textMid, letterSpacing:"0.04em", marginBottom:8 }}>TRIMESTRE</div>
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:8 }}>
+                            {TRIMES.map(({op,label,rango})=>(
+                              <button key={op} onClick={()=>setPOp(op)}
+                                style={{ padding:"12px 6px", border:`2px solid ${pOpcion===op?C.navInformes:C.border}`, borderRadius:10, background:pOpcion===op?C.navInformes+"10":C.white, cursor:"pointer", transition:"all 0.15s", textAlign:"center" }}>
+                                <div style={{ fontSize:16, fontWeight:800, color:pOpcion===op?C.navInformes:"#1B2F4E", marginBottom:2 }}>{label}</div>
+                                <div style={{ fontSize:9, color:C.textMid }}>{rango}</div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {pTipo==="semestral" && (
+                        <div style={{ marginBottom:20 }}>
+                          <div style={{ fontSize:11, fontWeight:700, color:C.textMid, letterSpacing:"0.04em", marginBottom:8 }}>SEMESTRE</div>
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                            {SEMESTRES.map(({op,label,rango})=>(
+                              <button key={op} onClick={()=>setPOp(op)}
+                                style={{ padding:"14px 10px", border:`2px solid ${pOpcion===op?C.navInformes:C.border}`, borderRadius:10, background:pOpcion===op?C.navInformes+"10":C.white, cursor:"pointer", transition:"all 0.15s", textAlign:"center" }}>
+                                <div style={{ fontSize:14, fontWeight:800, color:pOpcion===op?C.navInformes:"#1B2F4E", marginBottom:2 }}>{label}</div>
+                                <div style={{ fontSize:10, color:C.textMid }}>{rango}</div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {canContinue && (
+                        <div style={{ padding:"10px 14px", background:"#43A04710", borderRadius:8, border:"1px solid #43A04740", fontSize:12, color:"#0F5E2F", fontWeight:600, marginBottom:16 }}>
+                          ✓ Período seleccionado: {periodoLabel(wizPeriodo)}
+                        </div>
+                      )}
+
+                      <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+                        <button onClick={()=>setWizStep(1)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
+                        <button onClick={()=>{ if(canContinue) setWizStep(3); }} disabled={!canContinue}
+                          style={{ padding:"9px 22px", background:canContinue?C.navInformes:"#ccc", color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:canContinue?"pointer":"not-allowed" }}>Continuar →</button>
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* Step 3 — Subir Excel */}
+                {wizStep===3 && wizEnt && wizPeriodo && (
                   <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
                     <Steps/>
                     <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20, padding:"10px 14px", background:C.navInformes+"10", borderRadius:8, border:`1px solid ${C.navInformes}30` }}>
                       <div style={{ padding:"2px 8px", background:C.navInformes+"20", borderRadius:5, fontSize:11, fontWeight:800, color:C.navInformes }}>{wizEnt.siglas}</div>
                       <div style={{ fontSize:13, color:C.text, fontWeight:600 }}>{wizEnt.nombre}</div>
-                      <button onClick={()=>{ setWizEnt(null); setWizStep(1); }} style={{ marginLeft:"auto", fontSize:11, color:C.textLight, background:"none", border:"none", cursor:"pointer" }}>Cambiar</button>
+                      <button onClick={()=>{ setWizEnt(null); setWizStep(1); }} style={{ marginLeft:"auto", fontSize:11, color:C.textLight, background:"none", cursor:"pointer", border:"none" }}>Cambiar</button>
+                    </div>
+                    <div style={{ padding:"6px 12px", background:"#43A04710", borderRadius:7, border:"1px solid #43A04740", fontSize:11, color:"#0F5E2F", fontWeight:600, marginBottom:16, display:"inline-flex", alignItems:"center", gap:6 }}>
+                      📅 {periodoLabel(wizPeriodo)}
+                      <button onClick={()=>setWizStep(2)} style={{ fontSize:10, color:"#0F5E2F", background:"none", border:"none", cursor:"pointer", textDecoration:"underline" }}>Cambiar</button>
                     </div>
                     <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>Sube el export Excel de DIPRENA</div>
-                    <div style={{ fontSize:12, color:C.textMid, marginBottom:16 }}>Exporta desde el sistema DIPRENA el archivo de ejecución presupuestaria (Cierre 2025) en formato .xlsx.</div>
+                    <div style={{ fontSize:12, color:C.textMid, marginBottom:16 }}>Exporta desde el sistema DIPRENA el archivo de ejecución presupuestaria en formato .xlsx.</div>
                     <label
                       onDragOver={e=>{ e.preventDefault(); setWizDrag(true); }}
                       onDragLeave={()=>setWizDrag(false)}
@@ -883,13 +998,13 @@ function Entidades({ user }) {
                       )}
                     </label>
                     <div style={{ marginTop:20, display:"flex", gap:10, justifyContent:"flex-end" }}>
-                      <button onClick={()=>setWizStep(1)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
-                      <button onClick={()=>{ if(wizFile) setWizStep(3); }} disabled={!wizFile} style={{ padding:"9px 22px", background:wizFile?C.navInformes:"#ccc", color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:wizFile?"pointer":"not-allowed" }}>Continuar →</button>
+                      <button onClick={()=>setWizStep(2)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
+                      <button onClick={()=>{ if(wizFile) setWizStep(4); }} disabled={!wizFile} style={{ padding:"9px 22px", background:wizFile?C.navInformes:"#ccc", color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:wizFile?"pointer":"not-allowed" }}>Continuar →</button>
                     </div>
                   </div>
                 )}
-                {/* Step 3 — Contexto adicional */}
-                {wizStep===3 && wizEnt && wizFile && (
+                {/* Step 4 — Contexto adicional */}
+                {wizStep===4 && wizEnt && wizFile && (
                   <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
                     <Steps/>
                     <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>Contexto adicional para la IA</div>
@@ -907,16 +1022,16 @@ function Entidades({ user }) {
                       </div>
                     )}
                     <div style={{ marginTop:20, display:"flex", gap:10, justifyContent:"flex-end" }}>
-                      <button onClick={()=>setWizStep(2)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
-                      <button onClick={()=>{ setWizContexto(""); setWizStep(4); }} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>Saltar</button>
-                      <button onClick={()=>setWizStep(4)} style={{ padding:"9px 22px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                      <button onClick={()=>setWizStep(3)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
+                      <button onClick={()=>{ setWizContexto(""); setWizStep(5); }} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>Saltar</button>
+                      <button onClick={()=>setWizStep(5)} style={{ padding:"9px 22px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>
                         {wizContexto.trim() ? "Agregar contexto →" : "Continuar →"}
                       </button>
                     </div>
                   </div>
                 )}
-                {/* Step 4 — Confirmar y Generar */}
-                {wizStep===4 && wizEnt && wizFile && (
+                {/* Step 5 — Confirmar y Generar */}
+                {wizStep===5 && wizEnt && wizFile && (
                   <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
                     <Steps/>
                     {wizStatus===null && (
@@ -931,6 +1046,14 @@ function Entidades({ user }) {
                               <div style={{ fontSize:11, color:C.textMid }}>{wizEnt.siglas} · {["Gobierno Central","Inst. Descentralizadas","Empresas Públicas","Intermediarios Financieros"][wizEnt.codigo_area]}</div>
                             </div>
                           </div>
+                          <div style={{ display:"flex", gap:14, padding:"14px 16px", background:"#43A04708", borderRadius:10, border:`1px solid #43A04730`, alignItems:"center" }}>
+                            <span style={{ fontSize:22 }}>📅</span>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:11, color:C.textMid, marginBottom:2 }}>PERÍODO</div>
+                              <div style={{ fontSize:13, fontWeight:700, color:"#0F5E2F" }}>{periodoLabel(wizPeriodo)}</div>
+                            </div>
+                            <button onClick={()=>setWizStep(2)} style={{ fontSize:10, color:C.textLight, background:"none", border:"none", cursor:"pointer" }}>Cambiar</button>
+                          </div>
                           <div style={{ display:"flex", gap:14, padding:"14px 16px", background:C.bg, borderRadius:10, border:`1px solid ${C.border}`, alignItems:"center" }}>
                             <span style={{ fontSize:22 }}>📊</span>
                             <div>
@@ -939,11 +1062,11 @@ function Entidades({ user }) {
                               <div style={{ fontSize:11, color:C.textMid }}>{(wizFile.size/1024).toFixed(1)} KB · Export DIPRENA</div>
                             </div>
                           </div>
-                          <div style={{ display:"flex", gap:14, padding:"14px 16px", background:"#43A04708", borderRadius:10, border:`1px solid #43A04730`, alignItems:"center" }}>
+                          <div style={{ display:"flex", gap:14, padding:"14px 16px", background:"#1B2F4E08", borderRadius:10, border:`1px solid #1B2F4E20`, alignItems:"center" }}>
                             <span style={{ fontSize:22 }}>📄</span>
                             <div>
                               <div style={{ fontSize:11, color:C.textMid, marginBottom:2 }}>RESULTADO</div>
-                              <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{wizEnt.siglas}_Cierre2025.pptx</div>
+                              <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{wizEnt.siglas}_{wizPeriodo?.opcion}_{wizPeriodo?.anio}.pptx</div>
                               <div style={{ fontSize:11, color:C.textMid }}>4 slides · Portada · Funcionamiento · Inversión · Conclusiones</div>
                             </div>
                           </div>
@@ -954,7 +1077,7 @@ function Entidades({ user }) {
                                 <div style={{ fontSize:11, color:C.navInformes, fontWeight:700, marginBottom:4 }}>CONTEXTO PARA LA IA</div>
                                 <div style={{ fontSize:11, color:C.textMid, lineHeight:1.5, whiteSpace:"pre-wrap" }}>{wizContexto.trim().slice(0,200)}{wizContexto.trim().length>200?"…":""}</div>
                               </div>
-                              <button onClick={()=>setWizStep(3)} style={{ fontSize:10, color:C.navInformes, background:"none", border:"none", cursor:"pointer", whiteSpace:"nowrap" }}>Editar</button>
+                              <button onClick={()=>setWizStep(4)} style={{ fontSize:10, color:C.navInformes, background:"none", border:"none", cursor:"pointer", whiteSpace:"nowrap" }}>Editar</button>
                             </div>
                           )}
                         </div>
@@ -1016,7 +1139,7 @@ function Entidades({ user }) {
                         </div>
 
                         <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
-                          <button onClick={()=>setWizStep(3)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
+                          <button onClick={()=>setWizStep(4)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
                           <button onClick={async ()=>{
                             setWizStatus("loading");
                             setWizErrMsg("");
@@ -1030,7 +1153,7 @@ function Entidades({ user }) {
                               const r = await fetch("/api/generate-pptx", {
                                 method:"POST",
                                 headers:{"Content-Type":"application/json"},
-                                body:JSON.stringify({ codigo, excelBase64, contexto:wizContexto.trim()||null, extraSlides:wizExtraSlides.filter(s=>s.preview).map(s=>s.preview) })
+                                body:JSON.stringify({ codigo, excelBase64, contexto:wizContexto.trim()||null, extraSlides:wizExtraSlides.filter(s=>s.preview).map(s=>s.preview), periodo:wizPeriodo })
                               });
                               const json = await r.json();
                               if (!r.ok) throw new Error(json.error||`Error ${r.status}`);
@@ -1139,7 +1262,7 @@ function Entidades({ user }) {
                         <div style={{ fontSize:48, marginBottom:16 }}>✅</div>
                         <div style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:8 }}>¡Informe generado!</div>
                         <div style={{ fontSize:12, color:C.textMid, marginBottom:24, lineHeight:1.6 }}>
-                          El archivo <strong>{wizEnt.siglas}_Cierre2025.pptx</strong> se descargó automáticamente.
+                          El archivo <strong>{wizBlobData?.filename || `${wizEnt.siglas}_${wizPeriodo?.opcion}_${wizPeriodo?.anio}.pptx`}</strong> se descargó automáticamente.
                         </div>
                         <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
                           <button onClick={()=>{ resetWizard(); setView("lista"); }} style={{ padding:"9px 22px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>Volver al repositorio</button>

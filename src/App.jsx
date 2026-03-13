@@ -1985,11 +1985,14 @@ Cuando necesites datos cruzados (por fuente de ingreso, sector, programa, etc.) 
     try {
       const AKEY = process.env.REACT_APP_ANTHROPIC_KEY || "";
       const AI_HEADERS = {"Content-Type":"application/json","x-api-key":AKEY,"anthropic-version":"2023-06-01","anthropic-dangerous-allow-browser":"true"};
-      let d = await fetch("https://api.anthropic.com/v1/messages",{
+      if (!AKEY) { setMessages(p=>[...p,{role:"assistant",text:"⚠️ API key no configurada. Contacta al administrador."}]); setMood("idle"); setLoading(false); return; }
+      let resp = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST", headers:AI_HEADERS,
         body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:2000,
           system:SYSTEM_PROMPT, tools:PANAMITA_TOOLS, messages:apiMsgs })
-      }).then(r=>r.json());
+      });
+      let d = await resp.json();
+      if (!resp.ok) { setMessages(p=>[...p,{role:"assistant",text:`Error ${resp.status}: ${d?.error?.message||"Sin detalle"}`}]); setMood("idle"); setLoading(false); return; }
 
       // Loop de tool use: Panamita puede llamar a la BD las veces que necesite
       while (d.stop_reason === "tool_use") {
@@ -2023,7 +2026,7 @@ Cuando necesites datos cruzados (por fuente de ingreso, sector, programa, etc.) 
       const text = d.content?.find(b=>b.type==="text")?.text || d.content?.[0]?.text || "Error al procesar.";
       setMessages(p=>[...p,{role:"assistant",text}]);
       setMood("happy"); setTimeout(()=>setMood("idle"),2000);
-    } catch(e) { setMessages(p=>[...p,{role:"assistant",text:"Error de conexión."}]); setMood("idle"); }
+    } catch(e) { setMessages(p=>[...p,{role:"assistant",text:`Error de conexión: ${e.message}`}]); setMood("idle"); }
     setLoading(false);
   };
 

@@ -800,9 +800,35 @@ function Biblioteca() {
     { id:6, titulo:"Presupuesto Ciudadano 2026", titulo_corto:"Presupuesto Ciudadano 2026", categoria:"Transparencia Fiscal", anio:2026, paginas:13, icono:"👥", color:"#FB8C00", resumen_contexto:"Documento de transparencia fiscal del MEF. Explica el PGE 2026 (B/. 34,900M) en lenguaje accesible: ciclo presupuestario, fuentes y distribución del gasto.", tabla_contenidos:JSON.stringify(["1. Introducción","2. Presupuesto 2026","3. Ingresos","4. Gastos","5. Proyectos por provincia"]) },
   ];
 
-  const PEI_PLACEHOLDER = [
-    { id:"pei1", titulo:"PEI — Ministerio de Salud 2020–2024", titulo_corto:"PEI MINSA 2020–2024", categoria:"PEI", anio:2020, paginas:80, icono:"🏥", color:"#E53935", resumen_contexto:"Plan Estratégico Institucional del MINSA." },
-    { id:"pei2", titulo:"PEI — Ministerio de Educación 2019–2024", titulo_corto:"PEI MEDUCA 2019–2024", categoria:"PEI", anio:2019, paginas:95, icono:"🎓", color:"#1565C0", resumen_contexto:"Plan Estratégico Institucional de MEDUCA." },
+  const PEI_DOCS = [
+    { id:"pei-cgr",      titulo:"PEI — Contraloría General de la República", titulo_corto:"PEI CGR", categoria:"PEI", anio:2023, icono:"🏛", color:"#1565C0", resumen_contexto:"Plan Estratégico Institucional de la Contraloría General de la República.", pdf:"/docs/pei/002CGRPEI.pdf" },
+    { id:"pei-aac",      titulo:"PEI — Autoridad de Aeronáutica Civil", titulo_corto:"PEI AAC", categoria:"PEI", anio:2023, icono:"✈️", color:"#0277BD", resumen_contexto:"Plan Estratégico Institucional de la Autoridad de Aeronáutica Civil de Panamá.", pdf:"/docs/pei/AACPEI.pdf" },
+    { id:"pei-acodeco",  titulo:"PEI — Autoridad de Protección al Consumidor", titulo_corto:"PEI ACODECO", categoria:"PEI", anio:2023, icono:"⚖️", color:"#6A1B9A", resumen_contexto:"Plan Estratégico Institucional de ACODECO — Protección al Consumidor y Defensa de la Competencia.", pdf:"/docs/pei/ACODECOPEI.pdf" },
+    { id:"pei-attt",     titulo:"PEI — Autoridad de Tránsito y Transporte Terrestre", titulo_corto:"PEI ATTT", categoria:"PEI", anio:2023, icono:"🚗", color:"#E65100", resumen_contexto:"Plan Estratégico Institucional de la ATTT.", pdf:"/docs/pei/ATTTPEI.pdf" },
+    { id:"pei-ca",       titulo:"PEI — Caja de Ahorros", titulo_corto:"PEI Caja de Ahorros", categoria:"PEI", anio:2023, icono:"🏦", color:"#2E7D32", resumen_contexto:"Plan Estratégico Institucional de la Caja de Ahorros de Panamá.", pdf:"/docs/pei/CAPEI.pdf" },
+    { id:"poa-gorgas",   titulo:"POA — Instituto Conmemorativo Gorgas", titulo_corto:"POA Gorgas", categoria:"POA", anio:2023, icono:"🔬", color:"#00838F", resumen_contexto:"Plan Operativo Anual del Instituto Conmemorativo Gorgas de Estudios de la Salud.", pdf:"/docs/pei/GORGASPOA.pdf" },
+    { id:"pei-idaan",    titulo:"PEI — Instituto de Acueductos y Alcantarillados Nacionales", titulo_corto:"PEI IDAAN", categoria:"PEI", anio:2023, icono:"💧", color:"#0277BD", resumen_contexto:"Plan Estratégico Institucional del IDAAN.", pdf:"/docs/pei/IDAANPEI.pdf" },
+    { id:"pei-idiap",    titulo:"PEI — Instituto de Investigación Agropecuaria", titulo_corto:"PEI IDIAP", categoria:"PEI", anio:2023, icono:"🌾", color:"#558B2F", resumen_contexto:"Plan Estratégico Institucional del Instituto de Investigación Agropecuaria de Panamá.", pdf:"/docs/pei/IDIAPPEI.pdf" },
+    { id:"pei-ima",      titulo:"PEI — Instituto de Mercadeo Agropecuario", titulo_corto:"PEI IMA", categoria:"PEI", anio:2023, icono:"🥦", color:"#33691E", resumen_contexto:"Plan Estratégico Institucional del Instituto de Mercadeo Agropecuario.", pdf:"/docs/pei/IMAPEI.pdf" },
+    { id:"pei-ina",      titulo:"PEI — Instituto Nacional de Agricultura", titulo_corto:"PEI INA", categoria:"PEI", anio:2023, icono:"🌿", color:"#388E3C", resumen_contexto:"Plan Estratégico Institucional del INA.", pdf:"/docs/pei/INAPEI.pdf" },
+    { id:"pei-isa",      titulo:"PEI — Instituto de Seguro Agropecuario", titulo_corto:"PEI ISA", categoria:"PEI", anio:2023, icono:"🌻", color:"#F9A825", resumen_contexto:"Plan Estratégico Institucional del Instituto de Seguro Agropecuario.", pdf:"/docs/pei/ISAPEI.pdf" },
+    { id:"pei-meduca",   titulo:"PEI — Ministerio de Educación", titulo_corto:"PEI MEDUCA", categoria:"PEI", anio:2023, icono:"🎓", color:"#1565C0", resumen_contexto:"Plan Estratégico Institucional del Ministerio de Educación.", pdf:"/docs/pei/MEDUCAPEI.pdf" },
+    { id:"plan-mici",    titulo:"Plan Estratégico — Ministerio de Comercio e Industrias", titulo_corto:"Plan MICI", categoria:"Plan Estratégico", anio:2023, icono:"🏭", color:"#4527A0", resumen_contexto:"Plan Estratégico Institucional del Ministerio de Comercio e Industrias.", pdf:"/docs/pei/MICIPLAN.pdf" },
+    { id:"pei-minsa",    titulo:"PEI — Ministerio de Salud", titulo_corto:"PEI MINSA", categoria:"PEI", anio:2020, icono:"🏥", color:"#C62828", resumen_contexto:"Plan Estratégico Institucional del Ministerio de Salud.", pdf:"/docs/pei/MINSAP1.pdf" },
+    { id:"pei-minseg",   titulo:"PEI — Ministerio de Seguridad Pública", titulo_corto:"PEI MINSEG", categoria:"PEI", anio:2023, icono:"🛡️", color:"#1A237E", resumen_contexto:"Plan Estratégico Institucional del Ministerio de Seguridad Pública.", pdf:"/docs/pei/MINSEGPEI.pdf" },
+    { id:"pei-miviot",   titulo:"PEI — Ministerio de Vivienda y Ordenamiento Territorial", titulo_corto:"PEI MIVIOT", categoria:"PEI", anio:2023, icono:"🏘️", color:"#5D4037", resumen_contexto:"Plan Estratégico Institucional del MIVIOT.", pdf:"/docs/pei/MIVIOTPEI.pdf" },
+    { id:"plan-ods",     titulo:"Plan ODS — Panamá Sostenible", titulo_corto:"Plan ODS Panamá", categoria:"Plan Estratégico", anio:2023, icono:"🌍", color:"#2E7D32", resumen_contexto:"Plan Nacional de Objetivos de Desarrollo Sostenible de Panamá.", pdf:"/docs/pei/ODSPLANPANAMA.pdf" },
+    { id:"pei-oj",       titulo:"PEI — Órgano Judicial", titulo_corto:"PEI Órgano Judicial", categoria:"PEI", anio:2023, icono:"⚖️", color:"#4A148C", resumen_contexto:"Plan Estratégico Institucional del Órgano Judicial de Panamá.", pdf:"/docs/pei/OJPEI.pdf" },
+    { id:"pei-padm",     titulo:"PEI — Patronato de Nutrición", titulo_corto:"PEI PADM", categoria:"PEI", anio:2023, icono:"🍎", color:"#BF360C", resumen_contexto:"Plan Estratégico Institucional.", pdf:"/docs/pei/PADMPEI.pdf" },
+    { id:"plan-pencyt",  titulo:"PENCYT — Plan Estratégico Nacional de Ciencia y Tecnología", titulo_corto:"PENCYT", categoria:"Plan Estratégico", anio:2023, icono:"🔭", color:"#006064", resumen_contexto:"Plan Estratégico Nacional de Ciencia, Tecnología e Innovación de Panamá.", pdf:"/docs/pei/PENCYT.pdf" },
+    { id:"pei-smv",      titulo:"PEI — Superintendencia del Mercado de Valores", titulo_corto:"PEI SMV", categoria:"PEI", anio:2023, icono:"📈", color:"#1B5E20", resumen_contexto:"Plan Estratégico Institucional de la Superintendencia del Mercado de Valores.", pdf:"/docs/pei/SMVPEI.pdf" },
+    { id:"pei-tat",      titulo:"PEI — Tribunal Administrativo Tributario", titulo_corto:"PEI TAT", categoria:"PEI", anio:2023, icono:"🏛", color:"#3E2723", resumen_contexto:"Plan Estratégico Institucional del Tribunal Administrativo Tributario.", pdf:"/docs/pei/TATPEI.pdf" },
+    { id:"pei-te",       titulo:"PEI — Tribunal Electoral", titulo_corto:"PEI Tribunal Electoral", categoria:"PEI", anio:2023, icono:"🗳️", color:"#880E4F", resumen_contexto:"Plan Estratégico Institucional del Tribunal Electoral de Panamá.", pdf:"/docs/pei/TEPEI.pdf" },
+    { id:"poa-umip",     titulo:"POA — Universidad Marítima Internacional de Panamá", titulo_corto:"POA UMIP", categoria:"POA", anio:2023, icono:"⚓", color:"#01579B", resumen_contexto:"Plan Operativo Anual de la Universidad Marítima Internacional de Panamá.", pdf:"/docs/pei/UMIPPOA.pdf" },
+    { id:"pei-unachi",   titulo:"PEI — Universidad Autónoma de Chiriquí", titulo_corto:"PEI UNACHI", categoria:"PEI", anio:2023, icono:"🎓", color:"#4527A0", resumen_contexto:"Plan Estratégico Institucional de la Universidad Autónoma de Chiriquí.", pdf:"/docs/pei/UNACHIPEI.pdf" },
+    { id:"plan-utp",     titulo:"Plan Estratégico — Universidad Tecnológica de Panamá", titulo_corto:"Plan UTP", categoria:"Plan Estratégico", anio:2023, icono:"⚙️", color:"#006064", resumen_contexto:"Plan Estratégico de la Universidad Tecnológica de Panamá.", pdf:"/docs/pei/UTPPLANG.pdf" },
+    { id:"poa-utp",      titulo:"POA 2024 — Universidad Tecnológica de Panamá", titulo_corto:"POA UTP 2024", categoria:"POA", anio:2024, icono:"⚙️", color:"#00838F", resumen_contexto:"Plan Operativo Anual 2024 de la Universidad Tecnológica de Panamá.", pdf:"/docs/pei/UTPPOA2024.pdf" },
+    { id:"plan-ambiente", titulo:"Plan Estratégico — Ministerio de Ambiente", titulo_corto:"Plan MiAmbiente", categoria:"Plan Estratégico", anio:2023, icono:"🌿", color:"#1B5E20", resumen_contexto:"Plan Estratégico del Ministerio de Ambiente de Panamá.", pdf:"/docs/pei/miambienteplan.pdf" },
   ];
 
   useEffect(() => { loadDocs(); }, []);
@@ -817,7 +843,7 @@ function Biblioteca() {
   };
 
   const normativa = docs.filter(d => d.categoria !== "PEI");
-  const pei = [...PEI_PLACEHOLDER];
+  const peiByCategoria = PEI_DOCS.reduce((acc,d)=>{ (acc[d.categoria]??=[]).push(d); return acc; }, {});
 
   const Book = ({ doc, isSelected }) => {
     const [hovered, setHovered] = useState(false);
@@ -860,6 +886,7 @@ function Biblioteca() {
   );
 
   const BookDetail = ({ doc }) => {
+    const [showPdf, setShowPdf] = useState(false);
     let chapters = [];
     try { chapters = JSON.parse(doc.tabla_contenidos||"[]"); } catch {}
     return (
@@ -869,18 +896,30 @@ function Biblioteca() {
           <div style={{ flex:1 }}>
             <div style={{ fontSize:10, color:"rgba(255,255,255,0.6)", letterSpacing:"0.12em", fontWeight:600, marginBottom:3 }}>{doc.categoria?.toUpperCase()}</div>
             <div style={{ fontSize:15, fontWeight:800, color:"white", lineHeight:1.3 }}>{doc.titulo}</div>
-            <div style={{ display:"flex", gap:8, marginTop:6 }}>
+            <div style={{ display:"flex", gap:8, marginTop:6, flexWrap:"wrap" }}>
               <span style={{ padding:"2px 8px", background:"rgba(255,255,255,0.2)", borderRadius:10, fontSize:11, color:"white" }}>📅 {doc.anio}</span>
-              <span style={{ padding:"2px 8px", background:"rgba(255,255,255,0.2)", borderRadius:10, fontSize:11, color:"white" }}>📄 {doc.paginas} págs.</span>
+              {doc.paginas && <span style={{ padding:"2px 8px", background:"rgba(255,255,255,0.2)", borderRadius:10, fontSize:11, color:"white" }}>📄 {doc.paginas} págs.</span>}
             </div>
           </div>
-          <button onClick={()=>setSelected(null)} style={{ background:"rgba(255,255,255,0.2)", border:"none", color:"white", width:26, height:26, borderRadius:"50%", cursor:"pointer", fontSize:13, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+            {doc.pdf && (
+              <>
+                <button onClick={()=>setShowPdf(v=>!v)} style={{ background:"rgba(255,255,255,0.25)", border:"1px solid rgba(255,255,255,0.4)", color:"white", padding:"5px 12px", borderRadius:7, cursor:"pointer", fontSize:11, fontWeight:700 }}>
+                  {showPdf ? "▲ Cerrar" : "👁 Ver PDF"}
+                </button>
+                <a href={doc.pdf} download style={{ background:"rgba(255,255,255,0.25)", border:"1px solid rgba(255,255,255,0.4)", color:"white", padding:"5px 12px", borderRadius:7, cursor:"pointer", fontSize:11, fontWeight:700, textDecoration:"none" }}>
+                  ⬇ Descargar
+                </a>
+              </>
+            )}
+            <button onClick={()=>setSelected(null)} style={{ background:"rgba(255,255,255,0.2)", border:"none", color:"white", width:26, height:26, borderRadius:"50%", cursor:"pointer", fontSize:13, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+          </div>
         </div>
         <div style={{ padding:"18px 22px" }}>
           <div style={{ fontSize:12, color:C.textMid, lineHeight:1.7, marginBottom:14 }}>{doc.resumen_contexto}</div>
           {chapters.length > 0 && <>
             <div style={{ fontSize:11, fontWeight:700, color:C.text, letterSpacing:"0.08em", marginBottom:8 }}>CONTENIDO</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:5, marginBottom:14 }}>
               {chapters.map((ch,i)=>(
                 <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 10px", background:C.bg, borderRadius:7, fontSize:12, color:C.text, border:`1px solid ${C.border}` }}>
                   <div style={{ width:18, height:18, borderRadius:"50%", background:doc.color+"20", color:doc.color, fontSize:9, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{i+1}</div>
@@ -889,9 +928,16 @@ function Biblioteca() {
               ))}
             </div>
           </>}
-          <div style={{ marginTop:14, padding:"8px 12px", background:C.gold+"15", borderRadius:8, border:`1px solid ${C.gold}40`, fontSize:11, color:"#8B6914" }}>
-            ✦ Panamita usa este documento automáticamente al analizar el presupuesto
-          </div>
+          {doc.pdf && showPdf && (
+            <div style={{ borderRadius:10, overflow:"hidden", border:`1px solid ${C.border}`, marginBottom:14 }}>
+              <iframe src={doc.pdf} title={doc.titulo} width="100%" height="620px" style={{ display:"block", border:"none" }}/>
+            </div>
+          )}
+          {!doc.pdf && (
+            <div style={{ marginTop:14, padding:"8px 12px", background:C.gold+"15", borderRadius:8, border:`1px solid ${C.gold}40`, fontSize:11, color:"#8B6914" }}>
+              ✦ Panamita usa este documento automáticamente al analizar el presupuesto
+            </div>
+          )}
         </div>
       </div>
     );
@@ -926,11 +972,10 @@ function Biblioteca() {
           </>
         ) : (
           <>
-            <div style={{ background:C.navHistorico+"10", border:`1px dashed ${C.navHistorico}40`, borderRadius:10, padding:"14px 18px", marginBottom:20, fontSize:12, color:C.textMid }}>
-              📌 Aquí se cargarán los PEI de las instituciones que lo tengan disponible. Los documentos se integrarán automáticamente al contexto de Panamita.
-            </div>
-            <Shelf items={pei} label="PLANES ESTRATÉGICOS INSTITUCIONALES"/>
-            {selected && selected.categoria === "PEI" && <BookDetail doc={selected}/>}
+            {Object.entries(peiByCategoria).map(([cat, items]) => (
+              <Shelf key={cat} items={items} label={cat.toUpperCase()}/>
+            ))}
+            {selected && <BookDetail doc={selected}/>}
           </>
         )}
       </div>

@@ -124,6 +124,115 @@ Incluye entre 3 y 4 aspectos y entre 3 y 4 recomendaciones. Sé muy específico:
   }
 }
 
+// ── AI Fallback Parser ────────────────────────────────────────────────────────
+// Cuando el parser nativo no puede interpretar el formato del Excel,
+// usa Claude Haiku para analizar las filas crudas y retornar datos estructurados.
+
+async function parseExcelWithAI(filePath, apiKey) {
+  const XLSX = require("xlsx");
+  const wb = XLSX.readFile(filePath);
+  const sheetName =
+    wb.SheetNames.find(n =>
+      n.toLowerCase().includes("resultado") ||
+      n.toLowerCase().includes("consulta")
+    ) || wb.SheetNames[0];
+
+  const ws = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+
+  // Tomar hasta 200 filas para no exceder el contexto
+  const sample = rows.slice(0, 200).map((r, i) =>
+    `${i + 1}: [${r.slice(0, 9).map(c => JSON.stringify(c)).join(", ")}]`
+  ).join("\n");
+
+  const prompt = `Eres un experto en parsear exports Excel del sistema DIPRENA (MEF Panamá).
+Las columnas son: [0]=Descripción, [1]=Tipo, [2]=Partida, [3]=Detalle/Nombre, [4]=Ley, [5]=Modificado, [6]=Devengado, [7]=% Ejecución, [8]=Distribución
+
+Analiza estas filas del Excel y extrae la estructura presupuestaria:
+
+${sample}
+
+Retorna ÚNICAMENTE un JSON válido con esta estructura exacta (montos en miles de balboas como números):
+{
+  "total": { "ley": 0, "mod": 0, "eje": 0, "pct": 0 },
+  "funcionamiento": {
+    "ley": 0, "mod": 0, "eje": 0, "pct": 0, "dist": 0,
+    "grupos": [
+      { "nombre": "SERVICIOS PERSONALES", "codigo": "1", "ley": 0, "mod": 0, "eje": 0, "pct": 0 }
+    ],
+    "programas": [
+      { "nombre": "Nombre programa", "ley": 0, "mod": 0, "eje": 0, "pct": 0 }
+    ]
+  },
+  "inversion": {
+    "ley": 0, "mod": 0, "eje": 0, "pct": 0, "dist": 0,
+    "programas": [
+      { "nombre": "Nombre programa", "ley": 0, "mod": 0, "eje": 0, "pct": 0, "subprogramas": [
+        { "nombre": "Nombre sub", "ley": 0, "mod": 0, "eje": 0, "pct": 0 }
+      ]}
+    ]
+  },
+  "partidaCritica": { "nombre": "Grupo con menor ejecución", "pct": 0 }
+}
+
+Reglas:
+- dist = porcentaje del total presupuestario (Funcionamiento + Inversión = 100%)
+- Si no hay inversión, inversion.mod = 0 y programas = []
+- pct = porcentaje de ejecución (0-100, entero)
+- Incluye todos los grupos de gasto y programas que encuentres`;
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 2000,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!response.ok) {
+    console.warn("AI parser error:", response.status, await response.text());
+    return null;
+  }
+
+  const apiData = await response.json();
+  const raw = apiData.content?.[0]?.text || "";
+
+  try {
+    const parsed = JSON.parse(raw);
+    // Agregar colores a grupos si no los tiene
+    const DONUT_COLORS = ["1B2F4E","2E5F96","5B93C7","A8C8E8","7AA5C8","4B7FAE","C0D8EE","8BAED4"];
+    const totalModFun = parsed.funcionamiento?.mod || 1;
+    if (parsed.funcionamiento?.grupos) {
+      parsed.funcionamiento.grupos = parsed.funcionamiento.grupos.map((g, i) => ({
+        ...g,
+        color: DONUT_COLORS[i % DONUT_COLORS.length],
+        distPct: totalModFun > 0 ? Math.round((g.mod / totalModFun) * 100) : 0
+      }));
+    }
+    // Asegurar subprogramas en programas de inversión
+    if (parsed.inversion?.programas) {
+      parsed.inversion.programas = parsed.inversion.programas.map(p => ({
+        ...p,
+        subprogramas: p.subprogramas || []
+      }));
+    }
+    return parsed;
+  } catch (_) {
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch (__) {}
+    }
+    console.warn("AI parser failed to parse JSON:", raw.slice(0, 200));
+    return null;
+  }
+}
+
 // ── Handler principal ─────────────────────────────────────────────────────────
 
 module.exports = async function handler(req, res) {
@@ -144,7 +253,7 @@ module.exports = async function handler(req, res) {
   }
   const ent = { codigo, ...entRaw };
 
-  // Guardar Excel en /tmp para parseExcelDIPRENA
+  // Guardar Excel en /tmp (se borra después del parse + fallback IA)
   const tmpPath = path.join("/tmp", `diprena_${Date.now()}.xlsx`);
   try {
     fs.writeFileSync(tmpPath, Buffer.from(excelBase64, "base64"));
@@ -152,14 +261,37 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: `No se pudo guardar el archivo temporal: ${e.message}` });
   }
 
+  const apiKey = process.env.ANTHROPIC_KEY;
+
   let data;
   try {
     data = parseExcelDIPRENA(tmpPath);
   } catch (e) {
-    return res.status(422).json({ error: `Error al parsear el Excel: ${e.message}` });
-  } finally {
     try { fs.unlinkSync(tmpPath); } catch (_) {}
+    return res.status(422).json({ error: `Error al parsear el Excel: ${e.message}` });
   }
+
+  // ── Fallback IA: si el parser nativo no extrajo datos, usar Claude ──────────
+  if (data.total.mod === 0 && apiKey) {
+    console.log("Parser nativo retornó 0 — intentando fallback con IA...");
+    try {
+      const aiData = await parseExcelWithAI(tmpPath, apiKey);
+      if (aiData && aiData.total && aiData.total.mod > 0) {
+        console.log("Fallback IA exitoso:", JSON.stringify({ total: aiData.total, grupos: aiData.funcionamiento?.grupos?.length }));
+        data = {
+          total:          aiData.total          || data.total,
+          funcionamiento: aiData.funcionamiento || data.funcionamiento,
+          inversion:      aiData.inversion      || data.inversion,
+          partidaCritica: aiData.partidaCritica  || data.partidaCritica
+        };
+      }
+    } catch (e) {
+      console.warn("AI fallback error:", e.message);
+    }
+  }
+
+  // Borrar archivo temporal
+  try { fs.unlinkSync(tmpPath); } catch (_) {}
 
   // Generar narrativas con Claude (silencia si falla — usa plantillas de fallback)
   const apiKey = process.env.ANTHROPIC_KEY;

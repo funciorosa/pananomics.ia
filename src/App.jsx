@@ -754,7 +754,8 @@ function Entidades({ user }) {
   const [wizErrMsg, setWizErrMsg] = useState("");
   const [wizPreview, setWizPreview] = useState(null);
   const [wizBlobData, setWizBlobData] = useState(null); // {base64, filename}
-  const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizPeriodo(null); setWizFile(null); setWizSearch(""); setWizContexto(""); setWizExtraSlides([]); setWizStatus(null); setWizErrMsg(""); setWizPreview(null); setWizBlobData(null); };
+  const [wizLoadPhase, setWizLoadPhase] = useState(0);
+  const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizPeriodo(null); setWizFile(null); setWizSearch(""); setWizContexto(""); setWizExtraSlides([]); setWizStatus(null); setWizErrMsg(""); setWizPreview(null); setWizBlobData(null); setWizLoadPhase(0); };
   // Helper: etiqueta del período seleccionado
   const periodoLabel = (p) => {
     if (!p) return null;
@@ -776,6 +777,14 @@ function Entidades({ user }) {
       updateExtraSlide(id,{loading:false,preview:json});
     } catch(e) { updateExtraSlide(id,{loading:false,error:e.message}); }
   };
+  // Cicla fases de carga mientras genera el informe
+  React.useEffect(() => {
+    if (wizStatus !== "loading") { setWizLoadPhase(0); return; }
+    setWizLoadPhase(0);
+    const t = setInterval(() => setWizLoadPhase(p => Math.min(p + 1, 3)), 9000);
+    return () => clearInterval(t);
+  }, [wizStatus]);
+
   const handleViewToggle = () => { if (view==="crear") resetWizard(); setView(view==="crear"?"lista":"crear"); };
   const GRUPO_NAMES = ["GOBIERNO CENTRAL","INSTITUCIONES DESCENTRALIZADAS","EMPRESAS PÚBLICAS","INTERMEDIARIOS FINANCIEROS"];
   const GRUPO_COLORS = [C.navDash, C.navHistorico, C.navInformes, C.navEntidades];
@@ -1171,10 +1180,38 @@ function Entidades({ user }) {
                       </>
                     )}
                     {wizStatus==="loading" && (
-                      <div style={{ textAlign:"center", padding:"40px 0" }}>
-                        <div style={{ fontSize:42, marginBottom:16 }}>⚙️</div>
-                        <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:8 }}>Generando informe…</div>
-                        <div style={{ fontSize:12, color:C.textMid }}>Procesando Excel y construyendo diapositivas. Un momento.</div>
+                      <div style={{ padding:"36px 20px" }}>
+                        <style>{`@keyframes wiz-spin{to{transform:rotate(360deg)}}@keyframes wiz-pulse{0%,100%{opacity:1}50%{opacity:0.3}}@keyframes wiz-slide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}`}</style>
+                        {/* Spinner */}
+                        <div style={{ display:"flex", justifyContent:"center", marginBottom:28 }}>
+                          <div style={{ position:"relative", width:64, height:64 }}>
+                            <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:`5px solid ${C.navInformes}22` }}/>
+                            <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"5px solid transparent", borderTopColor:C.navInformes, animation:"wiz-spin 0.9s linear infinite" }}/>
+                            <div style={{ position:"absolute", inset:10, borderRadius:"50%", border:"3px solid transparent", borderTopColor:C.navInformes+"66", animation:"wiz-spin 1.4s linear infinite reverse" }}/>
+                          </div>
+                        </div>
+                        {/* Pasos */}
+                        <div style={{ display:"flex", flexDirection:"column", gap:8, maxWidth:400, margin:"0 auto" }}>
+                          {[
+                            { icon:"📂", label:"Leyendo y procesando Excel DIPRENA" },
+                            { icon:"🤖", label:"Generando narrativas con IA (Claude)" },
+                            { icon:"📊", label:"Construyendo diapositivas" },
+                            { icon:"✨", label:"Finalizando y empaquetando informe" }
+                          ].map((step, i) => {
+                            const done    = i < wizLoadPhase;
+                            const active  = i === wizLoadPhase;
+                            const pending = i > wizLoadPhase;
+                            return (
+                              <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:10, background: active ? C.navInformes+"10" : done ? "#43A04708" : C.bg, border:`1px solid ${active ? C.navInformes : done ? "#43A04740" : C.border}`, opacity: pending ? 0.45 : 1, animation: active ? "wiz-slide 0.3s ease" : "none", transition:"all 0.4s" }}>
+                                <span style={{ fontSize:18, flexShrink:0 }}>{step.icon}</span>
+                                <span style={{ flex:1, fontSize:12, fontWeight: active ? 700 : 500, color: active ? C.navInformes : done ? "#43A047" : C.textMid }}>{step.label}</span>
+                                {done   && <span style={{ fontSize:14, color:"#43A047" }}>✓</span>}
+                                {active && <span style={{ fontSize:11, color:C.navInformes, animation:"wiz-pulse 1.2s ease-in-out infinite", letterSpacing:2 }}>●●●</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div style={{ textAlign:"center", fontSize:11, color:C.textLight, marginTop:20 }}>Este proceso puede tomar entre 20 y 40 segundos…</div>
                       </div>
                     )}
                     {wizStatus==="preview" && wizPreview && (

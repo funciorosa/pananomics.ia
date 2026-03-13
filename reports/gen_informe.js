@@ -816,8 +816,8 @@ function slide2(pres, ent, data, narr, periodo) {
   const progFun = f.programas.slice(0, 7);
   if (progFun.length > 0) {
     const programasData = [
-      { name: "Modificado", labels: progFun.map(p => p.nombre), values: progFun.map(p => p.mod) },
-      { name: "Devengado",  labels: progFun.map(p => p.nombre), values: progFun.map(p => p.eje) }
+      { name: "Modificado", labels: progFun.map(p => p.nombre + " (" + p.pct + "%)"), values: progFun.map(p => p.mod) },
+      { name: "Devengado",  labels: progFun.map(p => p.nombre + " (" + p.pct + "%)"), values: progFun.map(p => p.eje) }
     ];
     sl.addChart(pres.charts.BAR, programasData, {
       x: rx + 0.1, y: cy + 0.2, w: 4.52, h: pbH - 0.25,

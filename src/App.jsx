@@ -1166,7 +1166,8 @@ function Entidades({ user }) {
                               });
                               const json = await r.json();
                               if (!r.ok) throw new Error(json.error||`Error ${r.status}`);
-                              setWizPreview(json.preview || null);
+                              if (json.narrError) console.warn("Narrativas IA:", json.narrError);
+                              setWizPreview({ ...(json.preview || {}), narrError: json.narrError || null });
                               setWizBlobData({ base64: json.pptxBase64.replace(/\s/g, ""), filename: json.filename });
                               setWizStatus("preview");
                             } catch(e) {
@@ -1215,7 +1216,7 @@ function Entidades({ user }) {
                       </div>
                     )}
                     {wizStatus==="preview" && wizPreview && (() => {
-                      const { entidad:pvEnt, siglas:pvSig, objetivo:pvObj, slides:pvSlides } = wizPreview;
+                      const { entidad:pvEnt, siglas:pvSig, objetivo:pvObj, slides:pvSlides, narrError:pvNarrError } = wizPreview;
                       const NAV="#1B2F4E", NAV2="#142240", ICE="#EEF4FF", BDR="#C8D8EE", GRY="#EEF2F8";
                       const pLbl = wizPeriodo ? (wizPeriodo.tipo==="trimestral" ? `${wizPeriodo.opcion} ${wizPeriodo.anio}` : `${wizPeriodo.opcion==="1S"?"1er Sem.":"2do Sem."} ${wizPeriodo.anio}`) : "Cierre 2025";
                       const pRng = wizPeriodo ? ({"T1":"Ene–Mar","T2":"Abr–Jun","T3":"Jul–Sep","T4":"Oct–Dic","1S":"Ene–Jun","2S":"Jul–Dic"}[wizPeriodo.opcion]||"Ene–Dic")+" "+wizPeriodo.anio : "Enero – Diciembre 2025";
@@ -1427,6 +1428,7 @@ function Entidades({ user }) {
 
                       return (
                         <div>
+                          {pvNarrError && <div style={{background:"#FFF8E1",border:"1px solid #FFD54F",borderRadius:8,padding:"8px 14px",marginBottom:12,fontSize:12,color:"#7A4800",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>⚠️</span><span><b>Análisis IA no disponible:</b> {pvNarrError}. El informe se generó con texto plantilla. Para análisis con IA configura <code>ANTHROPIC_KEY</code> en Vercel → Settings → Environment Variables.</span></div>}
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
                             <div><div style={{fontSize:15,fontWeight:700,color:C.text}}>Vista previa del informe</div><div style={{fontSize:11,color:C.textMid}}>{pvEnt} · {pvSlides.length} diapositivas · {pLbl}</div></div>
                             <div style={{display:"flex",gap:8}}>

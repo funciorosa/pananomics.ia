@@ -295,11 +295,17 @@ module.exports = async function handler(req, res) {
 
   // Generar narrativas con Claude (silencia si falla — usa plantillas de fallback)
   let narr = null;
-  if (apiKey) {
+  let narrError = null;
+  if (!apiKey) {
+    console.warn("ANTHROPIC_KEY no configurada — narrativas IA no disponibles");
+    narrError = "ANTHROPIC_KEY no configurada en el servidor";
+  } else {
     try {
       narr = await generateNarratives(ent, data, apiKey, contexto || null, periodo || null);
+      if (!narr) narrError = "Claude no retornó JSON válido";
     } catch (e) {
       console.warn("Error generando narrativas:", e.message);
+      narrError = e.message;
     }
   }
 
@@ -370,5 +376,5 @@ module.exports = async function handler(req, res) {
     ]
   };
 
-  return res.status(200).json({ pptxBase64, filename: outFilename, aiNarratives: !!narr, preview });
+  return res.status(200).json({ pptxBase64, filename: outFilename, aiNarratives: !!narr, narrError: narrError || null, preview });
 };

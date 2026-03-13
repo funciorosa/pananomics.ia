@@ -46,7 +46,31 @@ function short(name, maxLen = 18) {
 /** Sanear texto AI para evitar caracteres inválidos en XML/PPTX */
 function sanitize(s) {
   if (typeof s !== "string") return s;
-  return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "").replace(/[\uFFFE\uFFFF]/g, "").trim();
+  return s
+    .replace(/\r\n/g, "\n").replace(/\r/g, "\n")           // normalizar saltos de línea
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")    // control chars XML 1.0 inválidos
+    .replace(/[\uD800-\uDFFF]/g, "")                        // surrogates
+    .replace(/[\uFEFF\uFFFE\uFFFF]/g, "")                   // BOM y non-chars
+    .replace(/[\u200B-\u200D\u2028\u2029]/g, "")            // zero-width y separadores de línea
+    .trim();
+}
+
+/** Convierte texto plano con \n y bullets • en array de text objects para pptxgenjs */
+function narrativeToPptx(text, opts = {}) {
+  if (!text || typeof text !== "string") return [{ text: "" }];
+  const clean = sanitize(text);
+  const lines = clean.split("\n");
+  const result = [];
+  lines.forEach((line, i) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (i > 0) result.push({ text: "", options: { breakLine: true } });
+      return;
+    }
+    if (i > 0) result.push({ text: "", options: { breakLine: true } });
+    result.push({ text: trimmed, options: { ...opts } });
+  });
+  return result.length ? result : [{ text: "" }];
 }
 
 /** Etiqueta corta del período para header — ej: "T1 2025", "1er Sem. 2026" */
@@ -811,7 +835,7 @@ function slide2(pres, ent, data, narr, periodo) {
   const anH = 5.47 - anY - 0.18;
   addPanelBox(pres, sl, rx, anY, 4.72, anH);
   addPanelTitle(pres, sl, rx, anY, 4.72, "Análisis");
-  sl.addText(narr?.narrativaFun ? sanitize(narr.narrativaFun) : buildNarrFun(data, ent), {
+  sl.addText(narr?.narrativaFun ? narrativeToPptx(narr.narrativaFun) : buildNarrFun(data, ent), {
     x: rx + 0.12, y: anY + 0.25, w: 4.48, h: anH - 0.35,
     fontSize: 7.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
   });
@@ -903,7 +927,7 @@ function slide3(pres, ent, data, narr, periodo) {
   const rx = 5.06;
   addPanelBox(pres, sl, rx, cy, 4.72, 5.47 - cy - 0.18);
   addPanelTitle(pres, sl, rx, cy, 4.72, "Análisis de Inversión");
-  sl.addText(narr?.narrativaInv ? sanitize(narr.narrativaInv) : buildNarrInv(data, ent), {
+  sl.addText(narr?.narrativaInv ? narrativeToPptx(narr.narrativaInv) : buildNarrInv(data, ent), {
     x: rx + 0.12, y: cy + 0.25, w: 4.48, h: 4.6,
     fontSize: 7.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
   });
@@ -1073,8 +1097,8 @@ function slide4(pres, ent, data, narr, periodo) {
   addPanelTitle(pres, sl, 6.74, py, 3.04, "Conclusiones");
 
   const concl = buildConclusiones(data, ent);
-  const conclP1 = narr?.conclusion1 ? sanitize(narr.conclusion1) : concl.p1;
-  const conclP2 = narr?.conclusion2 ? sanitize(narr.conclusion2) : concl.p2;
+  const conclP1 = narr?.conclusion1 ? narrativeToPptx(narr.conclusion1) : concl.p1;
+  const conclP2 = narr?.conclusion2 ? narrativeToPptx(narr.conclusion2) : concl.p2;
   sl.addText(conclP1, {
     x: 6.86, y: py + 0.25, w: 2.8, h: panH / 2 - 0.1,
     fontSize: 7.5, color: NAV, fontFace: "Calibri", valign: "top", margin: 0
@@ -1083,7 +1107,7 @@ function slide4(pres, ent, data, narr, periodo) {
     x: 6.86, y: py + panH / 2 + 0.08, w: 2.8, h: 0.012,
     fill: { color: BDR }, line: { color: BDR }
   });
-  sl.addText(conclP2, {
+  sl.addText(conclP2 || [{ text: "" }], {
     x: 6.86, y: py + panH / 2 + 0.13, w: 2.8, h: panH / 2 - 0.15,
     fontSize: 7.5, color: NAV, fontFace: "Calibri", valign: "top", margin: 0
   });

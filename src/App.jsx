@@ -170,7 +170,7 @@ function Sidebar({ active, setActive, user, onLogout }) {
     { id:"dashboard", emoji:"📊", label:"Dashboard",    color:C.navDash },
     { id:"historico", emoji:"📈", label:"Histórico",    color:C.navHistorico },
     { id:"informes",  emoji:"📋", label:"Informes",     color:C.navInformes },
-    { id:"entidades", emoji:"🏛",  label:"Entidades",   color:C.navEntidades },
+    { id:"entidades", emoji:"🏛",  label:"Monitoreo",   color:C.navEntidades },
     { id:"biblioteca",emoji:"📚", label:"Biblioteca",   color:C.navBiblioteca },
   ];
   return (
@@ -738,7 +738,7 @@ function Informes() {
 // ── ENTIDADES ─────────────────────────────────────────────────────────────────
 function Entidades({ user }) {
   const ENTIDADES = useContext(EntidadesCtx);
-  const [view, setView] = useState("crear");
+  const [view, setView] = useState("lista");
   const [selected, setSelected] = useState(null);
   const [openGroups, setOpenGroups] = useState({0:true,1:false,2:false,3:false});
   // ── Crear Informe wizard ──
@@ -798,12 +798,12 @@ function Entidades({ user }) {
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, padding:"14px 28px", display:"flex", alignItems:"center", gap:12 }}>
         <span style={{ fontSize:22 }}>🏛</span>
         <div>
-          <div style={{ fontSize:17, fontWeight:700, color:C.text }}>Repositorio por Entidad</div>
-          <div style={{ fontSize:12, color:C.textMid }}>Informes de monitoreo previos · Crear nuevo informe</div>
+          <div style={{ fontSize:17, fontWeight:700, color:C.text }}>Monitoreo por Entidad</div>
+          <div style={{ fontSize:12, color:C.textMid }}>Selecciona una entidad y genera su informe presupuestario</div>
         </div>
-        {user.isAdmin && (
-          <button onClick={handleViewToggle} style={{ marginLeft:"auto", padding:"8px 18px", background:view==="crear"?C.navEntidades:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>
-            {view==="crear" ? "← Ver Repositorio" : "+ Crear Informe"}
+        {view==="crear" && (
+          <button onClick={()=>{ resetWizard(); setView("lista"); }} style={{ marginLeft:"auto", padding:"8px 18px", background:C.navEntidades, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+            ← Volver a Monitoreo
           </button>
         )}
       </div>
@@ -1482,9 +1482,9 @@ function Entidades({ user }) {
         ) : (
           <div>
             {[0,1,2,3].map(i => (
-              <div key={i} style={{ marginBottom:12, borderRadius:12, border:`1px solid ${GRUPO_COLORS[i]}30`, overflow:"hidden" }}>
-                <div onClick={()=>toggleGroup(i)} style={{ background:GRUPO_COLORS[i]+"12", padding:"12px 18px", display:"flex", alignItems:"center", gap:10, cursor:"pointer", borderBottom: openGroups[i]?`1px solid ${GRUPO_COLORS[i]}25`:"none" }}>
-                  <span style={{ fontSize:16 }}>{GRUPO_ICONS[i]}</span>
+              <div key={i} style={{ marginBottom:10, borderRadius:12, border:`1px solid ${GRUPO_COLORS[i]}30`, overflow:"hidden" }}>
+                <div onClick={()=>toggleGroup(i)} style={{ background:GRUPO_COLORS[i]+"10", padding:"13px 20px", display:"flex", alignItems:"center", gap:10, cursor:"pointer", userSelect:"none" }}>
+                  <span style={{ fontSize:17 }}>{GRUPO_ICONS[i]}</span>
                   <div style={{ flex:1 }}>
                     <span style={{ fontSize:13, fontWeight:800, color:GRUPO_COLORS[i], letterSpacing:"0.04em" }}>{i} {GRUPO_NAMES[i]}</span>
                     <span style={{ marginLeft:10, fontSize:11, color:C.textMid, fontWeight:500 }}>{grouped[i].length} entidades</span>
@@ -1492,26 +1492,43 @@ function Entidades({ user }) {
                   <span style={{ fontSize:11, color:GRUPO_COLORS[i], fontWeight:700 }}>{openGroups[i]?"▲":"▼"}</span>
                 </div>
                 {openGroups[i] && (
-                  <div style={{ background:C.white, padding:"16px 18px" }}>
-                    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:10 }}>
-                      {grouped[i].map(e => {
-                        const code = `${e.codigo_area}${String(e.codigo_entidad).padStart(2,'0')}`;
-                        const isSelected = selected===e.nombre;
-                        return (
-                          <div key={e.nombre} onClick={()=>setSelected(isSelected?null:e.nombre)}
-                            style={{ background:C.white, borderRadius:10, padding:"14px 16px", border:`1px solid ${isSelected?GRUPO_COLORS[i]:C.border}`, cursor:"pointer", transition:"all 0.2s", boxShadow:isSelected?`0 4px 16px ${GRUPO_COLORS[i]}25`:"none" }}
-                            onMouseEnter={ev=>{ if(!isSelected) ev.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.08)"; }}
-                            onMouseLeave={ev=>{ if(!isSelected) ev.currentTarget.style.boxShadow="none"; }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-                              <div style={{ padding:"3px 7px", background:GRUPO_COLORS[i]+"18", borderRadius:5, fontSize:10, fontWeight:800, color:GRUPO_COLORS[i], letterSpacing:"0.05em" }}>{code}</div>
-                              <div style={{ fontSize:11, fontWeight:800, color:GRUPO_COLORS[i], letterSpacing:"0.04em" }}>{e.siglas}</div>
-                            </div>
-                            <div style={{ fontSize:11, color:C.textMid, lineHeight:1.4 }}>{e.nombre}</div>
-                            <div style={{ marginTop:8, padding:"4px 8px", background:C.bg, borderRadius:5, fontSize:10, color:C.textLight, textAlign:"center" }}>Sin informes cargados aún</div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                  <div style={{ background:C.white }}>
+                    <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                      <thead>
+                        <tr style={{ background:"#F5F8FF", borderBottom:`1px solid ${C.border}` }}>
+                          <th style={{ padding:"9px 18px", fontSize:11, fontWeight:700, color:"#1B2F4E", textAlign:"left", width:70 }}>Código</th>
+                          <th style={{ padding:"9px 12px", fontSize:11, fontWeight:700, color:"#1B2F4E", textAlign:"left", width:90 }}>Siglas</th>
+                          <th style={{ padding:"9px 12px", fontSize:11, fontWeight:700, color:"#1B2F4E", textAlign:"left" }}>Nombre completo</th>
+                          <th style={{ padding:"9px 18px", fontSize:11, fontWeight:700, color:"#1B2F4E", textAlign:"right", width:140 }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {grouped[i].map((e, ei) => {
+                          const code = `${String(e.codigo_area).padStart(1,"0")}${String(e.codigo_entidad).padStart(2,"0")}`;
+                          return (
+                            <tr key={e.nombre} style={{ borderBottom:`1px solid ${C.border}`, background:ei%2===0?C.white:"#FAFBFF", transition:"background 0.15s" }}
+                              onMouseEnter={ev=>ev.currentTarget.style.background=GRUPO_COLORS[i]+"08"}
+                              onMouseLeave={ev=>ev.currentTarget.style.background=ei%2===0?C.white:"#FAFBFF"}>
+                              <td style={{ padding:"10px 18px" }}>
+                                <span style={{ padding:"3px 8px", background:GRUPO_COLORS[i]+"15", borderRadius:5, fontSize:11, fontWeight:800, color:GRUPO_COLORS[i] }}>{code}</span>
+                              </td>
+                              <td style={{ padding:"10px 12px", fontSize:12, fontWeight:700, color:GRUPO_COLORS[i] }}>{e.siglas}</td>
+                              <td style={{ padding:"10px 12px", fontSize:12, color:C.text }}>{e.nombre}</td>
+                              <td style={{ padding:"8px 18px", textAlign:"right" }}>
+                                <button onClick={()=>{
+                                  resetWizard();
+                                  setWizEnt(e);
+                                  setWizStep(2);
+                                  setView("crear");
+                                }} style={{ padding:"6px 14px", background:"#1B2F4E", color:"white", border:"none", borderRadius:7, fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
+                                  + Crear Informe
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>

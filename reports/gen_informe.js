@@ -141,34 +141,34 @@ function addHeader(pres, slide, opts = {}) {
   if (code) {
     slide.addText(code, {
       x: 0.18, y: 0.07, w: 7.5, h: 0.3,
-      fontSize: 13, bold: true, color: WHT, fontFace: "Calibri", margin: 0
+      fontSize: 13, bold: true, color: WHT, fontFace: "Arial", margin: 0
     });
     slide.addText(name, {
       x: 0.18, y: 0.37, w: 7.5, h: 0.25,
-      fontSize: 7, color: "99B5CC", fontFace: "Calibri",
+      fontSize: 7, color: "99B5CC", fontFace: "Arial",
       charSpacing: 1, margin: 0
     });
   } else {
     slide.addText(subtitle ? subtitle.toUpperCase() : "", {
       x: 0.18, y: 0.04, w: 7.5, h: 0.32,
-      fontSize: 10, bold: true, color: WHT, fontFace: "Calibri", margin: 0
+      fontSize: 10, bold: true, color: WHT, fontFace: "Arial", margin: 0
     });
     if (subtitle) {
       slide.addText(name, {
         x: 0.18, y: 0.37, w: 7.5, h: 0.25,
-        fontSize: 7.5, color: "88AACC", fontFace: "Calibri", margin: 0
+        fontSize: 7.5, color: "88AACC", fontFace: "Arial", margin: 0
       });
     }
   }
 
   slide.addText("Ejecución Presupuestaria", {
     x: 7.82, y: 0.06, w: 2.15, h: 0.2,
-    fontSize: 6, color: "88AACC", fontFace: "Calibri",
+    fontSize: 6, color: "88AACC", fontFace: "Arial",
     align: "right", margin: 0
   });
   slide.addText(period, {
     x: 7.82, y: 0.26, w: 2.15, h: 0.36,
-    fontSize: 13, bold: true, color: WHT, fontFace: "Calibri",
+    fontSize: 13, bold: true, color: WHT, fontFace: "Arial",
     align: "right", margin: 0
   });
 }
@@ -190,7 +190,7 @@ function addFooter(pres, slide, entity = "Dirección de Presupuesto de la Nació
   items.forEach((txt, i) => {
     slide.addText(txt, {
       x: 0.15 + i * 3.28, y: 5.51, w: 3.2, h: 0.115,
-      fontSize: 6, color: MUT, fontFace: "Calibri",
+      fontSize: 6, color: MUT, fontFace: "Arial",
       align: i === 0 ? "left" : i === 1 ? "center" : "right", margin: 0
     });
   });
@@ -213,7 +213,7 @@ function addPanelTitle(pres, slide, x, y, w, label) {
   });
   slide.addText(label.toUpperCase(), {
     x: x + 0.2, y: y + 0.06, w: w - 0.3, h: 0.14,
-    fontSize: 6, bold: true, color: NAV, fontFace: "Calibri",
+    fontSize: 6, bold: true, color: NAV, fontFace: "Arial",
     charSpacing: 0.5, margin: 0
   });
 }
@@ -440,11 +440,11 @@ function slide1(pres, ent, data, periodo) {
   });
   sl.addText("OBJETIVO GENERAL", {
     x: 0.28, y: 0.77, w: 2, h: 0.13,
-    fontSize: 6, bold: true, color: NAV, charSpacing: 0.5, fontFace: "Calibri", margin: 0
+    fontSize: 6, bold: true, color: NAV, charSpacing: 0.5, fontFace: "Arial", margin: 0
   });
   sl.addText(ent.objetivo, {
     x: 0.28, y: 0.89, w: 9.5, h: 0.28,
-    fontSize: 7.5, color: TXT, fontFace: "Calibri", margin: 0
+    fontSize: 7.5, color: TXT, fontFace: "Arial", margin: 0
   });
 
   // ── Panel izquierdo: KPIs ──
@@ -459,15 +459,15 @@ function slide1(pres, ent, data, periodo) {
   });
   sl.addText("Total Ejecutado", {
     x: lx + 0.12, y: ly + 0.33, w: lw - 0.24, h: 0.2,
-    fontSize: 7, color: "99B5CC", fontFace: "Calibri", align: "center", margin: 0
+    fontSize: 7, color: "99B5CC", fontFace: "Arial", align: "center", margin: 0
   });
   sl.addText(fmt(data.total.eje), {
     x: lx + 0.12, y: ly + 0.52, w: lw - 0.24, h: 0.45,
-    fontSize: 32, bold: true, color: WHT, fontFace: "Calibri", align: "center", margin: 0
+    fontSize: 32, bold: true, color: WHT, fontFace: "Arial", align: "center", margin: 0
   });
   sl.addText(`miles de balboas  ·  ${data.total.pct}% de ejecución`, {
     x: lx + 0.12, y: ly + 0.97, w: lw - 0.24, h: 0.18,
-    fontSize: 7, color: "C8F0D8", fontFace: "Calibri", align: "center", margin: 0
+    fontSize: 7, color: "C8F0D8", fontFace: "Arial", align: "center", margin: 0
   });
   // Barra progreso total
   sl.addShape(pres.shapes.RECTANGLE, {
@@ -505,15 +505,15 @@ function slide1(pres, ent, data, periodo) {
     });
     sl.addText(d.label.toUpperCase(), {
       x: sx, y: subY + 0.08, w: subW, h: 0.16,
-      fontSize: 6.5, color: MUT, fontFace: "Calibri", align: "center", margin: 0
+      fontSize: 6.5, color: MUT, fontFace: "Arial", align: "center", margin: 0
     });
     sl.addText(d.val, {
       x: sx, y: subY + 0.24, w: subW, h: 0.38,
-      fontSize: 22, bold: true, color: NAV, fontFace: "Calibri", align: "center", margin: 0
+      fontSize: 22, bold: true, color: NAV, fontFace: "Arial", align: "center", margin: 0
     });
     sl.addText(d.note, {
       x: sx, y: subY + 0.63, w: subW, h: 0.15,
-      fontSize: 6.5, color: MUT, fontFace: "Calibri", align: "center", margin: 0
+      fontSize: 6.5, color: MUT, fontFace: "Arial", align: "center", margin: 0
     });
     // Pill semáforo
     const s = sColor(d.pct);
@@ -523,7 +523,7 @@ function slide1(pres, ent, data, periodo) {
     });
     sl.addText(`${d.pct}%`, {
       x: sx + subW / 2 - 0.24, y: subY + 0.82, w: 0.48, h: 0.17,
-      fontSize: 7.5, bold: true, color: s.fg, fontFace: "Calibri", align: "center", margin: 0
+      fontSize: 7.5, bold: true, color: s.fg, fontFace: "Arial", align: "center", margin: 0
     });
     // Barra progreso
     sl.addShape(pres.shapes.RECTANGLE, {
@@ -538,7 +538,7 @@ function slide1(pres, ent, data, periodo) {
 
   sl.addText("Nota: Las entidades del Gobierno Central no generan ingresos propios; sus fondos provienen de transferencias o aportes fiscales.", {
     x: lx + 0.1, y: ly + 3.65, w: lw - 0.2, h: 0.22,
-    fontSize: 6, color: "AAAAAA", fontFace: "Calibri", margin: 0
+    fontSize: 6, color: "AAAAAA", fontFace: "Arial", margin: 0
   });
 
   // ── Panel derecho: tabla resumen ──
@@ -555,7 +555,7 @@ function slide1(pres, ent, data, periodo) {
       text: h,
       options: {
         fill: { color: NAV }, color: WHT, bold: true,
-        fontSize: 7, fontFace: "Calibri",
+        fontSize: 7, fontFace: "Arial",
         align: i === 0 ? "left" : "center",
         border: [{ pt: 0 }, { pt: 0 }, { pt: 0 }, { pt: 0 }]
       }
@@ -576,7 +576,7 @@ function slide1(pres, ent, data, periodo) {
           fill: { color: "E8EFF8" },
           color: ci === 4 ? s.fg : NAV,
           bold: true,
-          fontSize: 7.5, fontFace: "Calibri",
+          fontSize: 7.5, fontFace: "Arial",
           align: ci === 0 ? "left" : "center",
           border: [{ pt: 0.5, color: "E0E8F0" }, { pt: 0.5, color: "E0E8F0" }, { pt: 0.5, color: "E0E8F0" }, { pt: 0.5, color: "E0E8F0" }]
         }
@@ -598,7 +598,7 @@ function slide1(pres, ent, data, periodo) {
           fill: { color: WHT },
           color: ci === 4 ? s.fg : TXT,
           bold: ci === 4,
-          fontSize: 7.5, fontFace: "Calibri",
+          fontSize: 7.5, fontFace: "Arial",
           align: ci === 0 ? "left" : "center",
           border: [{ pt: 0.5, color: "E0E8F0" }, { pt: 0.5, color: "E0E8F0" }, { pt: 0.5, color: "E0E8F0" }, { pt: 0.5, color: "E0E8F0" }]
         }
@@ -620,7 +620,7 @@ function slide1(pres, ent, data, periodo) {
           fill: { color: WHT },
           color: ci === 4 ? s.fg : TXT,
           bold: ci === 4,
-          fontSize: 7.5, fontFace: "Calibri",
+          fontSize: 7.5, fontFace: "Arial",
           align: ci === 0 ? "left" : "center",
           border: [{ pt: 0.5, color: "E0E8F0" }, { pt: 0.5, color: "E0E8F0" }, { pt: 0.5, color: "E0E8F0" }, { pt: 0.5, color: "E0E8F0" }]
         }
@@ -630,14 +630,14 @@ function slide1(pres, ent, data, periodo) {
 
   sl.addTable(tableRows, {
     x: rx + 0.1, y: ry + 0.28, w: rw - 0.2, colW,
-    fontFace: "Calibri", fontSize: 7.5
+    fontFace: "Arial", fontSize: 7.5
   });
 
   // Leyenda semáforo
   const semY = ry + 1.65;
   sl.addText("Semáforo:", {
     x: rx + 0.12, y: semY, w: 0.7, h: 0.16,
-    fontSize: 6.5, bold: true, color: MUT, fontFace: "Calibri", margin: 0
+    fontSize: 6.5, bold: true, color: MUT, fontFace: "Arial", margin: 0
   });
   [
     { label: "≥ 80% Alta",   bg: "C8F0D8", fg: "0F5E2F" },
@@ -651,13 +651,13 @@ function slide1(pres, ent, data, periodo) {
     });
     sl.addText(s.label, {
       x: sx, y: semY, w: 1.1, h: 0.16,
-      fontSize: 6.5, bold: true, color: s.fg, fontFace: "Calibri", align: "center", margin: 0
+      fontSize: 6.5, bold: true, color: s.fg, fontFace: "Arial", align: "center", margin: 0
     });
   });
 
   sl.addText("Nota: Los montos considerados corresponden al presupuesto devengado.", {
     x: rx + 0.1, y: ry + 3.65, w: rw - 0.2, h: 0.22,
-    fontSize: 6, color: "AAAAAA", fontFace: "Calibri", margin: 0
+    fontSize: 6, color: "AAAAAA", fontFace: "Arial", margin: 0
   });
 
   addFooter(pres, sl, ent.nombre, periodo);
@@ -708,7 +708,7 @@ function slide2(pres, ent, data, narr, periodo) {
   });
   sl.addText(`${fmt(f.mod)}\nB/. miles`, {
     x: lx + 0.55, y: cy + 0.58, w: 0.76, h: 0.55,
-    fontSize: 6.5, color: NAV, fontFace: "Calibri", align: "center", margin: 0
+    fontSize: 6.5, color: NAV, fontFace: "Arial", align: "center", margin: 0
   });
 
   // Leyenda — hasta 4 grupos visibles por espacio
@@ -719,9 +719,9 @@ function slide2(pres, ent, data, narr, periodo) {
       x: lx + 1.88, y: legY + 0.02, w: 0.1, h: 0.1,
       fill: { color: g.color }, line: { color: g.color }
     });
-    sl.addText(short(g.nombre, 22), {
+    sl.addText(g.nombre, {
       x: lx + 2.03, y: legY, w: 1.62, h: 0.14,
-      fontSize: 7, bold: true, color: g.color, fontFace: "Calibri", margin: 0
+      fontSize: 7, bold: true, color: g.color, fontFace: "Arial", margin: 0
     });
     sl.addShape(pres.shapes.RECTANGLE, {
       x: lx + 2.03, y: legY + 0.17, w: 1.5, h: 0.06,
@@ -734,7 +734,7 @@ function slide2(pres, ent, data, narr, periodo) {
     });
     sl.addText(`${g.distPct}%`, {
       x: lx + 3.57, y: legY + 0.11, w: 0.3, h: 0.14,
-      fontSize: 7.5, bold: true, color: g.color, fontFace: "Calibri", margin: 0
+      fontSize: 7.5, bold: true, color: g.color, fontFace: "Arial", margin: 0
     });
   });
 
@@ -748,7 +748,7 @@ function slide2(pres, ent, data, narr, periodo) {
   const detRows = [
     ["Total Funcionamiento", fmt(f.ley), fmt(f.mod), fmt(f.eje), f.pct, true],
     ...grupos.slice(0, 5).map(g => [
-      short(g.nombre, 22),
+      g.nombre,
       fmt(g.ley),
       fmt(g.mod),
       fmt(g.eje),
@@ -762,7 +762,7 @@ function slide2(pres, ent, data, narr, periodo) {
       text: h,
       options: {
         fill: { color: NAV }, color: WHT, bold: true,
-        fontSize: 7, fontFace: "Calibri",
+        fontSize: 7, fontFace: "Arial",
         align: i === 0 ? "left" : "center",
         border: [{ pt: 0 }]
       }
@@ -772,23 +772,23 @@ function slide2(pres, ent, data, narr, periodo) {
       return [
         {
           text: r[5] ? r[0] : "  " + r[0],
-          options: { fill: { color: r[5] ? "E8EFF8" : WHT }, color: r[5] ? NAV : TXT, bold: r[5], fontSize: 7.5, fontFace: "Calibri", align: "left", border: [{ pt: 0.5, color: "E0E8F0" }] }
+          options: { fill: { color: r[5] ? "E8EFF8" : WHT }, color: r[5] ? NAV : TXT, bold: r[5], fontSize: 7.5, fontFace: "Arial", align: "left", border: [{ pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }] }
         },
         {
           text: r[1],
-          options: { fill: { color: r[5] ? "E8EFF8" : WHT }, color: r[5] ? NAV : TXT, bold: r[5], fontSize: 7.5, fontFace: "Calibri", align: "center", border: [{ pt: 0.5, color: "E0E8F0" }] }
+          options: { fill: { color: r[5] ? "E8EFF8" : WHT }, color: r[5] ? NAV : TXT, bold: r[5], fontSize: 7.5, fontFace: "Arial", align: "center", border: [{ pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }] }
         },
         {
           text: r[2],
-          options: { fill: { color: r[5] ? "E8EFF8" : WHT }, color: r[5] ? NAV : TXT, bold: r[5], fontSize: 7.5, fontFace: "Calibri", align: "center", border: [{ pt: 0.5, color: "E0E8F0" }] }
+          options: { fill: { color: r[5] ? "E8EFF8" : WHT }, color: r[5] ? NAV : TXT, bold: r[5], fontSize: 7.5, fontFace: "Arial", align: "center", border: [{ pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }] }
         },
         {
           text: r[3],
-          options: { fill: { color: r[5] ? "E8EFF8" : WHT }, color: r[5] ? NAV : TXT, bold: r[5], fontSize: 7.5, fontFace: "Calibri", align: "center", border: [{ pt: 0.5, color: "E0E8F0" }] }
+          options: { fill: { color: r[5] ? "E8EFF8" : WHT }, color: r[5] ? NAV : TXT, bold: r[5], fontSize: 7.5, fontFace: "Arial", align: "center", border: [{ pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }] }
         },
         {
           text: `${r[4]}%`,
-          options: { fill: { color: s.bg }, color: s.fg, bold: true, fontSize: 7.5, fontFace: "Calibri", align: "center", border: [{ pt: 0.5, color: "E0E8F0" }] }
+          options: { fill: { color: s.bg }, color: s.fg, bold: true, fontSize: 7.5, fontFace: "Arial", align: "center", border: [{ pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }, { pt: 0.5, color: "C0CCD8" }] }
         }
       ];
     })
@@ -797,12 +797,12 @@ function slide2(pres, ent, data, narr, periodo) {
   sl.addTable(detTableData, {
     x: lx + 0.1, y: dtY + 0.25, w: 4.5,
     colW: [1.7, 0.65, 0.65, 0.65, 0.65],
-    fontFace: "Calibri", fontSize: 7.5
+    fontFace: "Arial", fontSize: 7.5
   });
 
   sl.addText("Nota: Ver clasificación oficial de grupos de gasto en el Clasificador Presupuestario.", {
     x: lx + 0.1, y: dtY + dtH - 0.22, w: 4.5, h: 0.2,
-    fontSize: 5.5, color: "AAAAAA", fontFace: "Calibri", margin: 0
+    fontSize: 5.5, color: "AAAAAA", fontFace: "Arial", margin: 0
   });
 
   // ── Columna derecha ──
@@ -816,8 +816,8 @@ function slide2(pres, ent, data, narr, periodo) {
   const progFun = f.programas.slice(0, 7);
   if (progFun.length > 0) {
     const programasData = [
-      { name: "Modificado", labels: progFun.map(p => short(p.nombre)), values: progFun.map(p => p.mod) },
-      { name: "Devengado",  labels: progFun.map(p => short(p.nombre)), values: progFun.map(p => p.eje) }
+      { name: "Modificado", labels: progFun.map(p => p.nombre), values: progFun.map(p => p.mod) },
+      { name: "Devengado",  labels: progFun.map(p => p.nombre), values: progFun.map(p => p.eje) }
     ];
     sl.addChart(pres.charts.BAR, programasData, {
       x: rx + 0.1, y: cy + 0.2, w: 4.52, h: pbH - 0.25,
@@ -830,13 +830,13 @@ function slide2(pres, ent, data, narr, periodo) {
       valGridLine: { color: "E8EEF5", size: 0.5 },
       catGridLine: { style: "none" },
       showLegend: true, legendPos: "t", legendFontSize: 6.5, legendColor: MUT,
-      showValue: false,
-      dataLabelFontSize: 6
+      showValue: true,
+      dataLabelFontSize: 6, dataLabelColor: WHT
     });
   } else {
     sl.addText("Sin programas de funcionamiento disponibles.", {
       x: rx + 0.1, y: cy + 0.5, w: 4.52, h: 0.5,
-      fontSize: 8, color: MUT, fontFace: "Calibri", align: "center", margin: 0
+      fontSize: 8, color: MUT, fontFace: "Arial", align: "center", margin: 0
     });
   }
 
@@ -845,9 +845,9 @@ function slide2(pres, ent, data, narr, periodo) {
   const anH = 5.47 - anY - 0.18;
   addPanelBox(pres, sl, rx, anY, 4.72, anH);
   addPanelTitle(pres, sl, rx, anY, 4.72, "Análisis");
-  sl.addText(narr?.narrativaFun ? narrativeToPptx(narr.narrativaFun) : buildNarrFun(data, ent), {
+  sl.addText(narr?.narrativaFun ? narrativeToPptx(narr.narrativaFun, { align: "justify" }) : buildNarrFun(data, ent), {
     x: rx + 0.12, y: anY + 0.25, w: 4.48, h: anH - 0.35,
-    fontSize: 7.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
+    fontSize: 7.5, color: TXT, fontFace: "Arial", valign: "top", align: "justify", margin: 0
   });
 
   addFooter(pres, sl, ent.siglas, periodo);
@@ -876,8 +876,8 @@ function slide3(pres, ent, data, narr, periodo) {
 
   if (progInv.length > 0) {
     const invProgData = [
-      { name: "Modificado", labels: progInv.map(p => short(p.nombre)), values: progInv.map(p => p.mod) },
-      { name: "Devengado",  labels: progInv.map(p => short(p.nombre)), values: progInv.map(p => p.eje) }
+      { name: "Modificado", labels: progInv.map(p => p.nombre + " (" + p.pct + "%)"), values: progInv.map(p => p.mod) },
+      { name: "Devengado",  labels: progInv.map(p => p.nombre + " (" + p.pct + "%)"), values: progInv.map(p => p.eje) }
     ];
     sl.addChart(pres.charts.BAR, invProgData, {
       x: lx + 0.1, y: cy + 0.2, w: 4.5, h: pbH - 0.28,
@@ -894,7 +894,7 @@ function slide3(pres, ent, data, narr, periodo) {
   } else {
     sl.addText("Sin programas de inversión disponibles.", {
       x: lx + 0.1, y: cy + 0.5, w: 4.5, h: 0.5,
-      fontSize: 8, color: MUT, fontFace: "Calibri", align: "center", margin: 0
+      fontSize: 8, color: MUT, fontFace: "Arial", align: "center", margin: 0
     });
   }
 
@@ -911,8 +911,8 @@ function slide3(pres, ent, data, narr, periodo) {
 
   if (allSubs.length > 0) {
     const subprogData = [
-      { name: "Modificado", labels: allSubs.map(s => short(s.nombre)), values: allSubs.map(s => s.mod) },
-      { name: "Devengado",  labels: allSubs.map(s => short(s.nombre)), values: allSubs.map(s => s.eje) }
+      { name: "Modificado", labels: allSubs.map(s => s.nombre + " (" + s.pct + "%)"), values: allSubs.map(s => s.mod) },
+      { name: "Devengado",  labels: allSubs.map(s => s.nombre + " (" + s.pct + "%)"), values: allSubs.map(s => s.eje) }
     ];
     sl.addChart(pres.charts.BAR, subprogData, {
       x: lx + 0.1, y: spY + 0.2, w: 4.5, h: spH - 0.3,
@@ -929,7 +929,7 @@ function slide3(pres, ent, data, narr, periodo) {
   } else {
     sl.addText("Sin subprogramas disponibles.", {
       x: lx + 0.1, y: spY + 0.4, w: 4.5, h: 0.4,
-      fontSize: 8, color: MUT, fontFace: "Calibri", align: "center", margin: 0
+      fontSize: 8, color: MUT, fontFace: "Arial", align: "center", margin: 0
     });
   }
 
@@ -937,9 +937,9 @@ function slide3(pres, ent, data, narr, periodo) {
   const rx = 5.06;
   addPanelBox(pres, sl, rx, cy, 4.72, 5.47 - cy - 0.18);
   addPanelTitle(pres, sl, rx, cy, 4.72, "Análisis de Inversión");
-  sl.addText(narr?.narrativaInv ? narrativeToPptx(narr.narrativaInv) : buildNarrInv(data, ent), {
+  sl.addText(narr?.narrativaInv ? narrativeToPptx(narr.narrativaInv, { align: "justify" }) : buildNarrInv(data, ent), {
     x: rx + 0.12, y: cy + 0.25, w: 4.48, h: 4.6,
-    fontSize: 7.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
+    fontSize: 7.5, color: TXT, fontFace: "Arial", valign: "top", align: "justify", margin: 0
   });
 
   addFooter(pres, sl, ent.siglas, periodo);
@@ -1008,19 +1008,19 @@ function slide4(pres, ent, data, narr, periodo) {
     sl.addText(k.label.toUpperCase(), {
       x: kx, y: cy + 0.07, w: kw, h: 0.13,
       fontSize: 6, color: k.dark ? "99B5CC" : k.warn ? "7A5800" : MUT,
-      fontFace: "Calibri", align: "center", charSpacing: 0.3, margin: 0
+      fontFace: "Arial", align: "center", charSpacing: 0.3, margin: 0
     });
     sl.addText(k.val, {
       x: kx, y: cy + 0.18, w: kw, h: 0.38,
       fontSize: 28, bold: true,
       color: k.dark ? WHT : k.warn ? "7A1010" : NAV,
-      fontFace: "Calibri", align: "center", margin: 0
+      fontFace: "Arial", align: "center", margin: 0
     });
     sl.addText(k.sub, {
       x: kx, y: cy + 0.57, w: kw, h: 0.14,
       fontSize: 6.5,
       color: k.dark ? "88AACC" : k.warn ? "7A5800" : MUT,
-      fontFace: "Calibri", align: "center", bold: k.warn, margin: 0
+      fontFace: "Arial", align: "center", bold: k.warn, margin: 0
     });
     const barBg = k.dark ? "3A5070" : k.warn ? "F0D060" : BDR;
     const barFg = k.dark
@@ -1058,7 +1058,7 @@ function slide4(pres, ent, data, narr, periodo) {
     });
     sl.addText(a.warn ? "!" : "✓", {
       x: 0.28, y: ay + 0.03, w: 0.14, h: 0.14,
-      fontSize: 7, bold: true, color: WHT, fontFace: "Calibri", align: "center", margin: 0
+      fontSize: 7, bold: true, color: WHT, fontFace: "Arial", align: "center", margin: 0
     });
     const aspectoRuns = a.txt.length === 1
       ? [{ text: a.txt[0] }]
@@ -1069,7 +1069,7 @@ function slide4(pres, ent, data, narr, periodo) {
         ];
     sl.addText(aspectoRuns, {
       x: 0.46, y: ay, w: 2.72, h: 0.56,
-      fontSize: 7.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
+      fontSize: 7.5, color: TXT, fontFace: "Arial", valign: "top", margin: 0
     });
   });
 
@@ -1081,7 +1081,7 @@ function slide4(pres, ent, data, narr, periodo) {
   });
   sl.addText("RECOMENDACIONES", {
     x: 3.66, y: py + 0.06, w: 2.8, h: 0.14,
-    fontSize: 6, bold: true, color: "0F5E2F", fontFace: "Calibri", charSpacing: 0.5, margin: 0
+    fontSize: 6, bold: true, color: "0F5E2F", fontFace: "Arial", charSpacing: 0.5, margin: 0
   });
 
   const recs = narr?.recomendaciones ? narr.recomendaciones.map(r => sanitize(r)) : buildRecs(data, ent);
@@ -1093,11 +1093,11 @@ function slide4(pres, ent, data, narr, periodo) {
     });
     sl.addText(`${i + 1}`, {
       x: 3.56, y: ry2 + 0.02, w: 0.16, h: 0.16,
-      fontSize: 7, bold: true, color: WHT, fontFace: "Calibri", align: "center", margin: 0
+      fontSize: 7, bold: true, color: WHT, fontFace: "Arial", align: "center", margin: 0
     });
     sl.addText(r, {
       x: 3.76, y: ry2, w: 2.7, h: 0.56,
-      fontSize: 7.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
+      fontSize: 7.5, color: TXT, fontFace: "Arial", valign: "top", margin: 0
     });
   });
 
@@ -1114,7 +1114,7 @@ function slide4(pres, ent, data, narr, periodo) {
   const conclP2 = narr?.conclusion2 ? narrativeToPptx(narr.conclusion2) : concl.p2;
   sl.addText(conclP1, {
     x: 6.86, y: py + 0.25, w: 2.8, h: panH / 2 - 0.1,
-    fontSize: 7.5, color: NAV, fontFace: "Calibri", valign: "top", margin: 0
+    fontSize: 7.5, color: NAV, fontFace: "Arial", valign: "top", margin: 0
   });
   sl.addShape(pres.shapes.RECTANGLE, {
     x: 6.86, y: py + panH / 2 + 0.08, w: 2.8, h: 0.012,
@@ -1122,7 +1122,7 @@ function slide4(pres, ent, data, narr, periodo) {
   });
   sl.addText(conclP2 || [{ text: "" }], {
     x: 6.86, y: py + panH / 2 + 0.13, w: 2.8, h: panH / 2 - 0.15,
-    fontSize: 7.5, color: NAV, fontFace: "Calibri", valign: "top", margin: 0
+    fontSize: 7.5, color: NAV, fontFace: "Arial", valign: "top", margin: 0
   });
 
   addFooter(pres, sl, ent.nombre, periodo);
@@ -1152,7 +1152,7 @@ function slideExtra(pres, ent, slideData, periodo) {
     addPanelTitle(pres, sl, 0.18, panY, 9.64, sec.titulo || "");
     sl.addText(sanitize(sec.contenido || ""), {
       x: 0.3, y: panY + 0.28, w: 9.42, h: panH - 0.38,
-      fontSize: 8.5, color: TXT, fontFace: "Calibri", valign: "top", margin: 0
+      fontSize: 8.5, color: TXT, fontFace: "Arial", valign: "top", margin: 0
     });
   });
 

@@ -747,9 +747,10 @@ function Entidades({ user }) {
   const [wizFile, setWizFile] = useState(null);
   const [wizSearch, setWizSearch] = useState("");
   const [wizDrag, setWizDrag] = useState(false);
+  const [wizContexto, setWizContexto] = useState("");
   const [wizStatus, setWizStatus] = useState(null); // null | "loading" | "ok" | "error"
   const [wizErrMsg, setWizErrMsg] = useState("");
-  const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizFile(null); setWizSearch(""); setWizStatus(null); setWizErrMsg(""); };
+  const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizFile(null); setWizSearch(""); setWizContexto(""); setWizStatus(null); setWizErrMsg(""); };
   const handleViewToggle = () => { if (view==="crear") resetWizard(); setView(view==="crear"?"lista":"crear"); };
   const GRUPO_NAMES = ["GOBIERNO CENTRAL","INSTITUCIONES DESCENTRALIZADAS","EMPRESAS PÚBLICAS","INTERMEDIARIOS FINANCIEROS"];
   const GRUPO_COLORS = [C.navDash, C.navHistorico, C.navInformes, C.navEntidades];
@@ -782,7 +783,7 @@ function Entidades({ user }) {
               : ENTIDADES;
             const Steps = () => (
               <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
-                {["Entidad","Excel","Generar"].map((lbl,i)=>{
+                {["Entidad","Excel","Contexto","Generar"].map((lbl,i)=>{
                   const n=i+1; const done=wizStep>n; const active=wizStep===n;
                   return (
                     <React.Fragment key={n}>
@@ -792,7 +793,7 @@ function Entidades({ user }) {
                         </div>
                         <div style={{ fontSize:10, fontWeight:600, color: active?C.navInformes: done?"#43A047":C.textLight }}>{lbl}</div>
                       </div>
-                      {i<2 && <div style={{ flex:1, height:2, background: wizStep>n?"#43A047":C.border, margin:"0 8px", marginBottom:18, transition:"all 0.3s" }}/>}
+                      {i<3 && <div style={{ flex:1, height:2, background: wizStep>n?"#43A047":C.border, margin:"0 8px", marginBottom:18, transition:"all 0.3s" }}/>}
                     </React.Fragment>
                   );
                 })}
@@ -872,8 +873,35 @@ function Entidades({ user }) {
                     </div>
                   </div>
                 )}
-                {/* Step 3 — Confirmar y Generar */}
+                {/* Step 3 — Contexto adicional */}
                 {wizStep===3 && wizEnt && wizFile && (
+                  <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
+                    <Steps/>
+                    <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>Contexto adicional para la IA</div>
+                    <div style={{ fontSize:12, color:C.textMid, marginBottom:20 }}>Opcional. Si hay información que la IA debería considerar al redactar el análisis, escríbela aquí. De lo contrario, continúa sin contexto.</div>
+                    <textarea
+                      value={wizContexto}
+                      onChange={e=>setWizContexto(e.target.value)}
+                      placeholder={"Ej: Esta entidad tuvo una paralización en el segundo trimestre por ajustes de planilla. El programa de vivienda prioritaria fue reprogramado al 2026. El presupuesto de inversión refleja compromisos del Plan Estratégico Nacional..."}
+                      rows={6}
+                      style={{ width:"100%", padding:"12px 14px", border:`1px solid ${wizContexto?C.navInformes:C.border}`, borderRadius:10, fontSize:12, color:C.text, fontFamily:"inherit", resize:"vertical", outline:"none", boxSizing:"border-box", background:wizContexto?C.navInformes+"06":C.bg, lineHeight:1.6 }}
+                    />
+                    {wizContexto.trim() && (
+                      <div style={{ marginTop:8, fontSize:11, color:C.navInformes, fontWeight:600 }}>
+                        ✓ El contexto se incluirá en el prompt de Claude para personalizar las narrativas.
+                      </div>
+                    )}
+                    <div style={{ marginTop:20, display:"flex", gap:10, justifyContent:"flex-end" }}>
+                      <button onClick={()=>setWizStep(2)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
+                      <button onClick={()=>{ setWizContexto(""); setWizStep(4); }} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>Saltar</button>
+                      <button onClick={()=>setWizStep(4)} style={{ padding:"9px 22px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                        {wizContexto.trim() ? "Agregar contexto →" : "Continuar →"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {/* Step 4 — Confirmar y Generar */}
+                {wizStep===4 && wizEnt && wizFile && (
                   <div style={{ background:C.white, borderRadius:14, padding:"28px", border:`1px solid ${C.border}` }}>
                     <Steps/>
                     {wizStatus===null && (
@@ -904,9 +932,19 @@ function Entidades({ user }) {
                               <div style={{ fontSize:11, color:C.textMid }}>4 slides · Portada · Funcionamiento · Inversión · Conclusiones</div>
                             </div>
                           </div>
+                          {wizContexto.trim() && (
+                            <div style={{ display:"flex", gap:14, padding:"12px 16px", background:C.navInformes+"08", borderRadius:10, border:`1px solid ${C.navInformes}30`, alignItems:"flex-start" }}>
+                              <span style={{ fontSize:20, marginTop:2 }}>✍️</span>
+                              <div style={{ flex:1 }}>
+                                <div style={{ fontSize:11, color:C.navInformes, fontWeight:700, marginBottom:4 }}>CONTEXTO PARA LA IA</div>
+                                <div style={{ fontSize:11, color:C.textMid, lineHeight:1.5, whiteSpace:"pre-wrap" }}>{wizContexto.trim().slice(0,200)}{wizContexto.trim().length>200?"…":""}</div>
+                              </div>
+                              <button onClick={()=>setWizStep(3)} style={{ fontSize:10, color:C.navInformes, background:"none", border:"none", cursor:"pointer", whiteSpace:"nowrap" }}>Editar</button>
+                            </div>
+                          )}
                         </div>
                         <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
-                          <button onClick={()=>setWizStep(2)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
+                          <button onClick={()=>setWizStep(3)} style={{ padding:"9px 18px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>← Atrás</button>
                           <button onClick={async ()=>{
                             setWizStatus("loading");
                             setWizErrMsg("");
@@ -920,7 +958,7 @@ function Entidades({ user }) {
                               const r = await fetch("/api/generate-pptx", {
                                 method:"POST",
                                 headers:{"Content-Type":"application/json"},
-                                body:JSON.stringify({ codigo, excelBase64, filename:wizFile.name })
+                                body:JSON.stringify({ codigo, excelBase64, contexto:wizContexto.trim()||null })
                               });
                               const json = await r.json();
                               if (!r.ok) throw new Error(json.error||`Error ${r.status}`);

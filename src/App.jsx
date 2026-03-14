@@ -3472,15 +3472,17 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos*
   const PANAMITA_TOOLS = [
     {
       name: "consultar_presupuesto",
-      description: "Consulta datos detallados del presupuesto de Panamá filtrados por fuente de ingreso, entidad, año, tipo o programa. Úsala para preguntas cruzadas como: entidades que reciben fondos de una fuente específica, comparaciones sectoriales, análisis por fuente de financiamiento, o detalles no disponibles en el resumen general.",
+      description: "Consulta datos detallados del presupuesto de Panamá filtrados por fuente de ingreso, entidad, año, tipo, programa, grupo de gasto u objeto de gasto. Úsala para preguntas cruzadas como: entidades que reciben fondos de una fuente específica, comparaciones sectoriales, análisis por fuente de financiamiento, detalles por clasificación económica (grupo de gasto, objeto de gasto como Sueldos, Materiales, etc.) o detalles no disponibles en el resumen general.",
       input_schema: {
         type: "object",
         properties: {
           fuente_ingreso:  { type:"string",  description:"Fuente de financiamiento (ej: 'FECCI', 'BID', 'Ingresos Corrientes', 'Dividendos del Canal')" },
           nombre_entidad:  { type:"string",  description:"Nombre parcial o completo de la entidad (ej: 'MIDA', 'Ministerio de Salud')" },
-          anio:            { type:"integer", description:"Año fiscal entre 2016 y 2025" },
+          anio:            { type:"integer", description:"Año fiscal entre 2016 y 2026" },
           tipo_presupuesto:{ type:"string",  description:"FUNCIONAMIENTO o INVERSION" },
-          nombre_programa: { type:"string",  description:"Nombre parcial del programa presupuestario" }
+          nombre_programa: { type:"string",  description:"Nombre parcial del programa presupuestario" },
+          grupo_gasto:     { type:"string",  description:"Grupo de gasto de la clasificación económica (ej: 'SERVICIOS PERSONALES', 'MATERIALES Y SUMINISTROS', 'SERVICIOS NO PERSONALES', 'MAQUINARIA Y EQUIPOS', 'TRANSFERENCIAS CORRIENTES')" },
+          objeto_gasto:    { type:"string",  description:"Objeto de gasto específico dentro del grupo (ej: 'SUELDOS', 'DECIMOTERCER MES', 'ENERGIA ELECTRICA', 'COMBUSTIBLES Y LUBRICANTES'). Siempre usa junto con grupo_gasto cuando el usuario pida un objeto específico." }
         }
       }
     },
@@ -3492,9 +3494,11 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos*
         properties: {
           fuente_ingreso:  { type:"string",  description:"Fuente de financiamiento (opcional)" },
           nombre_entidad:  { type:"string",  description:"Nombre parcial o completo de la entidad (opcional)" },
-          anio:            { type:"integer", description:"Año fiscal entre 2016 y 2025 (opcional)" },
+          anio:            { type:"integer", description:"Año fiscal entre 2016 y 2026 (opcional)" },
           tipo_presupuesto:{ type:"string",  description:"FUNCIONAMIENTO o INVERSION (opcional)" },
-          nombre_programa: { type:"string",  description:"Nombre parcial del programa (opcional)" }
+          nombre_programa: { type:"string",  description:"Nombre parcial del programa (opcional)" },
+          grupo_gasto:     { type:"string",  description:"Grupo de gasto (ej: 'SERVICIOS PERSONALES') (opcional)" },
+          objeto_gasto:    { type:"string",  description:"Objeto de gasto específico (ej: 'SUELDOS') (opcional)" }
         }
       }
     },
@@ -3506,9 +3510,11 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos*
         properties: {
           fuente_ingreso:  { type:"string",  description:"Fuente de financiamiento (opcional)" },
           nombre_entidad:  { type:"string",  description:"Nombre parcial o completo de la entidad (opcional)" },
-          anio:            { type:"integer", description:"Año fiscal entre 2016 y 2025 (opcional)" },
+          anio:            { type:"integer", description:"Año fiscal entre 2016 y 2026 (opcional)" },
           tipo_presupuesto:{ type:"string",  description:"FUNCIONAMIENTO o INVERSION (opcional)" },
-          nombre_programa: { type:"string",  description:"Nombre parcial del programa (opcional)" }
+          nombre_programa: { type:"string",  description:"Nombre parcial del programa (opcional)" },
+          grupo_gasto:     { type:"string",  description:"Grupo de gasto (ej: 'SERVICIOS PERSONALES') (opcional)" },
+          objeto_gasto:    { type:"string",  description:"Objeto de gasto específico (ej: 'SUELDOS') (opcional)" }
         }
       }
     }
@@ -3516,7 +3522,7 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos*
 
   const SYSTEM_PROMPT = `Eres Panamita, asistente de análisis presupuestario de PANANOMICS.IA (DIPRENA — MEF de Panamá).
 
-BASE DE DATOS: Tienes acceso al presupuesto nacional de Panamá (2016–2025) con datos de Ley, Modificado, Devengado y % de ejecución, por entidad, fuente de ingreso, tipo (FUNCIONAMIENTO/INVERSIÓN/SEGURO EDUCATIVO) y programa. Usa SIEMPRE la herramienta consultar_presupuesto para obtener datos concretos antes de responder — nunca inventes cifras. Si necesitas cruzar datos, haz múltiples llamadas.
+BASE DE DATOS: Tienes acceso al presupuesto nacional de Panamá (2016–2026) con datos de Ley, Modificado, Devengado y % de ejecución, por entidad, fuente de ingreso, tipo (FUNCIONAMIENTO/INVERSIÓN/SEGURO EDUCATIVO), programa, grupo de gasto (clasificación económica) y objeto de gasto específico (ej: SUELDOS, DECIMOTERCER MES, ENERGÍA ELÉCTRICA). Usa SIEMPRE la herramienta consultar_presupuesto para obtener datos concretos antes de responder — nunca inventes cifras. Si necesitas cruzar datos, haz múltiples llamadas. Cuando el usuario pregunte por un objeto de gasto específico, usa los parámetros grupo_gasto y objeto_gasto en la herramienta.
 
 ENTIDADES DISPONIBLES: ${ENTIDADES.length} entidades públicas (Gobierno Central, Inst. Descentralizadas, Empresas Públicas, Intermediarios Financieros).
 
@@ -3582,15 +3588,27 @@ Responde como un analista presupuestario experto hablando directamente con un co
             return { type:"tool_result", tool_use_id:tb.id, content: json.message || "Sin datos para los filtros indicados." };
           }
           const rows = await sbRpc("consultar_informe",{
-            p_fuente:      inp.fuente_ingreso  || null,
-            p_entidad:     inp.nombre_entidad  || null,
-            p_anio_inicio: inp.anio            || null,
-            p_anio_fin:    inp.anio            || null,
-            p_tipo:        inp.tipo_presupuesto || null,
-            p_programa:    inp.nombre_programa  || null,
+            p_fuente:       inp.fuente_ingreso   || null,
+            p_entidad:      inp.nombre_entidad   || null,
+            p_anio_inicio:  inp.anio             || null,
+            p_anio_fin:     inp.anio             || null,
+            p_tipo:         inp.tipo_presupuesto || null,
+            p_programa:     inp.nombre_programa  || null,
+            p_grupo_gasto:  inp.grupo_gasto      || null,
+            p_objeto_gasto: inp.objeto_gasto     || null,
           });
           const content = rows.length
-            ? rows.map(r=>`${r.nombre_entidad} | ${r.fuente_ingreso||'-'} | ${r.anio} | ${r.tipo_presupuesto}: Ley B/.${(+r.total_ley/1e6).toFixed(2)}M | Mod B/.${(+r.total_mod/1e6).toFixed(2)}M | Eje B/.${(+r.total_eje/1e6).toFixed(2)}M | ${r.pct_ejecucion}%`).join("\n")
+            ? rows.map(r=>{
+                const parts = [r.nombre_entidad];
+                if (r.grupo_gasto)  parts.push(r.grupo_gasto);
+                if (r.objeto_gasto) parts.push(r.objeto_gasto);
+                parts.push(r.fuente_ingreso||'-', r.anio, r.tipo_presupuesto);
+                parts.push(`Ley B/.${(+r.total_ley/1e6).toFixed(2)}M`);
+                parts.push(`Mod B/.${(+r.total_mod/1e6).toFixed(2)}M`);
+                parts.push(`Eje B/.${(+r.total_eje/1e6).toFixed(2)}M`);
+                parts.push(`${r.pct_ejecucion}%`);
+                return parts.join(" | ");
+              }).join("\n")
             : "Sin resultados para los filtros indicados.";
           return { type:"tool_result", tool_use_id:tb.id, content };
         }));

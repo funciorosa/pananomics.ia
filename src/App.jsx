@@ -3438,6 +3438,7 @@ function ChatView({ user }) {
   const [messages, setMessages] = useState([{ role:"assistant", text:`¡Hola ${user.name}! Soy **Panamita** 👋 Estoy conectada a la base de datos en tiempo real.\n\nTengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos** (normativa + PEI/POA de 28 instituciones). Puedes preguntarme:\n\n• _¿Cómo ejecutó MEDUCA en 2024?_\n• _¿Qué entidades reciben fondos FECCI en el sector agropecuario?_\n• _Compara MINSA vs MIDA en inversión 2023_\n• _Entidades financiadas con Dividendos del Canal_\n\n¿Qué quieres analizar?` }]);
   const [input, setInput] = useState(""); const [loading, setLoading] = useState(false);
   const [mood, setMood] = useState("idle"); const [libCtx, setLibCtx] = useState("");
+  const [metaCtx, setMetaCtx] = useState("");
   const bottomRef = useRef(null);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [messages]);
   useEffect(() => { loadContexts(); }, []);
@@ -3467,6 +3468,19 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos*
       const dbCtxDocs = docs?.length ? docs.map(d=>`[${d.titulo_corto}]: ${d.resumen_contexto?.slice(0,300)}`).join("\n") : "";
       setLibCtx([dbCtxDocs, peiCtx].filter(Boolean).join("\n\n"));
     } catch { setLibCtx(peiCtx); }
+    // Cargar valores reales de fuentes y grupos de la BD para que Panamita use los nombres exactos
+    try {
+      const [fuentes, grupos] = await Promise.all([
+        sbRpc("hist_fuentes", {}).catch(()=>[]),
+        sbRpc("hist_grupos",  {}).catch(()=>[]),
+      ]);
+      const fuentesList = [...new Set((fuentes||[]).map(r=>r.fuente_ingreso).filter(Boolean))].sort();
+      const gruposList  = [...new Set((grupos ||[]).map(r=>r.grupo_gasto ).filter(Boolean))].sort();
+      setMetaCtx(
+        (fuentesList.length ? `FUENTES DE INGRESO DISPONIBLES EN LA BD (usa estos nombres exactos al filtrar): ${fuentesList.join(" | ")}` : "") +
+        (gruposList.length  ? `\nGRUPOS DE GASTO DISPONIBLES EN LA BD (usa estos nombres exactos al filtrar): ${gruposList.join(" | ")}` : "")
+      );
+    } catch { /* silencioso */ }
   };
 
   const PANAMITA_TOOLS = [
@@ -3526,7 +3540,7 @@ BASE DE DATOS: Tienes acceso al presupuesto nacional de Panamá (2016–2026) co
 
 ENTIDADES DISPONIBLES: ${ENTIDADES.length} entidades públicas (Gobierno Central, Inst. Descentralizadas, Empresas Públicas, Intermediarios Financieros).
 
-BIBLIOTECA: 34 documentos (normativa presupuestaria + PEI/POA/Planes de 28 instituciones).
+${metaCtx ? metaCtx + "\n" : ""}BIBLIOTECA: 34 documentos (normativa presupuestaria + PEI/POA/Planes de 28 instituciones).
 ${libCtx ? libCtx.slice(0, 2000) : ""}
 
 ESTILO DE RESPUESTA:

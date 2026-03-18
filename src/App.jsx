@@ -3601,16 +3601,19 @@ Responde como un analista presupuestario experto hablando directamente con un co
             }
             return { type:"tool_result", tool_use_id:tb.id, content: json.message || "Sin datos para los filtros indicados." };
           }
-          const rows = await sbRpc("consultar_informe",{
-            p_fuente:       inp.fuente_ingreso   || null,
-            p_entidad:      inp.nombre_entidad   || null,
-            p_anio_inicio:  inp.anio             || null,
-            p_anio_fin:     inp.anio             || null,
-            p_tipo:         inp.tipo_presupuesto || null,
-            p_programa:     inp.nombre_programa  || null,
-            p_grupo_gasto:  inp.grupo_gasto      || null,
-            p_objeto_gasto: inp.objeto_gasto     || null,
-          });
+          const rpcParams = {
+            p_fuente:      inp.fuente_ingreso   || null,
+            p_entidad:     inp.nombre_entidad   || null,
+            p_anio_inicio: inp.anio             || null,
+            p_anio_fin:    inp.anio             || null,
+            p_tipo:        inp.tipo_presupuesto || null,
+            p_programa:    inp.nombre_programa  || null,
+            p_grupo_gasto: inp.grupo_gasto      || null,
+          };
+          // p_objeto_gasto solo se pasa si el usuario lo especificó
+          // (requiere que la función SQL tenga ese parámetro actualizado en Supabase)
+          if (inp.objeto_gasto) rpcParams.p_objeto_gasto = inp.objeto_gasto;
+          const rows = await sbRpc("consultar_informe", rpcParams);
           const content = rows.length
             ? rows.map(r=>{
                 const parts = [r.nombre_entidad];

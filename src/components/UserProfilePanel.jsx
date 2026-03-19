@@ -23,7 +23,7 @@ export default function UserProfilePanel({
 
   useEffect(() => {
     if (!open) return;
-    fetch(`${supabaseUrl}/rest/v1/profiles?select=cargo,institucion,avatar_url,permisos&limit=1`, {
+    fetch(`${supabaseUrl}/rest/v1/profiles?select=nombre_completo,username,cargo,institucion,avatar_url,permisos&limit=1`, {
       headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
     })
       .then(r => r.json())
@@ -65,7 +65,6 @@ export default function UserProfilePanel({
         const url = `${supabaseUrl}/storage/v1/object/public/avatars/${filename}`;
         setLocalAvatar(url);
         onAvatarChange?.(url);
-        // Persist to profiles table
         await fetch(`${supabaseUrl}/rest/v1/profiles?limit=1`, {
           method: "PATCH",
           headers: {
@@ -76,14 +75,18 @@ export default function UserProfilePanel({
           body: JSON.stringify({ avatar_url: url }),
         }).catch(() => {});
       }
-    } catch {}
+    } catch (err) { /* upload failed silently */ }
     setUploading(false);
     e.target.value = "";
   };
 
-  const initials = user?.name
-    ? user.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
-    : "MP";
+  // Nombre e initials — vienen de profiles, fallback al user object
+  const fullName   = profile?.nombre_completo || user?.name || "";
+  const displayUser = profile?.username ? `@${profile.username}` : "";
+  const initials   = fullName
+    ? fullName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
+    : (user?.name?.[0] || "U").toUpperCase();
+
   const permisoKeys = user?.isAdmin
     ? ["todos"]
     : (Array.isArray(profile?.permisos) ? profile.permisos : ["restringido"]);
@@ -143,7 +146,7 @@ export default function UserProfilePanel({
         {/* ── Body ── */}
         <div style={{ padding: "20px 16px 18px" }}>
 
-          {/* Avatar */}
+          {/* Avatar — solo esto puede cambiar el usuario */}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
             <div
               onClick={() => !uploading && fileRef.current?.click()}
@@ -151,11 +154,9 @@ export default function UserProfilePanel({
               onMouseEnter={e => { const ov = e.currentTarget.querySelector(".av-ov"); if (ov) ov.style.opacity = "1"; }}
               onMouseLeave={e => { const ov = e.currentTarget.querySelector(".av-ov"); if (ov) ov.style.opacity = "0"; }}
             >
-              {/* Ring */}
               <div style={{
                 position: "absolute", inset: -3, borderRadius: "50%",
-                background: "linear-gradient(135deg,#6C3FA0,#9B5FD4)",
-                zIndex: 0,
+                background: "linear-gradient(135deg,#6C3FA0,#9B5FD4)", zIndex: 0,
               }}/>
               {localAvatar ? (
                 <img
@@ -172,7 +173,6 @@ export default function UserProfilePanel({
                   border: "2.5px solid white", boxSizing: "border-box",
                 }}>{initials}</div>
               )}
-              {/* Hover overlay */}
               <div className="av-ov" style={{
                 position: "absolute", inset: 0, zIndex: 2, borderRadius: "50%",
                 background: "rgba(108,63,160,0.75)",
@@ -186,31 +186,42 @@ export default function UserProfilePanel({
             <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
           </div>
 
-          {/* Name & username */}
-          <div style={{ textAlign: "center", marginBottom: 14 }}>
+          {/* Nombre y username — solo lectura */}
+          <div style={{ textAlign: "center", marginBottom: 16 }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: "#1B2F4E", lineHeight: 1.3 }}>
-              Mariam Pitti
+              {fullName || "—"}
             </div>
-            <div style={{ fontSize: 12, color: "#8B9BB4", marginTop: 2 }}>@mpitti</div>
-            {profile?.cargo && (
-              <div style={{
-                fontSize: 11, color: "#4A5568", marginTop: 8, fontWeight: 600,
-                background: "#F7F8FA", borderRadius: 6, padding: "4px 10px", display: "inline-block",
-              }}>
-                {profile.cargo}
-              </div>
-            )}
-            {profile?.institucion && (
-              <div style={{ fontSize: 11, color: "#718096", marginTop: 4 }}>
-                {profile.institucion}
-              </div>
+            {displayUser && (
+              <div style={{ fontSize: 12, color: "#8B9BB4", marginTop: 2 }}>{displayUser}</div>
             )}
           </div>
+
+          {/* Cargo e institución — solo lectura, visual prominente */}
+          {(profile?.cargo || profile?.institucion) && (
+            <div style={{
+              background: "#F4F0FC", border: "1px solid #D8C8F0",
+              borderRadius: 10, padding: "10px 12px", marginBottom: 14,
+              display: "flex", flexDirection: "column", gap: 4,
+            }}>
+              {profile?.cargo && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 13 }}>💼</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#4A3578" }}>{profile.cargo}</span>
+                </div>
+              )}
+              {profile?.institucion && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 13 }}>🏛</span>
+                  <span style={{ fontSize: 11, color: "#6B5B8A" }}>{profile.institucion}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Divider */}
           <div style={{ height: 1, background: "#EEF2F8", margin: "0 -4px 14px" }} />
 
-          {/* Permissions */}
+          {/* Permisos */}
           <div style={{ marginBottom: 16 }}>
             <div style={{
               fontSize: 10, fontWeight: 700, color: "#A0AEC0",
@@ -223,15 +234,12 @@ export default function UserProfilePanel({
                 const p = PERMISOS[key];
                 if (!p) return null;
                 return (
-                  <span
-                    key={key}
-                    style={{
-                      padding: "3px 10px", borderRadius: 20,
-                      background: p.bg, color: p.fg,
-                      fontSize: 10, fontWeight: 700,
-                      border: `1px solid ${p.fg}40`,
-                    }}
-                  >{p.label}</span>
+                  <span key={key} style={{
+                    padding: "3px 10px", borderRadius: 20,
+                    background: p.bg, color: p.fg,
+                    fontSize: 10, fontWeight: 700,
+                    border: `1px solid ${p.fg}40`,
+                  }}>{p.label}</span>
                 );
               })}
             </div>
@@ -240,32 +248,20 @@ export default function UserProfilePanel({
           {/* Divider */}
           <div style={{ height: 1, background: "#EEF2F8", margin: "0 -4px 14px" }} />
 
-          {/* Action buttons */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <button
-              style={{
-                padding: "9px 12px", border: "1.5px solid #6C3FA0", borderRadius: 8,
-                background: "transparent", color: "#6C3FA0",
-                fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = "#6C3FA0"; e.currentTarget.style.color = "white"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#6C3FA0"; }}
-            >
-              ✏️ Editar perfil
-            </button>
-            <button
-              onClick={() => { onClose(); onLogout(); }}
-              style={{
-                padding: "9px 12px", border: "1.5px solid #E53E3E", borderRadius: 8,
-                background: "transparent", color: "#E53E3E",
-                fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = "#E53E3E"; e.currentTarget.style.color = "white"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#E53E3E"; }}
-            >
-              → Cerrar sesión
-            </button>
-          </div>
+          {/* Solo Cerrar sesión — sin "Editar perfil" */}
+          <button
+            onClick={() => { onClose(); onLogout(); }}
+            style={{
+              width: "100%", padding: "9px 12px",
+              border: "1.5px solid #E53E3E", borderRadius: 8,
+              background: "transparent", color: "#E53E3E",
+              fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#E53E3E"; e.currentTarget.style.color = "white"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#E53E3E"; }}
+          >
+            → Cerrar sesión
+          </button>
         </div>
       </div>
     </>

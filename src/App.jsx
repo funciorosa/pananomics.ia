@@ -1698,6 +1698,31 @@ function Entidades({ user }) {
   const [wizBlobData, setWizBlobData] = useState(null); // {base64, filename}
   const [wizLoadPhase, setWizLoadPhase] = useState(0);
   const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizPeriodo(null); setWizFile(null); setWizSearch(""); setWizContexto(""); setWizExtraSlides([]); setWizStatus(null); setWizErrMsg(""); setWizPreview(null); setWizBlobData(null); setWizLoadPhase(0); };
+  // ── Registro de informes creados (persiste en localStorage) ──
+  const [informesCreados, setInformesCreados] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('pananomics_informes') || '{}'); } catch { return {}; }
+  });
+  const [informeBlobs, setInformeBlobs] = useState({});
+  const saveInformeCreado = (entNombre, blobData, periodo, creatorName) => {
+    const periodoStr = periodo ? (periodo.tipo==="trimestral" ? `${periodo.opcion} ${periodo.anio}` : `${periodo.opcion==="1S"?"1er Sem.":"2do Sem."} ${periodo.anio}`) : "";
+    const entry = { fecha: new Date().toISOString(), creator: creatorName || "Admin", periodo: periodoStr, filename: blobData?.filename || "" };
+    const newMap = { ...informesCreados, [entNombre]: entry };
+    setInformesCreados(newMap);
+    try { localStorage.setItem('pananomics_informes', JSON.stringify(newMap)); } catch {}
+    if (blobData?.base64) {
+      try {
+        const blob = new Blob([Uint8Array.from(atob(blobData.base64.replace(/\s/g,"")), c=>c.charCodeAt(0))], {type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
+        setInformeBlobs(prev => ({ ...prev, [entNombre]: URL.createObjectURL(blob) }));
+      } catch {}
+    }
+  };
+  const eliminarInforme = (entNombre) => {
+    const newMap = { ...informesCreados };
+    delete newMap[entNombre];
+    setInformesCreados(newMap);
+    try { localStorage.setItem('pananomics_informes', JSON.stringify(newMap)); } catch {}
+    setInformeBlobs(prev => { const n={...prev}; delete n[entNombre]; return n; });
+  };
   // Helper: etiqueta del período seleccionado
   const periodoLabel = (p) => {
     if (!p) return null;
@@ -2375,7 +2400,7 @@ function Entidades({ user }) {
                             <div><div style={{fontSize:15,fontWeight:700,color:C.text}}>Vista previa del informe</div><div style={{fontSize:11,color:C.textMid}}>{pvEnt} · {pvSlides.length} diapositivas · {pLbl}</div></div>
                             <div style={{display:"flex",gap:8}}>
                               <button onClick={()=>setWizStatus(null)} style={{padding:"7px 16px",background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,fontSize:12,fontWeight:600,color:C.textMid,cursor:"pointer"}}>← Volver</button>
-                              <button onClick={()=>{const blob=new Blob([Uint8Array.from(atob(wizBlobData.base64),c=>c.charCodeAt(0))],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=wizBlobData.filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);setWizStatus("ok");}} style={{padding:"7px 22px",background:NAV,color:"white",border:"none",borderRadius:7,fontSize:13,fontWeight:700,cursor:"pointer"}}>⬇ Descargar PPTX</button>
+                              <button onClick={()=>{const blob=new Blob([Uint8Array.from(atob(wizBlobData.base64),c=>c.charCodeAt(0))],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=wizBlobData.filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);saveInformeCreado(wizEnt?.nombre,wizBlobData,wizPeriodo,user?.name);setWizStatus("ok");}} style={{padding:"7px 22px",background:NAV,color:"white",border:"none",borderRadius:7,fontSize:13,fontWeight:700,cursor:"pointer"}}>⬇ Descargar PPTX</button>
                             </div>
                           </div>
                           {pvSlides.map((slide)=>{
@@ -2443,12 +2468,20 @@ function Entidades({ user }) {
                           <th style={{ padding:"9px 18px", fontSize:11, fontWeight:700, color:"#1B2F4E", textAlign:"left", width:70 }}>Código</th>
                           <th style={{ padding:"9px 12px", fontSize:11, fontWeight:700, color:"#1B2F4E", textAlign:"left", width:90 }}>Siglas</th>
                           <th style={{ padding:"9px 12px", fontSize:11, fontWeight:700, color:"#1B2F4E", textAlign:"left" }}>Nombre completo</th>
-                          <th style={{ padding:"9px 18px", fontSize:11, fontWeight:700, color:"#1B2F4E", textAlign:"right", width:140 }}></th>
+                          <th style={{ padding:"9px 12px", fontSize:11, fontWeight:700, color:"#1B2F4E", textAlign:"left", width:155 }}>Última actualización</th>
+                          <th style={{ padding:"9px 12px", fontSize:11, fontWeight:700, color:"#1B2F4E", textAlign:"left", width:100 }}>Creador</th>
+                          <th style={{ padding:"9px 18px", fontSize:11, fontWeight:700, color:"#1B2F4E", textAlign:"center", width:190 }}>Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
                         {grouped[i].map((e, ei) => {
                           const code = `${String(e.codigo_area).padStart(1,"0")}${String(e.codigo_entidad).padStart(2,"0")}`;
+                          const inf = informesCreados[e.nombre];
+                          const blobUrl = informeBlobs[e.nombre];
+                          const fechaFmt = inf ? (() => {
+                            const d = new Date(inf.fecha);
+                            return `${d.toLocaleDateString("es-PA",{day:"2-digit",month:"2-digit",year:"numeric"})} ${d.toLocaleTimeString("es-PA",{hour:"2-digit",minute:"2-digit"})}`;
+                          })() : null;
                           return (
                             <tr key={e.nombre} style={{ borderBottom:`1px solid ${C.border}`, background:ei%2===0?C.white:"#FAFBFF", transition:"background 0.15s" }}
                               onMouseEnter={ev=>ev.currentTarget.style.background=GRUPO_COLORS[i]+"08"}
@@ -2458,15 +2491,27 @@ function Entidades({ user }) {
                               </td>
                               <td style={{ padding:"10px 12px", fontSize:12, fontWeight:700, color:GRUPO_COLORS[i] }}>{e.siglas}</td>
                               <td style={{ padding:"10px 12px", fontSize:12, color:C.text }}>{e.nombre}</td>
-                              <td style={{ padding:"8px 18px", textAlign:"right" }}>
-                                <button onClick={()=>{
-                                  resetWizard();
-                                  setWizEnt(e);
-                                  setWizStep(2);
-                                  setView("crear");
-                                }} style={{ padding:"6px 14px", background:"#1B2F4E", color:"white", border:"none", borderRadius:7, fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
-                                  + Crear Informe
-                                </button>
+                              <td style={{ padding:"10px 12px", fontSize:11, color:C.textMid }}>
+                                {fechaFmt ? <><div style={{fontWeight:600,color:C.text}}>{fechaFmt.split(" ")[0]}</div><div style={{fontSize:10}}>{fechaFmt.split(" ")[1]}</div></> : <span style={{color:C.textLight}}>—</span>}
+                              </td>
+                              <td style={{ padding:"10px 12px", fontSize:11, color:C.textMid }}>
+                                {inf ? <span style={{fontWeight:600,color:C.text}}>{inf.creator}</span> : <span style={{color:C.textLight}}>—</span>}
+                              </td>
+                              <td style={{ padding:"8px 18px", textAlign:"center" }}>
+                                {inf ? (
+                                  <div style={{display:"flex", alignItems:"center", justifyContent:"center", gap:6}}>
+                                    <span style={{padding:"3px 8px", background:"#E8F5E9", color:"#2E7D32", borderRadius:12, fontSize:10, fontWeight:800, letterSpacing:"0.04em"}}>✓ CREADO</span>
+                                    {blobUrl && (
+                                      <button title="Ver informe" onClick={()=>window.open(blobUrl,"_blank")} style={{width:28,height:28,background:"#EEF4FF",border:"1px solid #C8D8EE",borderRadius:6,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>👁</button>
+                                    )}
+                                    <button title="Editar / Recrear" onClick={()=>{ resetWizard(); setWizEnt(e); setWizStep(2); setView("crear"); }} style={{width:28,height:28,background:"#FFF8E1",border:"1px solid #FFD54F",borderRadius:6,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
+                                    <button title="Eliminar registro" onClick={()=>{ if(window.confirm(`¿Eliminar el registro de informe de ${e.siglas}?`)) eliminarInforme(e.nombre); }} style={{width:28,height:28,background:"#FFF0F0",border:"1px solid #F0C0C0",borderRadius:6,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
+                                  </div>
+                                ) : (
+                                  <button onClick={()=>{ resetWizard(); setWizEnt(e); setWizStep(2); setView("crear"); }} style={{ padding:"6px 14px", background:"#1B2F4E", color:"white", border:"none", borderRadius:7, fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
+                                    + Crear Informe
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           );

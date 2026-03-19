@@ -1698,30 +1698,84 @@ function Entidades({ user }) {
   const [wizBlobData, setWizBlobData] = useState(null); // {base64, filename}
   const [wizLoadPhase, setWizLoadPhase] = useState(0);
   const resetWizard = () => { setWizStep(1); setWizEnt(null); setWizPeriodo(null); setWizFile(null); setWizSearch(""); setWizContexto(""); setWizExtraSlides([]); setWizStatus(null); setWizErrMsg(""); setWizPreview(null); setWizBlobData(null); setWizLoadPhase(0); };
-  // ── Registro de informes creados (persiste en localStorage) ──
-  const [informesCreados, setInformesCreados] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('pananomics_informes') || '{}'); } catch { return {}; }
-  });
+  // ── Registro de informes creados (Supabase) ──
+  const [informesCreados, setInformesCreados] = useState({});
   const [informeBlobs, setInformeBlobs] = useState({});
-  const saveInformeCreado = (entNombre, blobData, periodo, creatorName) => {
+  const [guardando, setGuardando] = useState(false);
+  const [guardadoOk, setGuardadoOk] = useState(false);
+
+  // Cargar informes guardados desde Supabase al montar
+  useEffect(() => {
+    sbQuery("informes_monitoreo", "select=id,nombre_entidad,siglas,periodo,fecha_creacion,creador,filename,pptx_base64&order=fecha_creacion.desc")
+      .then(rows => {
+        if (!rows?.length) return;
+        const map = {};
+        const blobs = {};
+        rows.forEach(r => {
+          map[r.nombre_entidad] = { id: r.id, fecha: r.fecha_creacion, creator: r.creador, periodo: r.periodo, filename: r.filename };
+          if (r.pptx_base64) {
+            try {
+              const blob = new Blob([Uint8Array.from(atob(r.pptx_base64.replace(/\s/g,"")), c=>c.charCodeAt(0))], {type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
+              blobs[r.nombre_entidad] = URL.createObjectURL(blob);
+            } catch {}
+          }
+        });
+        setInformesCreados(map);
+        setInformeBlobs(blobs);
+      }).catch(() => {});
+  }, []);
+
+  const guardarInforme = async (entNombre, siglas, blobData, periodo, creatorName) => {
+    setGuardando(true);
     const periodoStr = periodo ? (periodo.tipo==="trimestral" ? `${periodo.opcion} ${periodo.anio}` : `${periodo.opcion==="1S"?"1er Sem.":"2do Sem."} ${periodo.anio}`) : "";
-    const entry = { fecha: new Date().toISOString(), creator: creatorName || "Admin", periodo: periodoStr, filename: blobData?.filename || "" };
-    const newMap = { ...informesCreados, [entNombre]: entry };
-    setInformesCreados(newMap);
-    try { localStorage.setItem('pananomics_informes', JSON.stringify(newMap)); } catch {}
+    // Eliminar registro anterior si existe
+    const existing = informesCreados[entNombre];
+    if (existing?.id) {
+      await fetch(`${SUPABASE_URL}/rest/v1/informes_monitoreo?id=eq.${existing.id}`, {
+        method:"DELETE", headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`}
+      }).catch(()=>{});
+    }
+    const payload = { nombre_entidad: entNombre, siglas, periodo: periodoStr, creador: creatorName || "Admin", filename: blobData?.filename || "", pptx_base64: blobData?.base64 || "" };
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/informes_monitoreo`, {
+      method:"POST", headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Content-Type":"application/json","Prefer":"return=representation"},
+      body: JSON.stringify(payload)
+    }).catch(()=>null);
+    if (res?.ok) {
+      const [saved] = await res.json().catch(()=>[{}]);
+      const entry = { id: saved?.id, fecha: saved?.fecha_creacion || new Date().toISOString(), creator: creatorName || "Admin", periodo: periodoStr, filename: blobData?.filename || "" };
+      setInformesCreados(prev => ({ ...prev, [entNombre]: entry }));
+      if (blobData?.base64) {
+        try {
+          const blob = new Blob([Uint8Array.from(atob(blobData.base64.replace(/\s/g,"")), c=>c.charCodeAt(0))], {type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
+          setInformeBlobs(prev => ({ ...prev, [entNombre]: URL.createObjectURL(blob) }));
+        } catch {}
+      }
+      setGuardadoOk(true);
+    }
+    setGuardando(false);
+  };
+
+  const eliminarInforme = async (entNombre) => {
+    const existing = informesCreados[entNombre];
+    if (existing?.id) {
+      await fetch(`${SUPABASE_URL}/rest/v1/informes_monitoreo?id=eq.${existing.id}`, {
+        method:"DELETE", headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`}
+      }).catch(()=>{});
+    }
+    setInformesCreados(prev => { const n={...prev}; delete n[entNombre]; return n; });
+    setInformeBlobs(prev => { const n={...prev}; delete n[entNombre]; return n; });
+  };
+
+  const saveInformeCreado = (entNombre, blobData, periodo, creatorName) => {
+    // Mantener compatibilidad: solo actualiza estado local al descargar (sin guardar en BD)
+    const periodoStr = periodo ? (periodo.tipo==="trimestral" ? `${periodo.opcion} ${periodo.anio}` : `${periodo.opcion==="1S"?"1er Sem.":"2do Sem."} ${periodo.anio}`) : "";
+    setInformesCreados(prev => ({ ...prev, [entNombre]: { fecha: new Date().toISOString(), creator: creatorName||"Admin", periodo: periodoStr, filename: blobData?.filename||"" } }));
     if (blobData?.base64) {
       try {
         const blob = new Blob([Uint8Array.from(atob(blobData.base64.replace(/\s/g,"")), c=>c.charCodeAt(0))], {type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
         setInformeBlobs(prev => ({ ...prev, [entNombre]: URL.createObjectURL(blob) }));
       } catch {}
     }
-  };
-  const eliminarInforme = (entNombre) => {
-    const newMap = { ...informesCreados };
-    delete newMap[entNombre];
-    setInformesCreados(newMap);
-    try { localStorage.setItem('pananomics_informes', JSON.stringify(newMap)); } catch {}
-    setInformeBlobs(prev => { const n={...prev}; delete n[entNombre]; return n; });
   };
   // Helper: etiqueta del período seleccionado
   const periodoLabel = (p) => {
@@ -2424,12 +2478,29 @@ function Entidades({ user }) {
                       <div style={{ textAlign:"center", padding:"20px 0" }}>
                         <div style={{ fontSize:48, marginBottom:16 }}>✅</div>
                         <div style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:8 }}>¡Informe generado!</div>
-                        <div style={{ fontSize:12, color:C.textMid, marginBottom:24, lineHeight:1.6 }}>
-                          El archivo <strong>{wizBlobData?.filename || `${wizEnt.siglas}_${wizPeriodo?.opcion}_${wizPeriodo?.anio}.pptx`}</strong> se descargó automáticamente.
+                        <div style={{ fontSize:12, color:C.textMid, marginBottom:20, lineHeight:1.6 }}>
+                          El archivo <strong>{wizBlobData?.filename || `${wizEnt?.siglas}_${wizPeriodo?.opcion}_${wizPeriodo?.anio}.pptx`}</strong> se descargó automáticamente.
+                        </div>
+                        {/* Botón GUARDAR */}
+                        <div style={{ background:"#EEF4FF", border:"1px solid #C8D8EE", borderRadius:12, padding:"16px 24px", marginBottom:20, display:"inline-block", minWidth:340 }}>
+                          <div style={{ fontSize:12, color:"#1B2F4E", marginBottom:12, fontWeight:600 }}>¿Deseas guardar este informe en la plataforma?</div>
+                          {guardadoOk ? (
+                            <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 0" }}>
+                              <span style={{ fontSize:20 }}>💾</span>
+                              <span style={{ fontSize:14, fontWeight:700, color:"#2E7D32" }}>Informe guardado correctamente</span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={()=>{ setGuardadoOk(false); guardarInforme(wizEnt?.nombre, wizEnt?.siglas, wizBlobData, wizPeriodo, user?.name); }}
+                              disabled={guardando}
+                              style={{ padding:"10px 32px", background: guardando?"#8899AA":"#1B2F4E", color:"white", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor: guardando?"wait":"pointer", display:"flex", alignItems:"center", gap:8, margin:"0 auto" }}>
+                              {guardando ? <>⏳ Guardando...</> : <>💾 GUARDAR INFORME</>}
+                            </button>
+                          )}
                         </div>
                         <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-                          <button onClick={()=>{ resetWizard(); setView("lista"); }} style={{ padding:"9px 22px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>Volver al repositorio</button>
-                          <button onClick={()=>resetWizard()} style={{ padding:"9px 22px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>+ Nuevo informe</button>
+                          <button onClick={()=>{ setGuardadoOk(false); resetWizard(); setView("lista"); }} style={{ padding:"9px 22px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:600, color:C.textMid, cursor:"pointer" }}>Volver al repositorio</button>
+                          <button onClick={()=>{ setGuardadoOk(false); resetWizard(); }} style={{ padding:"9px 22px", background:C.navInformes, color:"white", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>+ Nuevo informe</button>
                         </div>
                       </div>
                     )}

@@ -23,7 +23,7 @@ export default function UserProfilePanel({
 
   useEffect(() => {
     if (!open) return;
-    fetch(`${supabaseUrl}/rest/v1/profiles?select=nombre_completo,username,cargo,institucion,avatar_url,permisos&limit=1`, {
+    fetch(`${supabaseUrl}/rest/v1/profiles?select=*&limit=1`, {
       headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
     })
       .then(r => r.json())
@@ -187,36 +187,36 @@ export default function UserProfilePanel({
           </div>
 
           {/* Nombre y username — solo lectura */}
-          <div style={{ textAlign: "center", marginBottom: 16 }}>
+          <div style={{ textAlign: "center", marginBottom: 14 }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: "#1B2F4E", lineHeight: 1.3 }}>
               {fullName || "—"}
             </div>
-            {displayUser && (
-              <div style={{ fontSize: 12, color: "#8B9BB4", marginTop: 2 }}>{displayUser}</div>
-            )}
+            <div style={{ fontSize: 12, color: "#8B9BB4", marginTop: 2 }}>
+              {displayUser || `@${(user?.name || "usuario").toLowerCase().replace(/\s/g,"")}`}
+            </div>
           </div>
 
-          {/* Cargo e institución — solo lectura, visual prominente */}
-          {(profile?.cargo || profile?.institucion) && (
-            <div style={{
-              background: "#F4F0FC", border: "1px solid #D8C8F0",
-              borderRadius: 10, padding: "10px 12px", marginBottom: 14,
-              display: "flex", flexDirection: "column", gap: 4,
-            }}>
-              {profile?.cargo && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 13 }}>💼</span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "#4A3578" }}>{profile.cargo}</span>
-                </div>
-              )}
-              {profile?.institucion && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 13 }}>🏛</span>
-                  <span style={{ fontSize: 11, color: "#6B5B8A" }}>{profile.institucion}</span>
-                </div>
-              )}
+          {/* Cargo e institución — siempre visible, solo lectura */}
+          <div style={{
+            background: "#F4F0FC", border: "1px solid #D8C8F0",
+            borderRadius: 10, padding: "10px 12px", marginBottom: 14,
+            display: "flex", flexDirection: "column", gap: 6,
+          }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 7 }}>
+              <span style={{ fontSize: 14, marginTop: 1 }}>💼</span>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#9B8BB4", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 1 }}>Cargo</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#4A3578" }}>{profile?.cargo || "—"}</div>
+              </div>
             </div>
-          )}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 7 }}>
+              <span style={{ fontSize: 14, marginTop: 1 }}>🏛</span>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#9B8BB4", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 1 }}>Institución</div>
+                <div style={{ fontSize: 11, color: "#6B5B8A", lineHeight: 1.4 }}>{profile?.institucion || "—"}</div>
+              </div>
+            </div>
+          </div>
 
           {/* Divider */}
           <div style={{ height: 1, background: "#EEF2F8", margin: "0 -4px 14px" }} />

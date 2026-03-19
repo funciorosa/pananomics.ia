@@ -21,6 +21,7 @@ export default function UserProfilePanel({
 
   useEffect(() => { setLocalAvatar(avatarUrl || null); }, [avatarUrl]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open) return;
     fetch(`${supabaseUrl}/rest/v1/profiles?select=cargo,institucion,avatar_url,permisos&limit=1`, {
@@ -37,7 +38,7 @@ export default function UserProfilePanel({
         }
       })
       .catch(() => {});
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open]); // solo re-fetch cuando abre el panel
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];

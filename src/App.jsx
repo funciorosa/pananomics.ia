@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, createContext, useContext } from "react";
+import UserProfilePanel from "./components/UserProfilePanel";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, LineChart, AreaChart, Area, ScatterChart, Scatter } from "recharts";
@@ -482,6 +483,8 @@ function Login({ onLogin }) {
 
 // ── SIDEBAR ───────────────────────────────────────────────────────────────────
 function Sidebar({ active, setActive, user, onLogout }) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(null);
   const nav = [
     { id:"chat",      emoji:"✦", label:"Panamita IA",  color:C.navChat },
     { id:"dashboard", emoji:"📊", label:"Dashboard",    color:C.navDash },
@@ -511,20 +514,35 @@ function Sidebar({ active, setActive, user, onLogout }) {
           </button>
         ))}
       </nav>
-      <div style={{ padding:"12px 14px", borderTop:`1px solid ${C.sidebarBorder}` }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-          <div style={{ width:28, height:28, borderRadius:"50%", background:`linear-gradient(135deg,${C.headerBg},${C.gold})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:"white", flexShrink:0 }}>{user.name[0]}</div>
-          <div>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text }}>{user.name}</div>
+      <div style={{ padding:"10px 12px", borderTop:`1px solid ${C.sidebarBorder}` }}>
+        <div
+          onClick={() => setProfileOpen(true)}
+          style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", borderRadius:8, padding:"6px 6px", transition:"background 0.15s" }}
+          onMouseEnter={e => e.currentTarget.style.background = C.sidebarBorder + "60"}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+        >
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" style={{ width:30, height:30, borderRadius:"50%", objectFit:"cover", flexShrink:0, border:`2px solid ${C.gold}` }} />
+          ) : (
+            <div style={{ width:30, height:30, borderRadius:"50%", background:`linear-gradient(135deg,${C.headerBg},${C.gold})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:"white", flexShrink:0 }}>{user.name[0]}</div>
+          )}
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{user.name}</div>
             <div style={{ fontSize:10, color:C.textLight }}>{user.role}</div>
           </div>
+          <div style={{ fontSize:12, color:C.textLight, flexShrink:0 }}>⚙</div>
         </div>
-        <button onClick={onLogout} style={{ width:"100%", padding:"5px", background:"transparent", border:`1px solid ${C.border}`, borderRadius:6, color:C.textLight, fontSize:11, cursor:"pointer" }}
-          onMouseEnter={e=>{e.currentTarget.style.borderColor=C.red;e.currentTarget.style.color=C.red;}}
-          onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textLight;}}>
-          Cerrar sesión
-        </button>
       </div>
+      <UserProfilePanel
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        user={user}
+        onLogout={onLogout}
+        supabaseUrl={SUPABASE_URL}
+        supabaseKey={SUPABASE_KEY}
+        avatarUrl={avatarUrl}
+        onAvatarChange={setAvatarUrl}
+      />
     </div>
   );
 }
@@ -2455,6 +2473,7 @@ function Entidades({ user }) {
                             <div style={{display:"flex",gap:8}}>
                               <button onClick={()=>setWizStatus(null)} style={{padding:"7px 16px",background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,fontSize:12,fontWeight:600,color:C.textMid,cursor:"pointer"}}>← Volver</button>
                               <button onClick={()=>{const blob=new Blob([Uint8Array.from(atob(wizBlobData.base64),c=>c.charCodeAt(0))],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=wizBlobData.filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);saveInformeCreado(wizEnt?.nombre,wizBlobData,wizPeriodo,user?.name);setWizStatus("ok");}} style={{padding:"7px 22px",background:NAV,color:"white",border:"none",borderRadius:7,fontSize:13,fontWeight:700,cursor:"pointer"}}>⬇ Descargar PPTX</button>
+                              <button onClick={async()=>{ await guardarInforme(wizEnt?.nombre, wizEnt?.siglas, wizBlobData, wizPeriodo, user?.name); resetWizard(); }} disabled={guardando} style={{padding:"7px 22px",background:guardando?"#8899AA":"#0F8B4E",color:"white",border:"none",borderRadius:7,fontSize:13,fontWeight:700,cursor:guardando?"wait":"pointer"}}>{guardando?"⏳ Guardando...":"💾 Guardar y Cerrar"}</button>
                             </div>
                           </div>
                           {pvSlides.map((slide)=>{

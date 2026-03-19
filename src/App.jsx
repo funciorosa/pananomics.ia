@@ -820,37 +820,56 @@ function Dashboard() {
     const slope = xs.reduce((s, x, i) => s + (x - xMean) * (ys[i] - yMean), 0) /
                   xs.reduce((s, x) => s + (x - xMean) ** 2, 0);
     const intercept = yMean - slope * xMean;
-    const resid = ys.map((y, i) => y - (slope * xs[i] + intercept));
-    const stdRes = Math.sqrt(resid.reduce((s, r) => s + r * r, 0) / Math.max(n - 2, 1));
-    const gRates = [];
-    for (let i = 1; i < h.length; i++) {
-      if (h[i - 1].Modificado > 0) gRates.push((h[i].Modificado - h[i - 1].Modificado) / h[i - 1].Modificado);
+    const gRates5 = [];
+    const h5 = h.slice(-5);
+    for (let i = 1; i < h5.length; i++) {
+      if (h5[i - 1].Modificado > 0) gRates5.push((h5[i].Modificado - h5[i - 1].Modificado) / h5[i - 1].Modificado);
     }
-    const avgGrowth = gRates.length ? gRates.reduce((a, b) => a + b, 0) / gRates.length : 0;
-    const avgEje = h.slice(-5).filter(d => d.Ejecucion > 0).reduce((s, d) => s + d.Ejecucion, 0) /
-                   Math.max(1, h.slice(-5).filter(d => d.Ejecucion > 0).length);
-    const proj2028Base = +(slope * 2028 + intercept).toFixed(2);
-    const proj2028Opt  = +(slope * 2028 + intercept + stdRes * 1.28).toFixed(2);
-    const proj2028Cons = +(slope * 2028 + intercept - stdRes * 1.28).toFixed(2);
-    const risks = [];
-    if (avgEje < 70) risks.push("baja ejecución histórica promedio");
-    if (stdRes / yMean > 0.15) risks.push("alta variabilidad presupuestaria");
-    if (avgGrowth < 0) risks.push("tendencia de crecimiento negativa");
-    if (h[h.length - 1]?.Ejecucion < 60) risks.push("ejecución del último año inferior al 60%");
-    const riskText = risks.length ? `Factores de riesgo detectados: ${risks.join(", ")}.` : "No se detectaron factores de riesgo significativos.";
-    const prompt = `Eres Panamita, analista presupuestaria del gobierno de Panamá. Analiza las siguientes proyecciones para ${entidad}:
-- Tendencia histórica: crecimiento anual promedio del ${(avgGrowth * 100).toFixed(1)}%, con desviación estándar de residuales de B/. ${stdRes.toFixed(1)}M.
-- Proyección 2028: Escenario base B/. ${proj2028Base}M, optimista B/. ${proj2028Opt}M, conservador B/. ${proj2028Cons}M.
-- Ejecución promedio últimos 5 años: ${avgEje.toFixed(1)}%.
-- ${riskText}
-Redacta un análisis ejecutivo breve (3-4 párrafos) explicando: (1) la tendencia observada, (2) qué significan los tres escenarios, (3) recomendaciones clave de política presupuestaria. Usa lenguaje profesional pero accesible. No uses títulos, solo prosa continua.`;
+    const avgGrowth5 = gRates5.length ? gRates5.reduce((a, b) => a + b, 0) / gRates5.length : 0;
+    const ejeVals = h.filter(d => d.Ejecucion > 0).map(d => d.Ejecucion);
+    const avgEje = ejeVals.length ? ejeVals.reduce((a, b) => a + b, 0) / ejeVals.length : 0;
+    const stdEje = ejeVals.length > 1
+      ? Math.sqrt(ejeVals.reduce((s, e) => s + (e - avgEje) ** 2, 0) / ejeVals.length)
+      : 0;
+    const ejeRecent = h.slice(-3).filter(d => d.Ejecucion > 0).map(d => d.Ejecucion);
+    const avgEjeRecent = ejeRecent.length ? ejeRecent.reduce((a, b) => a + b, 0) / ejeRecent.length : avgEje;
+    const tendency = avgEjeRecent > avgEje + 2 ? "mejorando" : avgEjeRecent < avgEje - 2 ? "deteriorando" : "estable";
+    const proj26 = +(slope * 2026 + intercept).toFixed(2);
+    const proj27 = +(slope * 2027 + intercept).toFixed(2);
+    const proj28 = +(slope * 2028 + intercept).toFixed(2);
+    const ejeBase = +Math.min(98, Math.max(50, avgEje)).toFixed(1);
+    const modArr = h.map(d => `${d.year}: B/. ${d.Modificado}M`).join(", ");
+    const ejeArr = h.map(d => `${d.year}: ${d.Ejecucion}%`).join(", ");
+    const systemMsg = "Eres Panamita IA, asistente de análisis presupuestario de PANANOMICS.IA (MEF-DIPRENA). Generas análisis concisos en español formal panameño. Máximo 250 palabras en total. Usas terminología de PbR.";
+    const userMsg = `Analiza la proyección presupuestaria de ${entidad}.
+
+Datos históricos 2016–2025:
+- Presupuesto modificado por año: ${modArr}
+- Tasa de ejecución por año: ${ejeArr}
+- Crecimiento promedio anual (5 años): ${(avgGrowth5 * 100).toFixed(1)}%
+- Ejecución promedio histórica: ${avgEje.toFixed(1)}%
+- Tendencia de ejecución: ${tendency}
+- Desviación estándar de ejecución: ${stdEje.toFixed(1)}%
+
+Proyección escenario base 2026–2028:
+- 2026: B/. ${proj26}M | Ejecución estimada: ${ejeBase}%
+- 2027: B/. ${proj27}M
+- 2028: B/. ${proj28}M
+
+Genera el análisis con exactamente estas 4 secciones usando headers en negrita:
+**Comportamiento histórico** (2-3 oraciones)
+**Escenario base** (2-3 oraciones explicando por qué ese crecimiento es plausible)
+**Factores de riesgo** (2-3 bullets con ⚠)
+**Recomendaciones de seguimiento** (2-3 bullets con →)
+
+No incluyas disclaimers. Sé directo y específico con los números.`;
     let cancelled = false;
     setProyAnalisis("");
     setProyAnalisisLoading(true);
     fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 900, messages: [{ role: "user", content: prompt }] }),
+      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 900, system: systemMsg, messages: [{ role: "user", content: userMsg }] }),
     })
       .then(r => r.json())
       .then(d => { if (!cancelled) { setProyAnalisis(d.content?.[0]?.text || "No se pudo generar el análisis."); setProyAnalisisEntidad(entidad); setProyAnalisisLoading(false); } })
@@ -953,75 +972,127 @@ Redacta un análisis ejecutivo breve (3-4 párrafos) explicando: (1) la tendenci
               if (h[i - 1].Modificado > 0) gRates.push((h[i].Modificado - h[i - 1].Modificado) / h[i - 1].Modificado);
             }
             const avgGrowth = gRates.length ? gRates.reduce((a, b) => a + b, 0) / gRates.length : 0;
+            // Execution rate stats
+            const ejeVals = h.filter(d => d.Ejecucion > 0).map(d => d.Ejecucion);
+            const avgEjeAll = ejeVals.length ? ejeVals.reduce((a, b) => a + b, 0) / ejeVals.length : 75;
+            const stdEje = ejeVals.length > 1
+              ? Math.sqrt(ejeVals.reduce((s, e) => s + (e - avgEjeAll) ** 2, 0) / ejeVals.length)
+              : 5;
+            const ejeBase = +Math.min(98, Math.max(50, avgEjeAll)).toFixed(1);
+            const ejeOpt  = +Math.min(98, Math.max(50, avgEjeAll + 0.5 * stdEje)).toFixed(1);
+            const ejeCons = +Math.min(98, Math.max(50, avgEjeAll - 0.5 * stdEje)).toFixed(1);
+            const ejeByScenario = { Base: ejeBase, Optimista: ejeOpt, Conservador: ejeCons };
+            // Projections with ejecutado estimado
             const projYears = [2026, 2027, 2028];
-            const proj = projYears.map(y => ({
-              year: y,
-              Base: +Math.max(0, slope * y + intercept).toFixed(2),
-              Optimista: +Math.max(0, slope * y + intercept + stdRes * 1.28).toFixed(2),
-              Conservador: +Math.max(0, slope * y + intercept - stdRes * 1.28).toFixed(2),
-            }));
+            const proj = projYears.map(y => {
+              const base = +Math.max(0, slope * y + intercept).toFixed(2);
+              const opt  = +Math.max(0, slope * y + intercept + stdRes * 1.28).toFixed(2);
+              const cons = +Math.max(0, slope * y + intercept - stdRes * 1.28).toFixed(2);
+              return {
+                year: y,
+                Base: base,        BaseEje:  +(base * ejeBase / 100).toFixed(2),
+                Optimista: opt,    OptimistaEje: +(opt  * ejeOpt  / 100).toFixed(2),
+                Conservador: cons, ConservadorEje: +(cons * ejeCons / 100).toFixed(2),
+              };
+            });
             const chartData = [
               ...h.map(d => ({ year: d.year, "Histórico": d.Modificado, "Ejecutado": d.Ejecutado })),
-              ...proj.map(p => ({ year: p.year, Base: p.Base, Optimista: p.Optimista, Conservador: p.Conservador })),
+              ...proj.map(p => ({
+                year: p.year,
+                Base: p.Base, BaseEje: p.BaseEje,
+                Optimista: p.Optimista, OptimistaEje: p.OptimistaEje,
+                Conservador: p.Conservador, ConservadorEje: p.ConservadorEje,
+              })),
             ];
+            // Last 5yr avg for KPI semaphore
             const last5Eje = h.slice(-5).filter(d => d.Ejecucion > 0);
-            const avgEje = last5Eje.length ? last5Eje.reduce((s, d) => s + d.Ejecucion, 0) / last5Eje.length : 0;
-            const maxMod = Math.max(...ys);
-            const maxYear = h.find(d => d.Modificado === maxMod)?.year || "—";
+            const avgEje5 = last5Eje.length ? last5Eje.reduce((s, d) => s + d.Ejecucion, 0) / last5Eje.length : 0;
+            const semaforo = avgEje5 >= 90 ? "🟢" : avgEje5 >= 75 ? "🟡" : "🔴";
             const totalExec = h.reduce((s, d) => s + d.Ejecutado, 0);
-            const risks = [];
-            if (avgEje < 70) risks.push("Baja ejecución histórica (< 70%)");
-            if (stdRes / yMean > 0.15) risks.push("Alta variabilidad presupuestaria");
-            if (avgGrowth < 0) risks.push("Tendencia de crecimiento negativa");
-            if (h.length < 5) risks.push("Pocos años de datos disponibles");
-            if ((h[h.length - 1]?.Ejecucion || 0) < 60) risks.push("Ejecución del último año inferior al 60%");
-            if (risks.length === 0) risks.push("Sin factores de riesgo significativos detectados");
             const CP = { base: "#6C3FA0", opt: "#059669", cons: "#DC2626" };
             return (
               <div>
+                {/* ── Chart ── */}
                 <div style={{ background:C.white, borderRadius:14, padding:"20px 24px", border:`1px solid ${C.border}`, marginBottom:16 }}>
                   <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:2 }}>Proyección Presupuestaria 2026–2028</div>
-                  <div style={{ fontSize:12, color:C.textMid, marginBottom:16 }}>{entidad} · Regresión lineal sobre datos históricos · Tres escenarios</div>
-                  <ResponsiveContainer width="100%" height={340}>
-                    <ComposedChart data={chartData} margin={{ top:10, right:40, left:10, bottom:5 }}>
+                  <div style={{ fontSize:12, color:C.textMid, marginBottom:16 }}>{entidad} · Regresión lineal · Tres escenarios + ejecutado estimado</div>
+                  <ResponsiveContainer width="100%" height={360}>
+                    <ComposedChart data={chartData} margin={{ top:30, right:40, left:10, bottom:5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={C.border}/>
                       <XAxis dataKey="year" tick={{ fontSize:11 }}/>
                       <YAxis tick={{ fontSize:11 }} tickFormatter={v=>`${v}M`} label={{ value:"Millones B/.", angle:-90, position:"insideLeft", fontSize:10, fill:C.textMid }}/>
                       <Tooltip formatter={(v,nm)=>[`B/. ${v}M`, nm]} labelFormatter={l=>`Año ${l}`}/>
-                      <Legend wrapperStyle={{ fontSize:12 }}/>
+                      <Legend verticalAlign="top" align="left" iconSize={8} wrapperStyle={{ fontSize:11, paddingLeft:50, paddingBottom:8 }}/>
                       <ReferenceLine x={2025} stroke="#94a3b8" strokeDasharray="5 5" label={{ value:"Hoy", position:"insideTopRight", fontSize:10, fill:"#94a3b8" }}/>
-                      <Area type="monotone" dataKey="Histórico" fill={C.navDash} stroke={C.navDash} fillOpacity={0.12} name="Histórico (Mod.)"/>
-                      <Line type="monotone" dataKey="Ejecutado" stroke={C.eje} strokeWidth={2} dot={{ fill:C.eje, r:3 }} name="Ejecutado"/>
-                      <Line type="monotone" dataKey="Base" stroke={CP.base} strokeWidth={2.5} strokeDasharray="6 3" dot={{ fill:CP.base, r:4 }} name="Proyección Base"/>
-                      <Line type="monotone" dataKey="Optimista" stroke={CP.opt} strokeWidth={1.5} strokeDasharray="4 4" dot={{ fill:CP.opt, r:3 }} name="Esc. Optimista"/>
-                      <Line type="monotone" dataKey="Conservador" stroke={CP.cons} strokeWidth={1.5} strokeDasharray="4 4" dot={{ fill:CP.cons, r:3 }} name="Esc. Conservador"/>
+                      <Area type="monotone" dataKey="Histórico" fill={C.navDash} stroke={C.navDash} fillOpacity={0.12} name="Histórico (Mod.)" legendType="square"/>
+                      <Line type="monotone" dataKey="Ejecutado" stroke={C.eje} strokeWidth={2} dot={{ fill:C.eje, r:3 }} name="Ejecutado hist." legendType="circle"/>
+                      <Line type="monotone" dataKey="Base" stroke={CP.base} strokeWidth={2.5} strokeDasharray="6 3" dot={{ fill:CP.base, r:4 }} name="Base (Mod.)" legendType="circle"/>
+                      <Line type="monotone" dataKey="BaseEje" stroke={CP.base} strokeWidth={1.5} strokeDasharray="3 4" dot={{ fill:CP.base, r:2 }} opacity={0.5} name="Base (Eje.)" legendType="circle"/>
+                      <Line type="monotone" dataKey="Optimista" stroke={CP.opt} strokeWidth={1.5} strokeDasharray="4 4" dot={{ fill:CP.opt, r:3 }} name="Optimista (Mod.)" legendType="circle"/>
+                      <Line type="monotone" dataKey="OptimistaEje" stroke={CP.opt} strokeWidth={1} strokeDasharray="2 4" dot={{ fill:CP.opt, r:2 }} opacity={0.45} name="Optimista (Eje.)" legendType="circle"/>
+                      <Line type="monotone" dataKey="Conservador" stroke={CP.cons} strokeWidth={1.5} strokeDasharray="4 4" dot={{ fill:CP.cons, r:3 }} name="Conservador (Mod.)" legendType="circle"/>
+                      <Line type="monotone" dataKey="ConservadorEje" stroke={CP.cons} strokeWidth={1} strokeDasharray="2 4" dot={{ fill:CP.cons, r:2 }} opacity={0.45} name="Conservador (Eje.)" legendType="circle"/>
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
+
+                {/* ── Scenario cards ── */}
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14, marginBottom:16 }}>
                   {[
-                    { label:"Escenario Conservador", key:"Conservador", color:CP.cons, bg:"#FEF2F2", desc:"Ajuste fiscal o menor crecimiento esperado" },
-                    { label:"Escenario Base", key:"Base", color:CP.base, bg:"#F4F0FC", desc:"Tendencia histórica sostenida" },
-                    { label:"Escenario Optimista", key:"Optimista", color:CP.opt, bg:"#ECFDF5", desc:"Mayor inversión o crecimiento robusto" },
+                    { label:"Escenario Conservador", key:"Conservador", ejeKey:"ConservadorEje", ejeRate:ejeCons, color:CP.cons, bg:"#FEF2F2", desc:"Ajuste fiscal o menor crecimiento esperado" },
+                    { label:"Escenario Base",        key:"Base",        ejeKey:"BaseEje",        ejeRate:ejeBase, color:CP.base, bg:"#F4F0FC", desc:"Tendencia histórica sostenida" },
+                    { label:"Escenario Optimista",   key:"Optimista",   ejeKey:"OptimistaEje",   ejeRate:ejeOpt,  color:CP.opt,  bg:"#ECFDF5", desc:"Mayor inversión o crecimiento robusto" },
                   ].map(sc => (
                     <div key={sc.key} style={{ background:sc.bg, borderRadius:12, padding:"16px 18px", border:`1.5px solid ${sc.color}30` }}>
                       <div style={{ fontSize:10, fontWeight:800, color:sc.color, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>{sc.label}</div>
                       {proj.map(p => (
-                        <div key={p.year} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
-                          <span style={{ fontSize:11, color:"#64748b" }}>{p.year}</span>
-                          <span style={{ fontSize:13, fontWeight:700, color:sc.color }}>B/. {p[sc.key]}M</span>
+                        <div key={p.year} style={{ marginBottom:10 }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:2 }}>
+                            <span style={{ fontSize:11, color:"#64748b", fontWeight:600 }}>{p.year}</span>
+                            <span style={{ fontSize:13, fontWeight:700, color:sc.color }}>B/. {p[sc.key]}M</span>
+                          </div>
+                          <div style={{ fontSize:10, color:"#94a3b8" }}>
+                            Ejec. est.: <span style={{ fontWeight:600, color:sc.color }}>{ejeByScenario[sc.key]}%</span>
+                            &nbsp;·&nbsp;Ejecutado est.: <span style={{ fontWeight:600, color:sc.color }}>B/. {p[sc.ejeKey]}M</span>
+                          </div>
                         </div>
                       ))}
-                      <div style={{ fontSize:10, color:"#94a3b8", marginTop:8, borderTop:`1px solid ${sc.color}20`, paddingTop:6 }}>{sc.desc}</div>
+                      <div style={{ fontSize:10, color:"#94a3b8", borderTop:`1px solid ${sc.color}20`, paddingTop:6 }}>{sc.desc}</div>
                     </div>
                   ))}
                 </div>
+
+                {/* ── Panamita IA Analysis ── */}
+                <div style={{ background:C.white, borderRadius:14, padding:"20px 24px", border:`1px solid ${C.border}`, marginBottom:16 }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <Panamita mood="default" size={28}/>
+                      <div style={{ fontSize:13, fontWeight:700, color:C.text }}>Análisis Panamita IA</div>
+                    </div>
+                    <button
+                      onClick={() => setProyRegen(p => p + 1)}
+                      style={{ fontSize:10, padding:"4px 12px", borderRadius:6, border:`1px solid ${C.border}`, background:C.bg, color:C.textMid, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}
+                    >↺ Regenerar</button>
+                  </div>
+                  {proyAnalisisLoading ? (
+                    <div style={{ display:"flex", alignItems:"center", gap:10, color:C.textMid, fontSize:12, padding:"12px 0" }}>
+                      <Panamita mood="thinking" size={36}/>
+                      <span>Panamita está analizando los datos históricos...</span>
+                    </div>
+                  ) : proyAnalisis && proyAnalisisEntidad === entidad ? (
+                    <div style={{ fontSize:12, color:"#374151", lineHeight:1.8, whiteSpace:"pre-wrap" }}>{proyAnalisis}</div>
+                  ) : (
+                    <div style={{ fontSize:12, color:C.textMid }}>El análisis se generará automáticamente al activar esta pestaña.</div>
+                  )}
+                </div>
+
+                {/* ── KPI strip ── */}
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:16 }}>
                   {[
-                    { label:"PROM. EJECUCIÓN", value:`${avgEje.toFixed(1)}%`, sub:"Últimos 5 años", color:col(avgEje) },
-                    { label:"MAYOR PRESUPUESTO", value:`B/. ${maxMod}M`, sub:`Año ${maxYear}`, color:C.navDash },
+                    { label:"PROM. EJECUCIÓN HIST.", value:`${semaforo} ${avgEje5.toFixed(1)}%`, sub:"Últimos 5 años", color:col(avgEje5) },
+                    { label:"PROM. EJE. PROYECTADA", value:`${ejeBase}%`, sub:"Escenario base 2026–28", color:CP.base },
                     { label:"TENDENCIA ANUAL", value:`${avgGrowth>=0?"+":""}${(avgGrowth*100).toFixed(1)}%`, sub:"Crecimiento promedio", color:avgGrowth>=0?CP.opt:CP.cons },
-                    { label:"TOTAL EJECUTADO", value:`B/. ${totalExec.toFixed(0)}M`, sub:"Acumulado histórico", color:C.teal },
+                    { label:"TOTAL EJECUTADO HIST.", value:`B/. ${totalExec.toFixed(0)}M`, sub:"Acumulado 2016–2025", color:C.teal },
                   ].map(m => (
                     <div key={m.label} style={{ background:C.white, borderRadius:10, padding:"12px 14px", border:`1px solid ${C.border}`, borderTop:`3px solid ${m.color}` }}>
                       <div style={{ fontSize:9, fontWeight:700, color:C.textMid, letterSpacing:"0.08em", marginBottom:4 }}>{m.label}</div>
@@ -1030,37 +1101,10 @@ Redacta un análisis ejecutivo breve (3-4 párrafos) explicando: (1) la tendenci
                     </div>
                   ))}
                 </div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 2fr", gap:14, marginBottom:16 }}>
-                  <div style={{ background:C.white, borderRadius:12, padding:"16px 18px", border:`1px solid ${C.border}` }}>
-                    <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:10 }}>⚠️ Factores de Riesgo</div>
-                    {risks.map((r, i) => (
-                      <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:7, marginBottom:7 }}>
-                        <span style={{ fontSize:10, color:"#DC2626", marginTop:1 }}>●</span>
-                        <span style={{ fontSize:11, color:"#4a5568", lineHeight:1.4 }}>{r}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ background:C.white, borderRadius:12, padding:"16px 18px", border:`1px solid ${C.border}` }}>
-                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:C.text }}>🤖 Análisis Panamita IA</div>
-                      <button
-                        onClick={() => setProyRegen(p => p + 1)}
-                        style={{ fontSize:10, padding:"3px 10px", borderRadius:6, border:`1px solid ${C.border}`, background:C.bg, color:C.textMid, cursor:"pointer" }}
-                      >↻ Regenerar</button>
-                    </div>
-                    {proyAnalisisLoading ? (
-                      <div style={{ display:"flex", alignItems:"center", gap:8, color:C.textMid, fontSize:12 }}>
-                        <Panamita mood="thinking" size={32}/><span>Analizando proyecciones...</span>
-                      </div>
-                    ) : proyAnalisis && proyAnalisisEntidad === entidad ? (
-                      <div style={{ fontSize:12, color:"#374151", lineHeight:1.7, whiteSpace:"pre-wrap" }}>{proyAnalisis}</div>
-                    ) : (
-                      <div style={{ fontSize:12, color:C.textMid }}>El análisis se generará automáticamente al activar esta pestaña.</div>
-                    )}
-                  </div>
-                </div>
-                <div style={{ background:"#FFFBEB", borderRadius:10, padding:"10px 14px", border:"1px solid #FDE68A", fontSize:10, color:"#92400E" }}>
-                  ⚠️ <strong>Nota metodológica:</strong> Las proyecciones se calculan mediante regresión lineal sobre el presupuesto modificado histórico. Los escenarios optimista y conservador representan ±1.28 desviaciones estándar de los residuales. Estas son estimaciones indicativas y no constituyen proyecciones oficiales del Estado panameño.
+
+                {/* ── Disclaimer ── */}
+                <div style={{ fontSize:10, color:"#94a3b8", textAlign:"center", paddingBottom:4 }}>
+                  Proyección indicativa basada en regresión histórica. No sustituye la formulación presupuestaria oficial.
                 </div>
               </div>
             );

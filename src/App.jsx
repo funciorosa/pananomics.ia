@@ -3670,6 +3670,17 @@ Tengo acceso a **${ENTIDADES.length} entidades** (2016–2026), **34 documentos*
           objeto_gasto:    { type:"string",  description:"Objeto de gasto específico (ej: 'SUELDOS') (opcional)" }
         }
       }
+    },
+    {
+      name: "consultar_documentos",
+      description: "Busca documentos en la Biblioteca: Planes Estratégicos Institucionales (PEI), Planes Operativos Anuales (POA), normativa presupuestaria y planes sectoriales. Úsala cuando el usuario pregunte sobre objetivos estratégicos, metas institucionales, planificación, programas de una entidad, o cualquier documento de la Biblioteca. Devuelve título, resumen y tabla de contenidos del documento.",
+      input_schema: {
+        type: "object",
+        properties: {
+          busqueda: { type:"string", description:"Nombre de la entidad o palabras clave (ej: 'MEDUCA', 'MINSA', 'Órgano Judicial', 'salud', 'educación', 'presupuesto 2026')" }
+        },
+        required: ["busqueda"]
+      }
     }
   ];
 
@@ -3679,8 +3690,8 @@ BASE DE DATOS: Tienes acceso al presupuesto nacional de Panamá (2016–2026) co
 
 ENTIDADES DISPONIBLES: ${ENTIDADES.length} entidades públicas (Gobierno Central, Inst. Descentralizadas, Empresas Públicas, Intermediarios Financieros).
 
-${metaCtx ? metaCtx + "\n" : ""}BIBLIOTECA: 34 documentos (normativa presupuestaria + PEI/POA/Planes de 28 instituciones).
-${libCtx ? libCtx.slice(0, 2000) : ""}
+${metaCtx ? metaCtx + "\n" : ""}BIBLIOTECA: 34 documentos (normativa presupuestaria + PEI/POA/Planes de 28 instituciones). Cuando el usuario pregunte sobre planes estratégicos, POA, objetivos, metas o contenido de documentos institucionales, usa SIEMPRE la herramienta consultar_documentos antes de responder.
+${libCtx ? libCtx.slice(0, 1500) : ""}
 
 ESTILO DE RESPUESTA:
 Responde como un analista presupuestario experto hablando directamente con un colega. Sigue estas reglas sin excepción:
@@ -3739,6 +3750,40 @@ Responde como un analista presupuestario experto hablando directamente con un co
               return { type:"tool_result", tool_use_id:tb.id, content:`Word generado con ${json.filas} filas. Archivo: ${json.filename}` };
             }
             return { type:"tool_result", tool_use_id:tb.id, content: json.message || "Sin datos para los filtros indicados." };
+          }
+          if (tb.name === "consultar_documentos") {
+            const kw = (inp.busqueda || "").toLowerCase();
+            // Buscar en PEI_DOCS (estáticos)
+            const peiHits = PEI_DOCS.filter(d =>
+              d.titulo.toLowerCase().includes(kw) ||
+              d.titulo_corto.toLowerCase().includes(kw) ||
+              d.resumen_contexto.toLowerCase().includes(kw)
+            );
+            // Buscar en tabla documentos de Supabase
+            let dbHits = [];
+            try {
+              const allDocs = await sbQuery("documentos", "select=titulo,titulo_corto,categoria,anio,resumen_contexto,tabla_contenidos");
+              if (Array.isArray(allDocs)) {
+                dbHits = allDocs.filter(d =>
+                  (d.titulo||"").toLowerCase().includes(kw) ||
+                  (d.titulo_corto||"").toLowerCase().includes(kw) ||
+                  (d.resumen_contexto||"").toLowerCase().includes(kw)
+                );
+              }
+            } catch {}
+            const hits = [
+              ...peiHits.map(d => ({ titulo: d.titulo, categoria: d.categoria, anio: d.anio, resumen: d.resumen_contexto, tabla: null })),
+              ...dbHits.map(d => { let tabla = null; try { tabla = d.tabla_contenidos ? JSON.parse(d.tabla_contenidos) : null; } catch {} return { titulo: d.titulo, categoria: d.categoria, anio: d.anio, resumen: d.resumen_contexto, tabla }; })
+            ];
+            if (hits.length === 0) {
+              return { type:"tool_result", tool_use_id:tb.id, content:`No se encontraron documentos para "${inp.busqueda}" en la Biblioteca.` };
+            }
+            const content = hits.map(d => {
+              let txt = `📄 ${d.titulo} (${d.categoria || ""}, ${d.anio || ""})\n${d.resumen || ""}`;
+              if (Array.isArray(d.tabla) && d.tabla.length) txt += `\nÍndice/Contenidos: ${d.tabla.join(" · ")}`;
+              return txt;
+            }).join("\n\n");
+            return { type:"tool_result", tool_use_id:tb.id, content };
           }
           const rpcParams = {
             p_fuente:      inp.fuente_ingreso   || null,

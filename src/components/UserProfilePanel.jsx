@@ -21,7 +21,6 @@ export default function UserProfilePanel({
 
   useEffect(() => { setLocalAvatar(avatarUrl || null); }, [avatarUrl]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open) return;
     fetch(`${supabaseUrl}/rest/v1/profiles?select=cargo,institucion,avatar_url,permisos&limit=1`, {
@@ -31,14 +30,16 @@ export default function UserProfilePanel({
       .then(data => {
         if (Array.isArray(data) && data[0]) {
           setProfile(data[0]);
-          if (data[0].avatar_url && !localAvatar) {
-            setLocalAvatar(data[0].avatar_url);
-            onAvatarChange?.(data[0].avatar_url);
+          if (data[0].avatar_url) {
+            setLocalAvatar(prev => {
+              if (!prev) { onAvatarChange?.(data[0].avatar_url); return data[0].avatar_url; }
+              return prev;
+            });
           }
         }
       })
       .catch(() => {});
-  }, [open]); // solo re-fetch cuando abre el panel
+  }, [open, supabaseUrl, supabaseKey, onAvatarChange]);
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];

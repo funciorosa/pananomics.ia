@@ -3030,6 +3030,10 @@ function Historico() {
           {top3.map((r,i)=><KpiH key={i} label={`#${i+1} ${gYear}`} value={r.provincia_comarca} sub={`B/.${r.eje}M ejecutado`} accent={PCOLORS[i]}/>)}
         </div>
         <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`, marginBottom:16}}>
+          <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Mapa de Calor · Distribución por Provincia/Comarca — {gYear}</div>
+          <PanamaMap provincias={yearD.map(r=>({name:r.provincia_comarca, mod:+r.mod||0, eje:+r.eje||0, pct:+r.mod>0?+((+r.eje/+r.mod)*100).toFixed(1):null}))}/>
+        </div>
+        <div style={{background:DK.card, borderRadius:14, padding:20, border:`1px solid ${DK.border}`, marginBottom:16}}>
           <div style={{fontSize:12, fontWeight:700, color:DK.text, marginBottom:12}}>Ejecutado por Provincia — {gYear} (B/. millones)</div>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart layout="vertical" data={yearD.slice(0,15).map(r=>({name:r.provincia_comarca.slice(0,22), eje:+r.eje, mod:+r.mod}))} margin={{top:4,right:60,bottom:4,left:4}}>

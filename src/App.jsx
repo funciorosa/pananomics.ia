@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, createContext, useContext } from "react";
 import UserProfilePanel from "./components/UserProfilePanel";
+import DashboardEntidad from "./components/pbr/DashboardEntidad";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, LineChart, AreaChart, Area, ScatterChart, Scatter, ReferenceLine } from "recharts";
@@ -492,6 +493,7 @@ function Sidebar({ active, setActive, user, onLogout }) {
     { id:"informes",  emoji:"📋", label:"Informes",     color:C.navInformes },
     { id:"entidades", emoji:"🏛",  label:"Monitoreo",   color:C.navEntidades },
     { id:"biblioteca",emoji:"📚", label:"Biblioteca",   color:C.navBiblioteca },
+    { id:"pbr",       emoji:"📐", label:"PbR",          color:"#0d9488" },
   ];
   return (
     <div style={{ width:210, minHeight:"100vh", background:C.sidebarBg, display:"flex", flexDirection:"column", flexShrink:0, borderRight:`1px solid ${C.sidebarBorder}`, boxShadow:"2px 0 12px rgba(108,92,231,0.06)" }}>
@@ -4182,6 +4184,7 @@ export default function App() {
     informes: <Informes/>,
     entidades: <Entidades user={user}/>,
     biblioteca: <Biblioteca/>,
+    pbr: <DashboardEntidad/>,
   };
   return (
     <EntidadesCtx.Provider value={entidades}>

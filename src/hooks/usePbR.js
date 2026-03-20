@@ -8,7 +8,7 @@ export function useEntidadesPbR() {
   useEffect(() => {
     sbQuery(
       "pbr_entidades",
-      "select=codigo_entidad,nombre_entidad,siglas,anio_incorporacion,pct_presupuesto_resultados,pilares_peg_2025&eq.tiene_pbr=true&order=codigo_entidad"
+      "select=codigo_entidad,nombre_entidad,siglas,anio_incorporacion,pct_presupuesto_resultados,pilares_peg_2025&tiene_pbr=eq.true&order=codigo_entidad"
     )
       .then((data) => { setEntidades(data || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -28,13 +28,13 @@ export function useEntidadPbR(codigoEntidad) {
     setData(null);
     const enc = encodeURIComponent(codigoEntidad);
     Promise.all([
-      sbQuery("pbr_entidades",         `select=*&eq.codigo_entidad=${enc}&limit=1`),
-      sbQuery("pbr_programas",         `select=*&eq.codigo_entidad=${enc}&order=anio.desc&order=codigo_programa.asc`),
-      sbQuery("pbr_plurianual",        `select=*&eq.codigo_entidad=${enc}&order=codigo_programa.asc&order=anio.asc`),
-      sbQuery("pbr_subprogramas",      `select=*&eq.codigo_entidad=${enc}&order=codigo_programa.asc`),
-      sbQuery("pbr_ods",               `select=*&eq.codigo_entidad=${enc}&order=anio.desc&order=ods_numero.asc`),
-      sbQuery("pbr_ejes_estrategicos", `select=*&eq.codigo_entidad=${enc}&order=numero_eje.asc`),
-      sbQuery("pbr_equivalencia",      `select=*&eq.codigo_entidad=${enc}&order=anio.desc`),
+      sbQuery("pbr_entidades",         `select=*&codigo_entidad=eq.${enc}&limit=1`),
+      sbQuery("pbr_programas",         `select=*&codigo_entidad=eq.${enc}&order=anio.desc,codigo_programa.asc`),
+      sbQuery("pbr_plurianual",        `select=*&codigo_entidad=eq.${enc}&order=codigo_programa.asc,anio.asc`),
+      sbQuery("pbr_subprogramas",      `select=*&codigo_entidad=eq.${enc}&order=codigo_programa.asc`),
+      sbQuery("pbr_ods",               `select=*&codigo_entidad=eq.${enc}&order=ods_numero.asc`),
+      sbQuery("pbr_ejes_estrategicos", `select=*&codigo_entidad=eq.${enc}&order=numero_eje.asc`),
+      sbQuery("pbr_equivalencia",      `select=*&codigo_entidad=eq.${enc}&order=anio.desc`),
     ])
       .then(([entArr, programas, plurianual, subprogramas, ods, ejes, equivalencia]) => {
         setData({
